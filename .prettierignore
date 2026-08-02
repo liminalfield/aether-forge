@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+coverage/
+pnpm-lock.yaml
+*.tsbuildinfo
+LICENSE
+
+# The canonical decision records, authored by hand. Left alone so diffs to them
+# are always deliberate content changes, never reflow noise.
+00-PROJECT-BRIEF.md
+01-BOOTSTRAP-PLAN.md
+02-MODULE-CONTRACT.md

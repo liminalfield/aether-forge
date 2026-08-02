@@ -1,0 +1,33 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Single source of truth for versions shared across workspace packages.
+# Referenced as "catalog:" in each package.json.
+catalog:
+  typescript: 6.0.3
+  vitest: 4.1.10
+
+# pnpm >=10 blocks dependency lifecycle scripts unless explicitly allowed.
+# Anything not listed here stays blocked, which is the point: a new dependency
+# cannot silently run install scripts.
+#
+# better-sqlite3 is deliberately absent — v13 ships N-API prebuilds for every
+# target platform and has no install script at all, so it needs no build step
+# and no per-Electron rebuild.
+allowBuilds:
+  # As of v43 Electron has no install script at all — the ~220 MB binary is
+  # fetched lazily the first time `require('electron')` resolves. Listed anyway
+  # so that if upstream reintroduces a postinstall, CI keeps working instead of
+  # stopping to ask.
+  electron: true
+  # Installs its platform-specific binary.
+  esbuild: true
+  # Used only by electron-builder on the Windows runner.
+  electron-winstaller: true
+  # Explicitly denied: v13 ships N-API prebuilds covering linux-x64/arm64,
+  # linux-musl, win32-x64/arm64 and darwin, and has no install script. Compiling
+  # from source would be slower and no more correct. If a prebuild is ever
+  # missing for a target, this fails loudly at require() time rather than
+  # silently building something ABI-mismatched.
+  better-sqlite3: false

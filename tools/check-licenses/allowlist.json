@@ -1,0 +1,35 @@
+{
+  "$comment": [
+    "SPDX identifiers permitted in the dependency tree (00-PROJECT-BRIEF.md).",
+    "'production' is the strict list: those packages are distributed inside the",
+    "GPL-3.0-or-later application, so every entry must be GPL-compatible.",
+    "'development' additionally covers build-time-only tooling, which is never",
+    "redistributed. Adding an entry to either list is a deliberate decision --",
+    "record why in the PR."
+  ],
+
+  "production": [
+    "0BSD",
+    "Apache-2.0",
+    "BlueOak-1.0.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "CC-BY-4.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "Python-2.0",
+    "Unlicense",
+    "Zlib"
+  ],
+
+  "development": ["Artistic-2.0", "CC-BY-3.0", "WTFPL"],
+
+  "$denyAlways": [
+    "Licenses that are never acceptable, even as dev tooling, because they are",
+    "GPL-incompatible, network-copyleft, or non-free."
+  ],
+  "denyAlways": ["AGPL-1.0", "AGPL-3.0", "SSPL-1.0", "BUSL-1.1", "Elastic-2.0", "CC-BY-NC-4.0"]
+}

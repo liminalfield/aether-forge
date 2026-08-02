@@ -1,0 +1,24 @@
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Maintains a release PR from conventional commits. Merging it bumps
+      # apps/desktop/package.json, writes the changelog, tags v<version> and
+      # creates the GitHub Release — which in turn triggers package.yml to
+      # build and attach the artifacts.
+      - uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

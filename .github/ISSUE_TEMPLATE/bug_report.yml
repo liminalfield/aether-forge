@@ -1,0 +1,68 @@
+name: Bug report
+description: Something behaves differently than it should
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The most useful bug reports say what you expected
+        as clearly as what happened.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, and what did the app do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in the application window.
+      placeholder: '0.1.0'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Linux — AppImage
+        - Linux — deb
+        - Windows — NSIS installer
+        - Built from source
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: 'Arch Linux 6.12 / Windows 11 23H2'
+    validations:
+      required: true
+
+  - type: textarea
+    id: campaign-size
+    attributes:
+      label: Campaign size, if relevant
+      description: >
+        Roughly how many sessions or events are in the campaign? Event-sourcing
+        bugs often depend on history length, so this is more useful than it
+        sounds.
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+      description: Logs, screenshots, or what you were in the middle of doing.

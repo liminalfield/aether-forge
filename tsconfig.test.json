@@ -1,0 +1,15 @@
+{
+  // Type-checks everything including *.test.ts, which the per-package build
+  // projects deliberately exclude so tests never land in dist/.
+  // Runs after `tsc -b`, so workspace imports resolve against built dist/.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["packages/*/src/**/*.ts"]
+}

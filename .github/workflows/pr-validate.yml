@@ -1,0 +1,87 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: build, test and guards
+    runs-on: ubuntu-latest
+    # Electron >=42 has no postinstall: the ~220 MB binary is fetched lazily the
+    # first time something actually resolves `require('electron')`. This job
+    # only type-checks and bundles against Electron's types, so it never pays
+    # that cost and needs no opt-out.
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        # Version comes from the "packageManager" field in package.json.
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Formatting
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Dependency direction
+        run: pnpm depcheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: License allowlist
+        run: pnpm check:licenses
+
+      - name: Content leak
+        run: pnpm check:content-leak
+
+      - name: Vocabulary rule
+        run: pnpm check:vocabulary
+
+  audit:
+    name: dependency audit (advisory)
+    runs-on: ubuntu-latest
+    # Advisory for now: a fresh upstream advisory should not block an unrelated
+    # PR. Promote to blocking once the noise level is known.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level=high
+
+  pr-title:
+    name: conventional commit PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      # release-please derives versions from the squashed commit, which is the
+      # PR title. A non-conventional title silently breaks releases.
+      - uses: amannn/action-semantic-pull-request@v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

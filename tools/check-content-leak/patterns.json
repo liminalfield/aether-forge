@@ -1,0 +1,31 @@
+{
+  "$comment": [
+    "Paths that must never be committed (00-PROJECT-BRIEF.md).",
+    "Licensed non-open game content ships as empty containers plus a user-side",
+    "import tool; imported data lives in the app data directory and is never",
+    "referenced in place or committed. .gitignore covers the honest case --",
+    "this guard is the backstop for `git add -f` and for files that arrive by",
+    "another route.",
+    "",
+    "Test fixtures must use obviously-dummy data, which is why fixture",
+    "directories are not exempt."
+  ],
+
+  "forbiddenPaths": [
+    "**/imported/**",
+    "**/*.userpkg.json",
+    "**/*.userpkg/**",
+    "**/user-packages/**",
+    "**/content-cache/**"
+  ],
+
+  "$forbiddenExtensionsComment": [
+    "Bulk data formats that have no legitimate reason to be in this repository.",
+    "Content we do bundle arrives as pinned @datasworn-community npm packages,",
+    "transformed at build time -- never checked in as raw data files."
+  ],
+  "forbiddenExtensions": [".sqlite", ".sqlite3", ".db", ".pdf", ".epub"],
+
+  "$allowComment": "Escape hatches, kept deliberately short.",
+  "allow": ["tools/check-content-leak/patterns.json", "docs/**"]
+}

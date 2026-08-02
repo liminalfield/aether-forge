@@ -1,0 +1,108 @@
+name: package
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  schedule:
+    # Nightly, so packaging breakage is discovered the same day rather than at
+    # release time. Packaging is the one thing PR validation cannot cover.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Package
+        # electron-builder reads apps/desktop/electron-builder.yml. Publishing
+        # is handled by the publish job below, never by electron-builder, so
+        # that update metadata and checksums come from one place.
+        run: pnpm --filter @aether-forge/desktop package
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.os }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.deb
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.blockmap
+            apps/desktop/dist/latest*.yml
+
+  publish:
+    name: publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download all packaging artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Flatten
+        # Artifacts arrive as artifacts/dist-<os>/<files>. The release wants a
+        # flat set, and SHA256SUMS must list bare filenames so `sha256sum -c`
+        # works from the download directory.
+        run: |
+          mkdir -p release
+          find artifacts -type f -exec cp -n {} release/ \;
+          ls -la release
+
+      - name: Checksums
+        working-directory: release
+        # Built outside the directory and moved in, so the glob can never race
+        # against the file it is writing.
+        run: |
+          sha256sum * > "${RUNNER_TEMP}/SHA256SUMS"
+          mv "${RUNNER_TEMP}/SHA256SUMS" SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.exe
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: release/*
+          fail_on_unmatched_files: true

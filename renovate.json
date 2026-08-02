@@ -1,0 +1,68 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+
+  "timezone": "Europe/Oslo",
+  "schedule": ["* 0-6 * * 1"],
+  "prConcurrentLimit": 4,
+  "prHourlyLimit": 2,
+
+  "rangeStrategy": "pin",
+  "commitMessagePrefix": "deps:",
+  "labels": ["dependencies"],
+
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 0-6 * * 1"]
+  },
+
+  "packageRules": [
+    {
+      "description": "Routine minor and patch bumps arrive as one weekly PR — individually they are noise, together they are one review.",
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "weekly minor and patch",
+      "matchPackageNames": ["!electron", "!electron-builder", "!electron-vite", "!electron-updater"]
+    },
+    {
+      "description": "Electron and its build chain move together; a mismatched pair fails only at packaging time, which PR validation does not cover.",
+      "matchPackageNames": ["electron", "electron-builder", "electron-vite", "electron-updater"],
+      "groupName": "electron toolchain",
+      "matchUpdateTypes": ["minor", "patch", "major"]
+    },
+    {
+      "description": "Datasworn packages define the content model. A bump is a content change requiring regenerated importer golden files, so it is never automated — the dashboard surfaces it and a human opens the PR.",
+      "matchPackageNames": ["/^@datasworn-community//", "/^@?datasworn/"],
+      "enabled": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Major bumps always get their own PR and their own review.",
+      "matchUpdateTypes": ["major"],
+      "matchPackageNames": [
+        "!electron",
+        "!electron-builder",
+        "!electron-vite",
+        "!electron-updater"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Node and pnpm are pinned to exact versions in .nvmrc and packageManager; changing them changes every CI runner, so it is a deliberate act.",
+      "matchPackageNames": ["node", "pnpm"],
+      "matchDepTypes": ["engines", "packageManager"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Security fixes bypass the weekly schedule.",
+      "matchDatasources": ["npm"],
+      "isVulnerabilityAlert": true,
+      "schedule": ["at any time"],
+      "prPriority": 10
+    }
+  ],
+
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": false
+  }
+}

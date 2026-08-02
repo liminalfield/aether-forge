@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest something the app should do
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before writing: the app **computes everything and decides nothing**. It
+        suggests, rolls, computes and proposes — it never enforces a rule or
+        blocks a state as illegal. Requests that ask the app to decide for the
+        player are the one category that will be declined on principle.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is awkward today
+      description: >
+        Describe the situation at the table, not the solution. What are you
+        doing now, and where does it get in the way?
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: If you have a specific idea, describe it. It is fine not to.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Where does this belong?
+      description: >
+        Core is system-neutral and may use no rulebook vocabulary. Anything
+        specific to Ironsworn or Starforged belongs in the system module.
+      options:
+        - System-neutral — would apply to any game
+        - Ironsworn / Starforged specific
+        - Not sure
+    validations:
+      required: true

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "$comment": [
+    "The application version is the product version and drives the v* tags that",
+    "the packaging workflow releases from. The MIT libraries under packages/*",
+    "are not versioned independently yet — they are not published to npm, and",
+    "adding per-package releases before anyone depends on them would be",
+    "ceremony without a consumer. Add them here when the first one publishes."
+  ],
+  "release-type": "node",
+  "include-component-in-tag": false,
+  "separate-pull-requests": false,
+  "packages": {
+    "apps/desktop": {
+      "package-name": "aether-forge",
+      "changelog-path": "CHANGELOG.md"
+    }
+  },
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "deps", "section": "Dependencies" },
+    { "type": "docs", "section": "Documentation", "hidden": true },
+    { "type": "chore", "section": "Chores", "hidden": true },
+    { "type": "refactor", "section": "Refactoring", "hidden": true },
+    { "type": "test", "section": "Tests", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true }
+  ]
+}
