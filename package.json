@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Solo tabletop roleplay companion — monorepo root",
+  "description": "Solo tabletop roleplay companion, monorepo root",
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",

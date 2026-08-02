@@ -18,7 +18,7 @@
 
   "packageRules": [
     {
-      "description": "Routine minor and patch bumps arrive as one weekly PR — individually they are noise, together they are one review.",
+      "description": "Routine minor and patch bumps arrive as one weekly PR. Individually they are noise; together they are one review.",
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "weekly minor and patch",
       "matchPackageNames": ["!electron", "!electron-builder", "!electron-vite", "!electron-updater"]
@@ -30,7 +30,7 @@
       "matchUpdateTypes": ["minor", "patch", "major"]
     },
     {
-      "description": "Datasworn packages define the content model. A bump is a content change requiring regenerated importer golden files, so it is never automated — the dashboard surfaces it and a human opens the PR.",
+      "description": "Datasworn packages define the content model. A bump is a content change requiring regenerated importer golden files, so it is never automated. The dashboard surfaces it and a human opens the PR.",
       "matchPackageNames": ["/^@datasworn-community//", "/^@?datasworn/"],
       "enabled": false,
       "dependencyDashboardApproval": true

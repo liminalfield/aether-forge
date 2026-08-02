@@ -3,7 +3,7 @@
   "$comment": [
     "The application version is the product version and drives the v* tags that",
     "the packaging workflow releases from. The MIT libraries under packages/*",
-    "are not versioned independently yet — they are not published to npm, and",
+    "are not versioned independently yet. They are not published to npm, and",
     "adding per-package releases before anyone depends on them would be",
     "ceremony without a consumer. Add them here when the first one publishes."
   ],
@@ -14,7 +14,7 @@
   "$versioningComment": [
     "Stay in 0.x until 1.0 is a deliberate decision rather than a side effect of",
     "the first feat: commit. While below 1.0, a feature bumps the minor and a",
-    "breaking change bumps the minor too — nothing here is stable enough yet for",
+    "breaking change bumps the minor too. Nothing here is stable enough yet for",
     "a major to mean anything."
   ],
   "bump-minor-pre-major": true,

@@ -45,7 +45,7 @@ module.exports = {
       name: 'modules-import-core-only',
       severity: 'error',
       comment:
-        'system-* and importer-* may depend on core and nothing else internal — not on ui, not on each other, not on the app.',
+        'system-* and importer-* may depend on core and nothing else internal: not on ui, not on each other, not on the app.',
       from: { path: '^packages/(system-|importer-)' },
       to: {
         path: '^(packages/|apps/)',

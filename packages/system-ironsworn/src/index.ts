@@ -1,5 +1,5 @@
 /**
- * `@aether-forge/system-ironsworn` — the Ironsworn and Ironsworn: Starforged
+ * `@aether-forge/system-ironsworn`, the Ironsworn and Ironsworn: Starforged
  * system module.
  *
  * This is where rulebook vocabulary is allowed to live. Content arrives as

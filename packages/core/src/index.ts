@@ -1,12 +1,12 @@
 /**
- * `@aether-forge/core` — the system-neutral kernel.
+ * `@aether-forge/core`: the system-neutral kernel.
  *
  * Vocabulary rule: nothing in this package may use a word that appears in a
  * rulebook. Allowed vocabulary is journal, entry, event, roll, table, entity,
  * relation, track, clock, resource, module, package, flow. If a name comes from
  * a game system, it belongs in a `system-*` module instead.
  *
- * This is the bootstrap seed — identifiers and versioning only. The event
+ * This is the bootstrap seed: identifiers and versioning only. The event
  * envelope, entity graph and flow engine arrive with the first feature
  * milestone (see 02-MODULE-CONTRACT.md).
  */

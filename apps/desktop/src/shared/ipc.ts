@@ -1,5 +1,5 @@
 /**
- * The typed IPC contract — the *only* seam between the renderer and the
+ * The typed IPC contract, the *only* seam between the renderer and the
  * platform.
  *
  * The renderer is a normal web app that does not know Electron exists. Every

@@ -1,5 +1,5 @@
 /**
- * `@aether-forge/importer-datasworn` — Datasworn to neutral ContentPackage.
+ * `@aether-forge/importer-datasworn`: Datasworn to neutral ContentPackage.
  *
  * Datasworn is an interchange format we consume, never our runtime model. This
  * package is the *only* place in the repository allowed to reference Datasworn
