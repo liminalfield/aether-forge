@@ -19,6 +19,12 @@
   ],
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
+  "$initialVersionComment": [
+    "Without this, release-please reads the 0.0.0 manifest entry as 'never",
+    "released' and cuts 1.0.0 for the first release regardless of",
+    "bump-minor-pre-major."
+  ],
+  "initial-version": "0.1.0",
   "packages": {
     "apps/desktop": {
       "package-name": "aether-forge",
