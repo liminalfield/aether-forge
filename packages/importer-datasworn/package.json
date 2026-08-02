@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oluf/aether-forge.git",
+    "url": "git+https://github.com/liminalfield/aether-forge.git",
     "directory": "packages/importer-datasworn"
   },
   "scripts": {

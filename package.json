@@ -7,7 +7,7 @@
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oluf/aether-forge.git"
+    "url": "git+https://github.com/liminalfield/aether-forge.git"
   },
   "packageManager": "pnpm@11.18.0",
   "engines": {
