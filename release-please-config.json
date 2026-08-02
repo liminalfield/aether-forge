@@ -25,9 +25,22 @@
     "bump-minor-pre-major."
   ],
   "initial-version": "0.1.0",
+  "$componentComment": [
+    "package-name is deliberately empty. release-please compares the component",
+    "parsed from the release branch name against getBranchComponent(), which is",
+    "`this.component || getDefaultComponent()`. That helper does NOT consult",
+    "include-component-in-tag, so any non-empty name makes it expect a component",
+    "the grouped branch (release-please--branches--main) does not carry, and the",
+    "release is silently skipped with a warning while the workflow still reports",
+    "success. An empty string is the only value that makes both sides agree,",
+    "because `'' ?? x` short-circuits to '' where a missing key would not.",
+    "packageName is otherwise only used for samples/package.json, which does not",
+    "exist here, and the changelog heading. The version write into",
+    "apps/desktop/package.json is keyed on path, so it is unaffected."
+  ],
   "packages": {
     "apps/desktop": {
-      "package-name": "aether-forge",
+      "package-name": "",
       "changelog-path": "CHANGELOG.md"
     }
   },
