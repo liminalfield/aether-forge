@@ -20,5 +20,13 @@ jobs:
       # build and attach the artifacts.
       - uses: googleapis/release-please-action@v5
         with:
+          # GitHub does not trigger workflows for events raised by GITHUB_TOKEN,
+          # so a release PR opened with it gets no status checks and cannot
+          # satisfy a required-checks rule on main. Supplying a PAT (or GitHub
+          # App token) as RELEASE_PLEASE_TOKEN makes the release PR run
+          # validation like any other. Until that secret exists this falls back
+          # to GITHUB_TOKEN, and release PRs must be merged by someone who can
+          # bypass branch protection.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
