@@ -10,6 +10,15 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "separate-pull-requests": false,
+
+  "$versioningComment": [
+    "Stay in 0.x until 1.0 is a deliberate decision rather than a side effect of",
+    "the first feat: commit. While below 1.0, a feature bumps the minor and a",
+    "breaking change bumps the minor too — nothing here is stable enough yet for",
+    "a major to mean anything."
+  ],
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": false,
   "packages": {
     "apps/desktop": {
       "package-name": "aether-forge",
