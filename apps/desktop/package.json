@@ -5,10 +5,10 @@
   "description": "Aether Forge desktop application",
   "license": "GPL-3.0-or-later",
   "author": "Aether Forge contributors",
-  "homepage": "https://github.com/oluf/aether-forge",
+  "homepage": "https://github.com/liminalfield/aether-forge",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oluf/aether-forge.git",
+    "url": "git+https://github.com/liminalfield/aether-forge.git",
     "directory": "apps/desktop"
   },
   "main": "./out/main/index.js",
