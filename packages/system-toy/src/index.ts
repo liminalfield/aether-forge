@@ -1,5 +1,5 @@
 /**
- * `@aether-forge/system-toy` — the canary module.
+ * `@aether-forge/system-toy`: the canary module.
  *
  * A trivial coin-flip journaling system whose only job is to keep the module
  * contract honest: core's test suite runs every contract-consuming path against

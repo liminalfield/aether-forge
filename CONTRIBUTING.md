@@ -2,7 +2,7 @@
 
 Thanks for looking. This project has a few rules that are stricter than usual, and they exist for
 reasons written down in `00-PROJECT-BRIEF.md`. Reading [CLAUDE.md](CLAUDE.md) first will save you a
-review round — it is the short version of everything below and applies to human and AI contributors
+review round. It is the short version of everything below and applies to human and AI contributors
 alike.
 
 ## Getting set up
@@ -33,8 +33,8 @@ apps/desktop          imports everything; nothing imports it
 renderer              never imports Node built-ins or Electron
 ```
 
-Enforced by `pnpm depcheck` and by ESLint. If you need to cross an arrow, the design is wrong —
-raise it as an issue before writing the code.
+Enforced by `pnpm depcheck` and by ESLint. If you need to cross an arrow, the design is wrong. Raise
+it as an issue before writing the code.
 
 ### 2. The vocabulary rule
 
@@ -42,7 +42,7 @@ raise it as an issue before writing the code.
 event, roll, table, entity, relation, track, clock, resource, module, package, flow. If a name comes
 from a game system, the thing it names belongs in a system module.
 
-`oracle` is fine — it is the generic term this project uses for tables.
+`oracle` is fine. It is the generic term this project uses for tables.
 
 ### 3. Events are versioned and append-only
 
@@ -52,13 +52,13 @@ without a version.
 
 ### 4. Suggestions are never enforcement
 
-The app computes everything and decides nothing. Mechanics UI may suggest, prefill and compute — it
+The app computes everything and decides nothing. Mechanics UI may suggest, prefill and compute; it
 may never block a state as illegal. Range validation only (a d10 cannot show 12).
 
 ### 5. Content and licensing
 
 - No game content that is not CC-BY, MIT or ORC-licensed.
-- No user-imported content, ever — `pnpm check:content-leak` will catch it, and git history is
+- No user-imported content, ever. `pnpm check:content-leak` will catch it, and git history is
   forever.
 - Test fixtures use obviously-dummy data.
 - New dependencies must pass `pnpm check:licenses`. Production dependencies ship inside the
@@ -68,8 +68,8 @@ See [LICENSES.md](LICENSES.md) for the full split.
 
 ## Commits and PRs
 
-**Conventional commits**, enforced on PR titles — release-please derives the version and changelog
-from them, so a non-conventional title silently breaks releases.
+**Conventional commits**, enforced on PR titles, because release-please derives the version and
+changelog from them, so a non-conventional title silently breaks releases.
 
 ```
 feat: add oracle roll history panel
@@ -89,7 +89,7 @@ accepted under the license of the directory they touch.
 
 ## Dependencies
 
-Versions are **pinned exactly** — no `^`, no `~`. `typescript` and `vitest` come from the pnpm
+Versions are **pinned exactly**: no `^`, no `~`. `typescript` and `vitest` come from the pnpm
 catalog in `pnpm-workspace.yaml`; add shared tooling there rather than duplicating a version across
 packages.
 
@@ -110,12 +110,12 @@ Packaging also runs nightly on `main`, because packaging breakage is invisible t
 Vitest across the workspace. Two testing commitments are permanent:
 
 - Core runs its contract-consuming paths against **both** `system-toy` and `system-ironsworn`. If a
-  contract change breaks the toy, the contract is wrong — not the toy.
+  contract change breaks the toy, the contract is wrong, not the toy.
 - Importer output is covered by golden files. A Datasworn version bump regenerates them **in the
   same PR**.
 
 ## Reporting bugs
 
-Include your OS, the app version (shown in the window), and how you installed it — AppImage, deb or
+Include your OS, the app version (shown in the window), and how you installed it: AppImage, deb or
 NSIS. If it involves a campaign, say roughly how many events are in it; event-sourcing bugs tend to
 be about history length.

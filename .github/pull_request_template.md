@@ -1,5 +1,5 @@
 <!--
-The PR title must be a conventional commit — it becomes the squashed commit
+The PR title must be a conventional commit. It becomes the squashed commit
 message and release-please derives the version and changelog from it.
   feat: …   fix: …   deps: …   docs: …   refactor: …   test: …   ci: …
 Breaking: feat!: … or a BREAKING CHANGE: footer.
@@ -21,8 +21,8 @@ Breaking: feat!: … or a BREAKING CHANGE: footer.
 ## Dependencies
 
 <!--
-Delete if none. Otherwise: what was added, why, its license, and — if it needed
-an entry in allowBuilds — what its install script does.
+Delete if none. Otherwise: what was added, why, its license, and, if it needed
+an entry in allowBuilds, what its install script does.
 -->
 
 ## Notes for the reviewer

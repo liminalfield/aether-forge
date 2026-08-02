@@ -1,5 +1,5 @@
 /**
- * `@aether-forge/ui` — design tokens and (later) the component layer.
+ * `@aether-forge/ui`: design tokens and (later) the component layer.
  *
  * Imports nothing internal, ever. Subject to the same vocabulary rule as
  * `core`: no rulebook words. System modules contribute their own theme tokens

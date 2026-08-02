@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Before writing: the app **computes everything and decides nothing**. It
-        suggests, rolls, computes and proposes — it never enforces a rule or
+        suggests, rolls, computes and proposes. It never enforces a rule or
         blocks a state as illegal. Requests that ask the app to decide for the
         player are the one category that will be declined on principle.
 
@@ -34,7 +34,7 @@ body:
         Core is system-neutral and may use no rulebook vocabulary. Anything
         specific to Ironsworn or Starforged belongs in the system module.
       options:
-        - System-neutral — would apply to any game
+        - System-neutral, would apply to any game
         - Ironsworn / Starforged specific
         - Not sure
     validations:

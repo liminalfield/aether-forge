@@ -23,7 +23,7 @@ artifactName: aether-forge-${version}-${os}-${arch}.${ext}
 linux:
   target:
     - AppImage # the only Linux target electron-updater supports; the self-updating channel
-    - deb # no auto-update — say so in release notes
+    - deb # no auto-update; say so in release notes
   # Same reason as artifactName: derived from the scoped package name this would
   # be "@aether-forgedesktop", which electron-builder rejects. It also becomes
   # the WM_CLASS used to match windows to the .desktop entry.

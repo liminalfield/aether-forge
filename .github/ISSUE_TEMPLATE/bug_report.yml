@@ -37,9 +37,9 @@ body:
     attributes:
       label: How did you install it?
       options:
-        - Linux — AppImage
-        - Linux — deb
-        - Windows — NSIS installer
+        - Linux AppImage
+        - Linux deb
+        - Windows NSIS installer
         - Built from source
     validations:
       required: true

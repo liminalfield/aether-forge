@@ -9,7 +9,7 @@ import Database from 'better-sqlite3';
  *
  * Migrations run forward on open, keyed off SQLite's `user_version`. The
  * campaign event log is append-only, so migrations may add tables and indexes
- * but must never rewrite recorded events — payload schema changes are handled
+ * but must never rewrite recorded events. Payload schema changes are handled
  * by upcasting on read (see 02-MODULE-CONTRACT.md), not by touching the log.
  */
 
@@ -67,7 +67,7 @@ export function migrate(db: Database.Database): number {
 /**
  * Opens (creating if needed) a campaign database under the app data directory.
  *
- * @param userDataPath `app.getPath('userData')` — passed in rather than read
+ * @param userDataPath `app.getPath('userData')`, passed in rather than read
  *   from Electron so this module stays testable outside the app.
  */
 export function openCampaignDatabase(

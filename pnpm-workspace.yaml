@@ -12,11 +12,11 @@ catalog:
 # Anything not listed here stays blocked, which is the point: a new dependency
 # cannot silently run install scripts.
 #
-# better-sqlite3 is deliberately absent — v13 ships N-API prebuilds for every
+# better-sqlite3 is deliberately absent: v13 ships N-API prebuilds for every
 # target platform and has no install script at all, so it needs no build step
 # and no per-Electron rebuild.
 allowBuilds:
-  # As of v43 Electron has no install script at all — the ~220 MB binary is
+  # As of v43 Electron has no install script at all. The ~220 MB binary is
   # fetched lazily the first time `require('electron')` resolves. Listed anyway
   # so that if upstream reintroduces a postinstall, CI keeps working instead of
   # stopping to ask.
