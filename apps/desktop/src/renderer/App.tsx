@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { tokens } from '@aether-forge/ui';
 
 /**
- * Bootstrap shell. No feature code — its only job is to prove the IPC round
+ * Bootstrap shell. No feature code. Its only job is to prove the IPC round
  * trip and the design-token import work in both dev and a packaged build.
  */
 export function App(): React.JSX.Element {

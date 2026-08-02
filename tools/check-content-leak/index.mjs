@@ -94,7 +94,7 @@ for (const file of files) {
 
 if (hits.length === 0) {
   console.log(
-    `[check-content-leak] ok — ${files.length} ${stagedOnly ? 'staged' : 'tracked'} files, no imported content.`,
+    `[check-content-leak] ok: ${files.length} ${stagedOnly ? 'staged' : 'tracked'} files, no imported content.`,
   );
   process.exit(0);
 }

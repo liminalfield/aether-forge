@@ -107,7 +107,7 @@ for (const [license, packages] of allLicenses) {
 if (violations.length === 0) {
   const count = [...allLicenses.values()].reduce((n, s) => n + s.size, 0);
   console.log(
-    `[check-licenses] ok — ${count} packages across ${allLicenses.size} license expressions, all allowlisted.`,
+    `[check-licenses] ok: ${count} packages across ${allLicenses.size} license expressions, all allowlisted.`,
   );
   process.exit(0);
 }
@@ -120,7 +120,7 @@ for (const { scope, license, packages } of violations) {
   console.error('');
 }
 console.error(
-  'Either drop the dependency, or — if the license really is acceptable —\n' +
+  'Either drop the dependency, or, if the license really is acceptable,\n' +
     'add the SPDX identifier to tools/check-licenses/allowlist.json and say why in the PR.\n' +
     'Production entries ship inside the GPL-3.0-or-later app and must be GPL-compatible.',
 );

@@ -16,7 +16,7 @@ jobs:
     steps:
       # Maintains a release PR from conventional commits. Merging it bumps
       # apps/desktop/package.json, writes the changelog, tags v<version> and
-      # creates the GitHub Release — which in turn triggers package.yml to
+      # creates the GitHub Release, which in turn triggers package.yml to
       # build and attach the artifacts.
       - uses: googleapis/release-please-action@v5
         with:

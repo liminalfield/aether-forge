@@ -101,7 +101,7 @@ try {
 }
 
 if (violations.length === 0) {
-  console.log(`[check-vocabulary] ok — ${scanned} files in core/ui, no rulebook vocabulary.`);
+  console.log(`[check-vocabulary] ok: ${scanned} files in core/ui, no rulebook vocabulary.`);
   process.exit(0);
 }
 
@@ -112,7 +112,7 @@ for (const { file, line, term, text } of violations) {
 }
 console.error(
   '\ncore and ui may only use words that appear in no rulebook. If this concept is\n' +
-    'real, it belongs in a system module (packages/system-*) — or it needs a\n' +
+    'real, it belongs in a system module (packages/system-*), or it needs a\n' +
     'system-neutral name here. See the vocabulary rule in CLAUDE.md.',
 );
 process.exit(1);

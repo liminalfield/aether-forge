@@ -1,7 +1,7 @@
 {
   "name": "@aether-forge/system-toy",
   "version": "0.0.0",
-  "description": "Canary system module — trivial coin-flip journaling system",
+  "description": "Canary system module: trivial coin-flip journaling system",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

@@ -1,5 +1,5 @@
 {
-  // Renderer: a plain web app. No "node" types here on purpose — if the
+  // Renderer: a plain web app. No "node" types here on purpose. If the
   // renderer can *see* Node's types, someone will eventually import them.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
