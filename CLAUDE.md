@@ -12,7 +12,7 @@ It does not restate the architecture. Those live elsewhere and each fact has one
 | `design/<feature>.md`   | The design record for one feature. Written before its issues exist.        |
 | `CONTRIBUTING.md`       | The same rules addressed to an outside contributor.                        |
 | `LICENSES.md`           | The license split and its reasoning.                                       |
-| GitHub issues           | What is being built, in what order. An epic per feature, tasks beneath it. |
+| GitHub issues           | What is being built, in what order. An Epic per feature, Tasks beneath it. |
 | This file               | How we work, and the bar the work has to clear.                            |
 
 Where this file and the brief disagree about a decision, the brief wins and this file is stale.
@@ -137,9 +137,22 @@ This is the point at which disagreement is cheap. Raise objections here.
 
 An agreed design becomes one epic plus its task issues.
 
-**The epic** is an issue titled `Epic: <name>`, carrying the relevant `track:*` labels and
-`contract-touching` when it changes the module contract or an event payload schema. Its body has a
-fixed shape:
+Issue **type** carries the meaning, not a title prefix. The type is searchable (`type:Epic`),
+renders as a badge, and is a field on the project board. Do not restate it in the title.
+
+| Type      | Means                                                                           |
+| --------- | ------------------------------------------------------------------------------- |
+| `Feature` | An idea or a request. The inbox. Filing one needs no design record.             |
+| `Epic`    | A designed, agreed, decomposed feature. Carries the design record and the plan. |
+| `Task`    | One reviewable step. Always a sub-issue of an epic.                             |
+| `Bug`     | A defect in something already built.                                            |
+
+**A feature is promoted to an epic** when its design record lands. Change the type on the existing
+issue rather than opening a new one, so that the whole thread from first suggestion through design
+discussion to finished plan keeps one number and one history.
+
+**The epic** carries the relevant `track:*` labels, and `contract-touching` when it changes the
+module contract or an event payload schema. Its body has a fixed shape:
 
 - A prose statement of what the feature is and what problem it solves.
 - A link to the design record, and to the origin discussion when there was one.
@@ -189,6 +202,9 @@ Filing an issue does not put it on the project board. That stays the maintainer'
 `contract-touching` marks the one-way doors: a change to the module contract or to an event payload
 schema. Both are permanent once a user has written events against them. Treat these issues as
 deliberate, and expect them to need a design record even when they look small.
+
+Labels mark area and risk. Issue type marks what kind of thing it is. Do not encode one as the
+other.
 
 ## Verify, do not remember
 
