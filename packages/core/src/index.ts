@@ -34,3 +34,21 @@ export type {
 } from './event.js';
 
 export { isCoreEvent, isModuleEvent } from './event.js';
+
+export type {
+  CoreEventDraft,
+  EventDraft,
+  EventLog,
+  LogEnvironment,
+  LogFailure,
+  ModuleEventDraft,
+  ReadRange,
+} from './log.js';
+
+export { isModuleEventDraft } from './log.js';
+
+export type { Result } from './result.js';
+export { failed, ok } from './result.js';
+
+export type { MemoryEventLogOptions } from './memory-log.js';
+export { createMemoryEventLog } from './memory-log.js';
