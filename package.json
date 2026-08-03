@@ -1,0 +1,48 @@
+{
+  "name": "aether-forge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Solo tabletop roleplay companion, monorepo root",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liminalfield/aether-forge.git"
+  },
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "scripts": {
+    "build": "pnpm run build:libs && pnpm run build:app",
+    "build:libs": "tsc -b",
+    "build:app": "pnpm --filter aether-forge-desktop build",
+    "clean": "tsc -b --clean && pnpm -r exec rm -rf dist out",
+    "dev": "pnpm run build:libs && pnpm --filter aether-forge-desktop dev",
+    "package": "pnpm --filter aether-forge-desktop package",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "depcheck": "depcruise apps/desktop/src packages/*/src --config .dependency-cruiser.cjs",
+    "depcheck:graph": "depcruise apps/desktop/src packages/*/src --config .dependency-cruiser.cjs --output-type dot",
+    "check:licenses": "node tools/check-licenses/index.mjs",
+    "check:content-leak": "node tools/check-content-leak/index.mjs",
+    "check:vocabulary": "node tools/check-vocabulary/index.mjs",
+    "check:all": "pnpm lint && pnpm depcheck && pnpm check:licenses && pnpm check:content-leak && pnpm check:vocabulary"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.1",
+    "dependency-cruiser": "18.1.0",
+    "eslint": "10.8.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.8.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10"
+  }
+}
