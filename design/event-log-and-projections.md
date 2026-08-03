@@ -270,6 +270,26 @@ designed:
 - **Events that carry a value** may be corrected, and the correction carries the whole new value.
 - **Events that carry a change** are never corrected. They are compensated by a further change.
 
+### Invoking a move is its own event, separate from the roll
+
+When a move is invoked, that is recorded as an event in its own right, before the roll it causes. It
+carries which move, which stat was chosen, what was added, and which of those the application
+suggested rather than the player deciding.
+
+Hanging that information on the roll event instead would mean one event per move rather than two.
+There are two reasons not to.
+
+Core owns the roll event, and core does not know what a stat is. Putting the inputs there would put
+rulebook vocabulary inside a core event permanently, and that is exactly the split the project
+exists to keep.
+
+The stronger reason is that this is what makes the audit trail real. The product promises the log
+records what the application suggested and what the player actually chose. If those inputs live only
+on a core roll event, then either core has to learn what a stat is, or that information is not
+recorded anywhere.
+
+The cost is one extra event for every move. That is accepted.
+
 ### System modules calculate their own state
 
 Core may not look inside a module's event data. That rule is what makes modules replaceable, and it
