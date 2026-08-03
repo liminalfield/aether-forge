@@ -313,10 +313,43 @@ because it affects replay speed.
 Keeping the log to text is what makes replaying it cheap, and what makes a campaign file something
 you can open and read.
 
+### You can carry a campaign to another machine
+
+A campaign can be exported to a single file and imported somewhere else. Take it on a laptop, play
+on the trip, bring it home.
+
+This is not syncing. Nothing happens automatically, nothing runs in the background, there is no
+account, and nothing talks to a server. It is a file you move, and you decide when.
+
+The bundle is the log, the entities and the images together, which the brief already describes.
+
+The part worth designing carefully is what happens when it comes back, because by then two copies
+exist and they may have both been played. Numbered events that never change make this cheap to work
+out:
+
+- **If only one side moved on**, there is nothing to decide. Say your desktop's campaign still ends
+  at event 120 and the copy you brought back continues to 147. The desktop simply takes events 121
+  to 147. Nothing is lost and nobody is asked anything.
+- **If both sides moved on**, they have genuinely diverged. Perhaps the desktop reached 131 while
+  the travelling copy reached 147, and events 121 onwards are different on each. The application
+  will not try to combine them. That is the merging problem this design deliberately does not take
+  on, and quietly guessing would be worse than refusing. It says clearly that both have been played
+  since they parted, and offers to keep the imported one as a separate campaign so that nothing is
+  destroyed.
+
+To make that comparison trustworthy, the bundle carries a fingerprint of the history it shares with
+the original, so that two campaigns that merely happen to share an identifier are never mistaken for
+the same campaign.
+
+The honest advice the application should give alongside this feature is to play in one place at a
+time. The divergence case exists to protect you, not to be a workflow.
+
 ## What we are deliberately not doing
 
 **No syncing between devices.** Your campaign lives on your machine. There is no account and no
-server.
+server. You can still carry a campaign to another machine yourself, as described above; what we are
+not building is anything that does it for you, in the background, while you are playing in two
+places.
 
 This is worth explaining rather than asserting, because it is the reason event numbering can stay
 simple. If two devices could both edit a campaign while offline, they would both create event 47,
@@ -386,6 +419,18 @@ Recording which fields were intended would preserve that, at the cost of a more 
 
 _What would settle it:_ the first entity-editing feature, and whether the log reads sensibly without
 it.
+
+**Should exporting a campaign mark the original as put aside?**
+
+If you export to take a campaign travelling, the copy left behind could be marked as handed over, so
+that opening it warns you before you play and create a divergence you will have to sort out later.
+
+That prevents the awkward case rather than reporting it. It is also annoying in the obvious way: if
+the travelling machine is lost, stolen, or simply not with you, you would have to override the
+warning to use your own campaign, and a warning people routinely override is worse than none.
+
+_What would settle it:_ using export and import in practice for a few real trips and seeing whether
+divergence actually happens or is a hypothetical.
 
 **What do we record about where a roll came from?**
 
