@@ -1,6 +1,10 @@
 # The event log and how current state is worked out
 
-Status: proposal. Nothing here is built yet, and nothing should be until this is agreed.
+Status: accepted, 3 August 2026. Decomposed into epic
+[#31](https://github.com/liminalfield/aether-forge/issues/31) and its tasks.
+
+If the code and this record ever disagree, the code is right and this needs a note saying what
+changed.
 
 This is the first design record because everything else depends on what it decides, and because it
 is the hardest thing to change later. Once someone has played a campaign, their history is written
