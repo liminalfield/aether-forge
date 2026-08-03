@@ -47,6 +47,10 @@ export type {
 
 export { isModuleEventDraft } from './log.js';
 
+export type { EventSchemas, EventTypeDefinition, SchemaFailure, Translation } from './schema.js';
+
+export { createEventSchemas } from './schema.js';
+
 export type { Result } from './result.js';
 export { failed, ok } from './result.js';
 
