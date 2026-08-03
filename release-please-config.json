@@ -1,0 +1,58 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "$comment": [
+    "The application version is the product version and drives the v* tags that",
+    "the packaging workflow releases from. The MIT libraries under packages/*",
+    "are not versioned independently yet. They are not published to npm, and",
+    "adding per-package releases before anyone depends on them would be",
+    "ceremony without a consumer. Add them here when the first one publishes."
+  ],
+  "release-type": "node",
+  "include-component-in-tag": false,
+  "separate-pull-requests": false,
+
+  "$versioningComment": [
+    "Stay in 0.x until 1.0 is a deliberate decision rather than a side effect of",
+    "the first feat: commit. While below 1.0, a feature bumps the minor and a",
+    "breaking change bumps the minor too. Nothing here is stable enough yet for",
+    "a major to mean anything."
+  ],
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": false,
+  "$initialVersionComment": [
+    "Without this, release-please reads the 0.0.0 manifest entry as 'never",
+    "released' and cuts 1.0.0 for the first release regardless of",
+    "bump-minor-pre-major."
+  ],
+  "initial-version": "0.1.0",
+  "$componentComment": [
+    "package-name is deliberately empty. release-please compares the component",
+    "parsed from the release branch name against getBranchComponent(), which is",
+    "`this.component || getDefaultComponent()`. That helper does NOT consult",
+    "include-component-in-tag, so any non-empty name makes it expect a component",
+    "the grouped branch (release-please--branches--main) does not carry, and the",
+    "release is silently skipped with a warning while the workflow still reports",
+    "success. An empty string is the only value that makes both sides agree,",
+    "because `'' ?? x` short-circuits to '' where a missing key would not.",
+    "packageName is otherwise only used for samples/package.json, which does not",
+    "exist here, and the changelog heading. The version write into",
+    "apps/desktop/package.json is keyed on path, so it is unaffected."
+  ],
+  "packages": {
+    "apps/desktop": {
+      "package-name": "",
+      "changelog-path": "CHANGELOG.md"
+    }
+  },
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "deps", "section": "Dependencies" },
+    { "type": "docs", "section": "Documentation", "hidden": true },
+    { "type": "chore", "section": "Chores", "hidden": true },
+    { "type": "refactor", "section": "Refactoring", "hidden": true },
+    { "type": "test", "section": "Tests", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true }
+  ]
+}
