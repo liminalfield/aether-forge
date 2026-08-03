@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/liminalfield/aether-forge/blob/main/CONTRIBUTING.md
+    about: Setup, the dependency-direction law, the vocabulary rule, commit conventions.
+  - name: Design decisions
+    url: https://github.com/liminalfield/aether-forge/blob/main/00-PROJECT-BRIEF.md
+    about: The canonical decision record. Read this before proposing architectural changes.
