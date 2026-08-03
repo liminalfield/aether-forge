@@ -1,0 +1,7 @@
+{
+  // apps/desktop is built by electron-vite, not by `tsc -b`. These two projects
+  // exist purely for type checking (`pnpm --filter aether-forge-desktop typecheck`),
+  // which is why they are noEmit and not part of the root solution file.
+  "files": [],
+  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
+}

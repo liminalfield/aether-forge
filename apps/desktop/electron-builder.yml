@@ -1,0 +1,60 @@
+appId: com.aetherforge.app
+productName: Aether Forge
+copyright: Copyright © 2026 Aether Forge contributors
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+
+# better-sqlite3 ships a .node binary that must stay outside the asar to be
+# loadable at runtime.
+asarUnpack:
+  - '**/*.node'
+
+# Set explicitly rather than derived. The default is built from productName,
+# which contains a space, and released filenames should stay stable across
+# versions regardless of what the package or product is called.
+artifactName: aether-forge-${version}-${os}-${arch}.${ext}
+
+linux:
+  target:
+    - AppImage # the only Linux target electron-updater supports; the self-updating channel
+    - deb # no auto-update; say so in release notes
+  # The binary is the product, not the workspace package, so it is named for the
+  # product rather than defaulting to aether-forge-desktop. Also becomes the
+  # WM_CLASS used to match windows to the .desktop entry.
+  executableName: aether-forge
+  # Writes the .desktop file named after package.json desktopName, so the
+  # window's WM_CLASS matches the launcher entry.
+  syncDesktopName: true
+  category: Game
+  synopsis: Solo tabletop roleplay companion
+  maintainer: Aether Forge contributors <oluf@oandrews.com>
+  desktop:
+    entry:
+      Name: Aether Forge
+      Categories: Game;RolePlaying;
+
+win:
+  target:
+    - nsis
+  # Windows code signing is deliberately not configured (see 00-PROJECT-BRIEF.md).
+  # This hook is the seam: it no-ops without credentials, so unsigned builds
+  # succeed today and signing becomes a secrets-only change later.
+  signtoolOptions:
+    sign: ./scripts/sign-windows.cjs
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+publish:
+  provider: github
+  owner: liminalfield
+  repo: aether-forge

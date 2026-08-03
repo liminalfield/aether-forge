@@ -1,0 +1,18 @@
+{
+  // The smoke tests run in Node but evaluate code inside the renderer, so they
+  // need both lib sets. src/shared is included for the window.aetherForge
+  // global declaration, which is what makes the IPC assertion type-checked
+  // rather than a string comparison against nothing.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["e2e/**/*.ts", "playwright.config.ts", "src/shared/**/*.ts"]
+}
