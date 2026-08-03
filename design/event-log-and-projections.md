@@ -9,8 +9,8 @@ in whatever shape we chose here, and we have to keep reading it forever.
 ## The idea this rests on
 
 Everything that happens in a campaign is written down as a numbered list of small facts, and never
-changed afterwards. "Entry written." "Dice rolled, showing 7 and 3." "Track advanced by two."
-"Suggestion offered." "Suggestion declined."
+changed afterwards. "Entry written." "Two ten-sided dice rolled, showing 7 and 3." "Track advanced
+by two." "Suggestion offered." "Suggestion declined."
 
 That list is the campaign. It is the only thing we store.
 
@@ -35,6 +35,98 @@ Two words are used throughout, and this record means something specific by each.
 **A projection** is any view of the campaign built by reading events in order. A character sheet is
 a projection. So is a track's current value, and the list of threads that have not moved recently.
 Building one means starting from nothing and applying each event in turn.
+
+## What an event actually looks like
+
+Everything above is easier to judge against a real one. Here is a roll of two six-sided dice.
+
+```json
+{
+  "id": "01K9QF3W7ZR8XN2VC4MTBD6H1A",
+  "seq": 47,
+  "at": "2026-08-03T09:12:44.108Z",
+  "type": "core.roll.performed",
+  "schema_version": 1,
+  "system_id": null,
+  "causation_id": "01K9QF3W2MJH5PYQ0S8EAK4RN7",
+  "revises": null,
+  "payload": {
+    "request": {
+      "dice": [{ "sides": 6, "count": 2 }],
+      "reason": { "kind": "check", "refId": "starforged/moves/face_danger" }
+    },
+    "dice": [
+      { "sides": 6, "value": 4, "source": "digital" },
+      { "sides": 6, "value": 2, "source": "manual" }
+    ]
+  }
+}
+```
+
+Three things about that are deliberate.
+
+**It records what was asked for as well as what came up.** `request` says two six-sided dice were
+called for; `dice` says what they showed. Keeping the request means the log still makes sense years
+later, after the move that asked for it has changed.
+
+**Where each die came from is recorded separately.** In this example the app rolled one and the
+player typed in a real one they had just thrown. People mix, so this is per die rather than per
+roll. It is also the field that gains a third possibility if dice are ever rolled through a service
+like dddice.
+
+**No total is stored.** There is no `"sum": 6`. A total can be calculated, and calculated things are
+never stored. It is also not core's business: whether you add the dice, take the highest, or compare
+them against each other is a rule, and rules belong to system modules.
+
+### How events connect
+
+`causation_id` points at the event that caused this one. It always points backwards, because an
+event cannot know what it will go on to cause. To follow a chain forwards, you look for events
+pointing at the one you are holding.
+
+A single Starforged move produces a chain like this:
+
+| Number | Event                            | Caused by | Carries                                                        |
+| ------ | -------------------------------- | --------- | -------------------------------------------------------------- |
+| 46     | `sys.ironsworn.move.invoked`     |           | which move, which stat, what was added, what the app suggested |
+| 47     | `core.roll.performed`            | 46        | the dice, as above                                             |
+| 48     | `sys.ironsworn.move.resolved`    | 47        | a strong hit                                                   |
+| 49     | `core.suggestion.offered`        | 48        | "Momentum +1"                                                  |
+| 50     | `core.suggestion.accepted`       | 49        |                                                                |
+| 51     | `sys.ironsworn.momentum.changed` | 50        | +1                                                             |
+
+So the roll points back at what triggered it, and the outcome points back at the roll.
+
+Events 49 and 50 are the part that makes "the app computes everything and decides nothing"
+verifiable. The log records what was proposed and what the player did about it. Had they declined,
+50 would say so and 51 would not exist at all.
+
+### What this shows about the split
+
+The roll event contains no stat, no bonuses, and no hit or miss. Core knows about dice and numbers.
+It does not know what a stat is, or what counts as a hit.
+
+That is why there is a module event on each side of the roll: one carrying the inputs, one carrying
+the interpretation. Putting the stat and the outcome directly onto the roll event would be less work
+now, and it would put rulebook concepts permanently inside a core event.
+
+Consulting an oracle shows the same seam with less machinery:
+
+| Number | Event                   | Caused by | Carries                                                               |
+| ------ | ----------------------- | --------- | --------------------------------------------------------------------- |
+| 60     | `core.roll.performed`   |           | one hundred-sided die, showed 47, typed in by hand                    |
+| 61     | `core.oracle.consulted` | 60        | the table, the result, and which content package version it came from |
+
+The roll is only a number. The meaning is a separate event, and it records the package version so
+that the log still explains itself after the player updates their content.
+
+### And a re-roll
+
+An ability that lets you reroll a die appends a new `core.roll.performed` whose `revises` points at
+the old one, carrying the whole new set of dice rather than "the second die is now a 5".
+
+That is the correction rule described further down, and this is the case that shows why it earns its
+place: nothing anywhere has to work out how to un-roll a die.
 
 ## What this record covers
 
