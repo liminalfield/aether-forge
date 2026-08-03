@@ -542,6 +542,37 @@ Forbidden:
 Length is not a virtue. If a paragraph can do its job in two sentences, use two. Closing paragraphs
 that restate what was already said are usually unnecessary; end on the last substantive point.
 
+### Explanatory writing, which is where this goes wrong
+
+"Plain language" was not specific enough to prevent an unreadable first draft of the event log
+design record, so this section says what went wrong and how to avoid repeating it. It applies to
+design records, issue bodies, and anywhere else something is being explained rather than stated.
+
+The audience knows the domain. They know what a vow, an oracle and a progress track are. They do not
+necessarily know what you mean by fold, reducer, upcast, idempotent or CRDT, and they should not
+have to.
+
+- **Define a term where it first appears, or do not use it.** The first draft used "fold" as both a
+  noun and a verb without ever saying what it meant. If a term needs a definition and the definition
+  is awkward, that is a sign to use ordinary words instead.
+- **Show one real example early.** The same draft described the mechanism completely and never
+  showed a single event, so the first question it drew was what one actually looks like. A worked
+  example near the top makes everything after it easier to judge.
+- **Write the argument, do not compress it into a clause.** "Designing for a merge that has no
+  product behind it would distort every decision here, starting with seq" contains a real argument
+  that the reader cannot reconstruct. Three plain sentences would have carried it.
+- **No aphorisms.** "Written down so the failure is recognisable rather than rationalised" sounds
+  considered and says very little. If a sentence sounds quotable, check that it also means
+  something.
+- **An open question states three things**: what the question is, why it matters, and what would
+  settle it. A question with no route to an answer is a worry, not a question.
+- **Density is the enemy, not length.** The rule above about brevity is about cutting filler. It is
+  not licence to compress an argument until it needs decoding. A document that is short because it
+  is compressed is worse than one that is longer and can be read once.
+
+The test: could someone who knows solo roleplaying, but has never built an event-sourced system,
+read this once and tell you what was decided and why?
+
 ## Amending this file
 
 This file changes the way code changes: by pull request, with the reasoning in the commit message,
