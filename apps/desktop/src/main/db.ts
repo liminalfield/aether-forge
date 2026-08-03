@@ -38,6 +38,47 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     },
   },
+  {
+    version: 2,
+    up: (db) => {
+      // No campaign column: one campaign is one file, so it would repeat the
+      // filename on every row. The log stamps it on as events are read.
+      db.exec(`
+        CREATE TABLE events (
+          id             TEXT    PRIMARY KEY NOT NULL,
+          seq            INTEGER NOT NULL UNIQUE,
+          at             TEXT    NOT NULL,
+          type           TEXT    NOT NULL,
+          schema_version INTEGER NOT NULL,
+          system_id      TEXT,
+          causation_id   TEXT,
+          revises        TEXT,
+          payload        TEXT    NOT NULL
+        );
+
+        CREATE INDEX events_by_type ON events (type);
+        CREATE INDEX events_by_revises ON events (revises) WHERE revises IS NOT NULL;
+      `);
+
+      // Append-only is the central promise of the whole design, so the database
+      // enforces it rather than the code above being careful. A guard that
+      // lives here survives a careless change to the data layer, and it applies
+      // equally to anyone poking at the file with a SQLite browser.
+      db.exec(`
+        CREATE TRIGGER events_cannot_be_changed
+        BEFORE UPDATE ON events
+        BEGIN
+          SELECT RAISE(ABORT, 'the campaign log is append-only: an event cannot be changed. Append an event that supersedes it instead.');
+        END;
+
+        CREATE TRIGGER events_cannot_be_removed
+        BEFORE DELETE ON events
+        BEGIN
+          SELECT RAISE(ABORT, 'the campaign log is append-only: an event cannot be deleted.');
+        END;
+      `);
+    },
+  },
 ];
 
 /** Highest migration version this build knows how to produce. */

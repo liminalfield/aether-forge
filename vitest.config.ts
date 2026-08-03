@@ -10,6 +10,13 @@ export default defineConfig({
   // through each package's "exports" field.
   resolve: {
     alias: {
+      // More specific first: Vite matches aliases by prefix, so the bare
+      // package name would otherwise swallow the subpath and rewrite it to
+      // index.ts/testing.
+      '@aether-forge/core/testing': resolve(
+        import.meta.dirname,
+        'packages/core/src/testing/log-contract.ts',
+      ),
       '@aether-forge/core': pkg('core'),
       '@aether-forge/ui': pkg('ui'),
       '@aether-forge/system-toy': pkg('system-toy'),
