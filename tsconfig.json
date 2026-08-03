@@ -1,7 +1,7 @@
 {
   // Solution file: builds the library graph in dependency order via `tsc -b`.
   // apps/desktop is NOT referenced here: electron-vite owns its build, and its
-  // type checking runs through `pnpm --filter @aether-forge/desktop typecheck`.
+  // type checking runs through `pnpm --filter aether-forge-desktop typecheck`.
   "files": [],
   "references": [
     { "path": "packages/core" },

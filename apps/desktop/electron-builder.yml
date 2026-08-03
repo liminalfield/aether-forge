@@ -16,17 +16,18 @@ files:
 asarUnpack:
   - '**/*.node'
 
-# Not ${name}: the workspace package is scoped (@aether-forge/desktop), and the
-# slash in a scope is not legal in a filename.
+# Set explicitly rather than derived. The default is built from productName,
+# which contains a space, and released filenames should stay stable across
+# versions regardless of what the package or product is called.
 artifactName: aether-forge-${version}-${os}-${arch}.${ext}
 
 linux:
   target:
     - AppImage # the only Linux target electron-updater supports; the self-updating channel
     - deb # no auto-update; say so in release notes
-  # Same reason as artifactName: derived from the scoped package name this would
-  # be "@aether-forgedesktop", which electron-builder rejects. It also becomes
-  # the WM_CLASS used to match windows to the .desktop entry.
+  # The binary is the product, not the workspace package, so it is named for the
+  # product rather than defaulting to aether-forge-desktop. Also becomes the
+  # WM_CLASS used to match windows to the .desktop entry.
   executableName: aether-forge
   # Writes the .desktop file named after package.json desktopName, so the
   # window's WM_CLASS matches the launcher entry.

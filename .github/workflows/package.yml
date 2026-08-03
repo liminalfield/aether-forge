@@ -44,7 +44,7 @@ jobs:
         # electron-builder reads apps/desktop/electron-builder.yml. Publishing
         # is handled by the publish job below, never by electron-builder, so
         # that update metadata and checksums come from one place.
-        run: pnpm --filter @aether-forge/desktop package
+        run: pnpm --filter aether-forge-desktop package
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

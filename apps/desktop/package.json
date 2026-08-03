@@ -1,5 +1,5 @@
 {
-  "name": "@aether-forge/desktop",
+  "name": "aether-forge-desktop",
   "version": "0.1.0",
   "private": true,
   "description": "Aether Forge desktop application",

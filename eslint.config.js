@@ -131,7 +131,7 @@ export default tseslint.config(
           ],
           patterns: [
             {
-              group: ['@aether-forge/desktop', '**/apps/**'],
+              group: ['aether-forge-desktop', '@aether-forge/desktop', '**/apps/**'],
               message: 'Nothing imports apps/desktop. Dependency direction points the other way.',
             },
             {
