@@ -158,7 +158,10 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@aether-forge/*'],
+              // The app name is listed alongside the scope because this rule
+              // REPLACES the packages/** rule rather than merging with it, so
+              // anything missing here is simply unguarded in core and ui.
+              group: ['@aether-forge/*', 'aether-forge-desktop', '**/apps/**'],
               message:
                 'packages/core and packages/ui are the roots of the graph: they import nothing internal.',
             },
