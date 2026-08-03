@@ -46,6 +46,33 @@ jobs:
         # that update metadata and checksums come from one place.
         run: pnpm --filter aether-forge-desktop package
 
+      # The only step in the whole pipeline that runs the thing we ship. Every
+      # other check proves the code compiles and can be wrapped; this one proves
+      # the window opens, the preload bridge attaches, the IPC round trip
+      # returns, and the native module loads from outside the asar.
+      - name: Smoke test the packaged app (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          if ! command -v xvfb-run >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y xvfb
+          fi
+          xvfb-run --auto-servernum pnpm --filter aether-forge-desktop test:e2e
+
+      - name: Smoke test the packaged app (Windows)
+        if: runner.os == 'Windows'
+        run: pnpm --filter aether-forge-desktop test:e2e
+
+      - name: Upload smoke-test output on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-${{ matrix.os }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            apps/desktop/test-results/
+            apps/desktop/playwright-report/
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:

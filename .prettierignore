@@ -17,3 +17,5 @@ LICENSE
 # fails its own format check every time.
 CHANGELOG.md
 **/CHANGELOG.md
+test-results/
+playwright-report/

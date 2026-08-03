@@ -16,9 +16,10 @@
     "dev": "electron-vite dev",
     "build": "pnpm run typecheck && electron-vite build",
     "preview": "electron-vite preview",
-    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "package": "electron-builder --publish never",
-    "package:dir": "electron-builder --dir --publish never"
+    "package:dir": "electron-builder --dir --publish never",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "better-sqlite3": "13.0.2"
@@ -29,6 +30,7 @@
     "@aether-forge/system-ironsworn": "workspace:*",
     "@aether-forge/system-toy": "workspace:*",
     "@aether-forge/ui": "workspace:*",
+    "@playwright/test": "1.62.1",
     "@types/better-sqlite3": "9.6.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

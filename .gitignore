@@ -30,3 +30,7 @@ pnpm-debug.log*
 **/imported/**
 *.userpkg.json
 *.userpkg/
+
+# Playwright smoke-test output
+test-results/
+playwright-report/
