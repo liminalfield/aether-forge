@@ -9,7 +9,7 @@ import type {
   ModuleEventType,
   ReadRange,
 } from '@aether-forge/core';
-import { failed, isModuleEventDraft, ok, type Result } from '@aether-forge/core';
+import { failed, isModuleEvent, isModuleEventDraft, ok, type Result } from '@aether-forge/core';
 import type Database from 'better-sqlite3';
 
 /**
@@ -148,6 +148,31 @@ export function openEventLog(
         );
       } catch (cause) {
         return storageFailed(`could not append a ${draft.type} event`, cause);
+      }
+    },
+
+    restore(event: EventEnvelope): Result<void, LogFailure> {
+      try {
+        const expected = nextSeq.get()?.next ?? 1;
+        if (event.seq !== expected) {
+          return failed({ kind: 'out-of-order', expected, given: event.seq });
+        }
+
+        insert.run({
+          id: event.id,
+          seq: event.seq,
+          at: event.at,
+          type: event.type,
+          schemaVersion: event.schemaVersion,
+          systemId: isModuleEvent(event) ? event.systemId : null,
+          causationId: event.causationId ?? null,
+          revises: event.revises ?? null,
+          payload: JSON.stringify(event.payload),
+        });
+
+        return ok(undefined);
+      } catch (cause) {
+        return storageFailed(`could not restore event ${event.id}`, cause);
       }
     },
 

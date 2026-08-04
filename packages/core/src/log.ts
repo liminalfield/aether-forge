@@ -58,7 +58,16 @@ export interface ReadRange {
  * refusing a write, and nothing else. A malformed event is not represented
  * here because the types prevent one being offered.
  */
-export interface LogFailure {
+export type LogFailure =
+  | {
+      /** The position offered was not the next one, so the log would have a hole. */
+      readonly kind: 'out-of-order';
+      readonly expected: number;
+      readonly given: number;
+    }
+  | StorageFailed;
+
+export interface StorageFailed {
   readonly kind: 'storage-failed';
   /** Readable description, suitable for a log line or a report. */
   readonly detail: string;
@@ -84,6 +93,19 @@ export interface EventLog {
    * are assigned here and never by the caller, so that they cannot collide.
    */
   append<Payload>(draft: EventDraft<Payload>): Result<EventEnvelope<Payload>, LogFailure>;
+
+  /**
+   * Write an event that already has its identity.
+   *
+   * For events arriving from a copy of this campaign carried on another
+   * machine. They were given their identity and their position when they were
+   * first recorded, and both have to survive the journey, or the two copies
+   * stop being the same campaign.
+   *
+   * The position must be exactly the next one. A log with a hole in it is not
+   * a log, and refusing is better than storing something unreadable.
+   */
+  restore(event: EventEnvelope): Result<void, LogFailure>;
 
   /**
    * Read events in the order they happened.

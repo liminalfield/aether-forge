@@ -164,6 +164,12 @@ export function describeFailure(failure: TranslatingLogFailure): string {
     case 'translation-failed':
       return failure.detail;
 
+    case 'out-of-order':
+      return (
+        `an event arrived claiming position ${failure.given} when the campaign ` +
+        `is expecting ${failure.expected}. Events cannot be stored out of order.`
+      );
+
     case 'unknown-event-type':
       return `this build does not know the event type ${failure.type}`;
 

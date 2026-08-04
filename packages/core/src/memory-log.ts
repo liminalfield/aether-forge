@@ -12,7 +12,7 @@
 import type { EventEnvelope } from './event.js';
 import type { CampaignId } from './identifiers.js';
 import { isModuleEventDraft, type EventDraft, type EventLog, type LogEnvironment } from './log.js';
-import { ok, type Result } from './result.js';
+import { failed, ok, type Result } from './result.js';
 import type { LogFailure, ReadRange } from './log.js';
 
 export interface MemoryEventLogOptions extends LogEnvironment {
@@ -38,6 +38,15 @@ export function createMemoryEventLog(options: MemoryEventLogOptions): EventLog {
       const stored = stamp(draft, events.length + 1);
       events.push(stored);
       return ok(stored);
+    },
+
+    restore(event: EventEnvelope): Result<void, LogFailure> {
+      const expected = events.length + 1;
+      if (event.seq !== expected) {
+        return failed({ kind: 'out-of-order', expected, given: event.seq });
+      }
+      events.push(event);
+      return ok(undefined);
     },
 
     read(range?: ReadRange): Result<readonly EventEnvelope[], LogFailure> {

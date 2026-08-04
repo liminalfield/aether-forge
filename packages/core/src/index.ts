@@ -92,6 +92,15 @@ export { createTranslatingLog, describeFailure } from './translating-log.js';
 export type { Projection } from './projection.js';
 export { buildFromLog, replay } from './projection.js';
 
+export type { CampaignBundle, HistoryComparison, ImportFailure, ImportOutcome } from './bundle.js';
+export {
+  BUNDLE_FORMAT,
+  compareHistories,
+  exportCampaign,
+  fingerprintOf,
+  importCampaign,
+} from './bundle.js';
+
 export type { EntryCreatedV1, EntryRevisedV1, Journal, JournalEntry } from './journal.js';
 export { ENTRY_CREATED, ENTRY_REVISED, journal, journalEventTypes } from './journal.js';
 
