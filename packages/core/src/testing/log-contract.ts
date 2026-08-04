@@ -188,6 +188,58 @@ export function describeEventLogContract(name: string, subject: EventLogUnderTes
       });
     });
 
+    it('accepts an event that already has its identity, keeping both', () => {
+      withLog((log) => {
+        log.restore({
+          id: 'an-event-from-elsewhere',
+          campaignId: log.campaignId,
+          seq: 1,
+          at: '2020-01-01T00:00:00.000Z',
+          type: 'core.entry.created',
+          schemaVersion: 1,
+          payload: { text: 'written on another machine' },
+        });
+
+        const read = log.read();
+        expect(read.ok && read.value[0]?.id).toBe('an-event-from-elsewhere');
+        expect(read.ok && read.value[0]?.at).toBe('2020-01-01T00:00:00.000Z');
+      });
+    });
+
+    it('refuses an event that would leave a hole in the log', () => {
+      withLog((log) => {
+        const restored = log.restore({
+          id: 'far-ahead',
+          campaignId: log.campaignId,
+          seq: 47,
+          at: 'now',
+          type: 'core.entry.created',
+          schemaVersion: 1,
+          payload: {},
+        });
+
+        expect(!restored.ok && restored.failure.kind).toBe('out-of-order');
+        expect(log.count()).toEqual({ ok: true, value: 0 });
+      });
+    });
+
+    it('carries on numbering after a restored event', () => {
+      withLog((log) => {
+        log.restore({
+          id: 'from-elsewhere',
+          campaignId: log.campaignId,
+          seq: 1,
+          at: 'then',
+          type: 'core.entry.created',
+          schemaVersion: 1,
+          payload: {},
+        });
+
+        const next = log.append(anEntry);
+        expect(next.ok && next.value.seq).toBe(2);
+      });
+    });
+
     it('carries on numbering after events have been read', () => {
       withLog((log) => {
         log.append(anEntry);
