@@ -67,7 +67,13 @@ export { createMemoryEventLog } from './memory-log.js';
 
 // --- event shapes, and reading older ones -----------------------------------
 
-export type { EventSchemas, EventTypeDefinition, SchemaFailure, Translation } from './schema.js';
+export type {
+  CorrectionStyle,
+  EventSchemas,
+  EventTypeDefinition,
+  SchemaFailure,
+  Translation,
+} from './schema.js';
 export { createEventSchemas } from './schema.js';
 
 export type {
@@ -85,6 +91,9 @@ export { createTranslatingLog, describeFailure } from './translating-log.js';
 
 export type { Projection } from './projection.js';
 export { buildFromLog, replay } from './projection.js';
+
+export type { EntryCreatedV1, EntryRevisedV1, Journal, JournalEntry } from './journal.js';
+export { ENTRY_CREATED, ENTRY_REVISED, journal, journalEventTypes } from './journal.js';
 
 export type { ModuleProjection, ProjectionContext } from './module-projection.js';
 export { isVisibleToModule } from './module-projection.js';

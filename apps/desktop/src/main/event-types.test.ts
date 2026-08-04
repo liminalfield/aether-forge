@@ -1,6 +1,8 @@
 import { describeSchemaTranslations } from '@aether-forge/core/testing';
 
-import { declareEventTypes, ENTRY_CREATED } from './event-types';
+import { ENTRY_CREATED } from '@aether-forge/core';
+
+import { declareEventTypes } from './event-types';
 
 /**
  * Walks every declared event type from version 1 to whatever it is on now.

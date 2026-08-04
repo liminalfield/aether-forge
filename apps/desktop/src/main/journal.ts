@@ -1,7 +1,7 @@
 import { describeFailure, type TranslatingLog } from '@aether-forge/core';
 
 import type { IpcFailure, IpcResult, RecordedEntry } from '../shared/ipc';
-import { ENTRY_CREATED, type EntryCreatedV1 } from './event-types';
+import { ENTRY_CREATED, type EntryCreatedV1 } from '@aether-forge/core';
 
 /**
  * Writing journal entries into the campaign log.

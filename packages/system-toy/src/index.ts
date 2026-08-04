@@ -70,5 +70,5 @@ export const coinTally: ModuleProjection<CoinTally> = {
  * the only thing that knows what its events mean or how they have changed.
  */
 export const eventTypes: readonly EventTypeDefinition[] = [
-  { type: COIN_FLIPPED, currentVersion: 1, translations: [] },
+  { type: COIN_FLIPPED, currentVersion: 1, translations: [], corrections: 'records-a-change' },
 ];

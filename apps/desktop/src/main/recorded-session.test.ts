@@ -9,7 +9,9 @@ import { momentum } from '@aether-forge/system-ironsworn';
 import { coinTally } from '@aether-forge/system-toy';
 import { describe, expect, it } from 'vitest';
 
-import { declareEventTypes, ENTRY_CREATED } from './event-types';
+import { ENTRY_CREATED } from '@aether-forge/core';
+
+import { declareEventTypes } from './event-types';
 import { RECORDED_SESSION } from './recorded-session';
 
 /** How many entries the campaign has, and what the last one said. A core view. */
