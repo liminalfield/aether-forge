@@ -1,5 +1,6 @@
 import {
   createEventSchemas,
+  journalEventTypes,
   type EventSchemas,
   type EventTypeDefinition,
 } from '@aether-forge/core';
@@ -9,31 +10,20 @@ import { eventTypes as toyEventTypes } from '@aether-forge/system-toy';
 /**
  * Every event type this build knows, and how it reads its own history.
  *
- * Core's own types are declared here. A module's are declared by the module,
- * because the module is the only thing that knows what its events mean or how
- * they have changed; the application only collects them.
- *
- * Adding a core type means adding it here and adding a sample to the test
- * beside this file. Changing an existing type means raising its version and
- * writing the translation from the previous one, never editing what it used
- * to be.
+ * Nothing is declared here. Core declares the shapes it owns and each module
+ * declares its own, because in both cases that is the only place that knows
+ * what the events mean or how they have changed. The application collects them.
  */
-
-/** A journal entry. Version 1 carries `{ text: string }`. */
-export const ENTRY_CREATED = 'core.entry.created';
-
-export interface EntryCreatedV1 {
-  readonly text: string;
-}
-
-const coreEventTypes: readonly EventTypeDefinition[] = [
-  { type: ENTRY_CREATED, currentVersion: 1, translations: [] },
-];
-
 export function declareEventTypes(): EventSchemas {
   const schemas = createEventSchemas();
 
-  for (const definition of [...coreEventTypes, ...toyEventTypes, ...ironswornEventTypes]) {
+  const everything: readonly EventTypeDefinition[] = [
+    ...journalEventTypes,
+    ...toyEventTypes,
+    ...ironswornEventTypes,
+  ];
+
+  for (const definition of everything) {
     const declared = schemas.declare(definition);
     if (!declared.ok) {
       // Two modules claiming the same event type, or a broken translation

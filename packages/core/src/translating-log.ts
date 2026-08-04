@@ -111,6 +111,17 @@ export function createTranslatingLog(log: EventLog, schemas: EventSchemas): Tran
       const version = schemas.currentVersion(draft.type);
       if (!version.ok) return version;
 
+      // An event that records a change stays as it happened. Correcting one
+      // means appending a further change, not replacing the original, or the
+      // events stop adding up to the state.
+      if (draft.revises !== undefined) {
+        const style = schemas.correctionStyle(draft.type);
+        if (!style.ok) return style;
+        if (style.value === 'records-a-change') {
+          return failed({ kind: 'cannot-be-superseded', type: draft.type });
+        }
+      }
+
       const schemaVersion = version.value;
       return isUnversionedModuleDraft(draft)
         ? log.append<Payload>({ ...draft, schemaVersion })
@@ -155,6 +166,12 @@ export function describeFailure(failure: TranslatingLogFailure): string {
 
     case 'unknown-event-type':
       return `this build does not know the event type ${failure.type}`;
+
+    case 'cannot-be-superseded':
+      return (
+        `a ${failure.type} records something that happened, so it cannot be replaced. ` +
+        'Record a further change that compensates for it instead.'
+      );
 
     case 'already-declared':
       return `the event type ${failure.type} was declared more than once`;

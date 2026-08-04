@@ -34,6 +34,22 @@ export interface Translation {
   readonly translate: (payload: unknown) => unknown;
 }
 
+/**
+ * Whether an event of this type can be corrected, and how.
+ *
+ * `replaces-a-value` means the event says what something *is*: the text of an
+ * entry, a field on an entity. Correcting it means appending an event that
+ * supersedes it and carries the whole new value. Later values win and nothing
+ * is ever undone.
+ *
+ * `records-a-change` means the event says what *happened*: a resource moved by
+ * two, progress was marked. That happened, and it stays happened. Correcting it
+ * means appending a further change that compensates, so the log shows both what
+ * occurred and what was done about it. Superseding one would make the events
+ * stop adding up to the state.
+ */
+export type CorrectionStyle = 'replaces-a-value' | 'records-a-change';
+
 /** An event type, the shape it is on now, and how to reach that from older ones. */
 export interface EventTypeDefinition {
   readonly type: EventType;
@@ -44,6 +60,9 @@ export interface EventTypeDefinition {
    * version. A type that has never changed has none.
    */
   readonly translations: readonly Translation[];
+
+  /** Defaults to `replaces-a-value`, which is the ordinary case. */
+  readonly corrections?: CorrectionStyle;
 }
 
 export type SchemaFailure =
@@ -67,6 +86,14 @@ export type SchemaFailure =
     }
   | {
       /**
+       * Something tried to supersede an event that records a change rather than
+       * a value. Such an event stays as it is and is compensated instead.
+       */
+      readonly kind: 'cannot-be-superseded';
+      readonly type: EventType;
+    }
+  | {
+      /**
        * The event was written by a build that knew a later shape than this one
        * does. There is no way to translate forwards into the past.
        */
@@ -85,6 +112,9 @@ export interface EventSchemas {
 
   /** The version new events of this type are written at. */
   currentVersion(type: EventType): Result<number, SchemaFailure>;
+
+  /** How an event of this type is corrected. */
+  correctionStyle(type: EventType): Result<CorrectionStyle, SchemaFailure>;
 
   /**
    * The translations needed to bring an event written at `storedVersion` up to
@@ -159,6 +189,13 @@ export function createEventSchemas(): EventSchemas {
       const definition = declared.get(type);
       return definition
         ? ok(definition.currentVersion)
+        : failed({ kind: 'unknown-event-type', type });
+    },
+
+    correctionStyle(type: EventType): Result<CorrectionStyle, SchemaFailure> {
+      const definition = declared.get(type);
+      return definition
+        ? ok(definition.corrections ?? 'replaces-a-value')
         : failed({ kind: 'unknown-event-type', type });
     },
 

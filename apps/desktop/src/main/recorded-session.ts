@@ -2,7 +2,7 @@ import type { UnversionedEventDraft } from '@aether-forge/core';
 import { MOMENTUM_CHANGED, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
 import { COIN_FLIPPED, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 
-import { ENTRY_CREATED } from './event-types';
+import { ENTRY_CREATED } from '@aether-forge/core';
 
 /**
  * A session, written down as it would have happened.

@@ -91,5 +91,12 @@ export const momentum: ModuleProjection<Momentum> = {
  * the only thing that knows what its events mean or how they have changed.
  */
 export const eventTypes: readonly EventTypeDefinition[] = [
-  { type: MOMENTUM_CHANGED, currentVersion: 1, translations: [] },
+  {
+    type: MOMENTUM_CHANGED,
+    currentVersion: 1,
+    translations: [],
+    // Momentum moving by two happened. Correcting it means moving it back,
+    // not pretending it moved by something else.
+    corrections: 'records-a-change',
+  },
 ];
