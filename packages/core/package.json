@@ -13,8 +13,8 @@
       "default": "./dist/index.js"
     },
     "./testing": {
-      "types": "./dist/testing/log-contract.d.ts",
-      "default": "./dist/testing/log-contract.js"
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
     }
   },
   "files": [

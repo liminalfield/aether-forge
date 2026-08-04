@@ -1,10 +1,11 @@
 import { join } from 'node:path';
 
-import type { EventLog } from '@aether-forge/core';
+import { createTranslatingLog, type TranslatingLog } from '@aether-forge/core';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
 import { openCampaignDatabase } from './db';
+import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
 import { countEvents, recordEntry } from './journal';
 import { createUlidSource } from './ulid';
@@ -53,7 +54,7 @@ function createWindow(): BrowserWindow {
   return window;
 }
 
-function registerIpcHandlers(log: EventLog): void {
+function registerIpcHandlers(log: TranslatingLog): void {
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(log, text));
   ipcMain.handle(IPC.countEvents, () => countEvents(log));
@@ -65,10 +66,15 @@ void app.whenReady().then(() => {
 
   // The two unpredictable inputs to writing an event, supplied here because
   // this is the only layer allowed to reach for them.
-  const log = openEventLog(db, ONLY_CAMPAIGN, {
+  const stored = openEventLog(db, ONLY_CAMPAIGN, {
     now: () => new Date().toISOString(),
     nextEventId: createUlidSource(),
   });
+
+  // Everything above this line speaks the current shape of every event. Older
+  // ones are brought up to date as they are read, and what is stored is left
+  // exactly as it was written.
+  const log = createTranslatingLog(stored, declareEventTypes());
 
   registerIpcHandlers(log);
   createWindow();
