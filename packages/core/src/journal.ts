@@ -52,7 +52,19 @@ export const journalEventTypes: readonly EventTypeDefinition[] = [
 export interface JournalEntry {
   /** The event that created it. An entry keeps this identity through corrections. */
   readonly id: EventId;
+
   readonly text: string;
+
+  /**
+   * The event holding the text above.
+   *
+   * The same as `id` until the entry is corrected, and then the most recent
+   * correction. A further correction supersedes this, so a history of
+   * corrections reads as a chain rather than as several events all claiming to
+   * supersede the original.
+   */
+  readonly currentVersionId: EventId;
+
   /** How many times it has been corrected. */
   readonly corrections: number;
 }
@@ -79,7 +91,15 @@ export const journal: Projection<Journal> = {
   apply: (state, event: EventEnvelope): Journal => {
     if (event.type === ENTRY_CREATED && hasText(event.payload)) {
       return {
-        entries: [...state.entries, { id: event.id, text: event.payload.text, corrections: 0 }],
+        entries: [
+          ...state.entries,
+          {
+            id: event.id,
+            text: event.payload.text,
+            currentVersionId: event.id,
+            corrections: 0,
+          },
+        ],
         entryOf: { ...state.entryOf, [event.id]: event.id },
       };
     }
@@ -97,7 +117,14 @@ export const journal: Projection<Journal> = {
 
       return {
         entries: state.entries.map((entry) =>
-          entry.id === entryId ? { ...entry, text, corrections: entry.corrections + 1 } : entry,
+          entry.id === entryId
+            ? {
+                ...entry,
+                text,
+                currentVersionId: event.id,
+                corrections: entry.corrections + 1,
+              }
+            : entry,
         ),
         entryOf: { ...state.entryOf, [event.id]: entryId },
       };

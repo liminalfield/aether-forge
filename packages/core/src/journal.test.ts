@@ -45,16 +45,18 @@ describe('correcting an entry', () => {
     });
     if (!written.ok) throw new Error('could not write');
 
-    campaign.append({
+    const corrected = campaign.append({
       type: ENTRY_REVISED,
       revises: written.value.id,
       payload: { text: 'The airlock opened on the second try.' },
     });
+    if (!corrected.ok) throw new Error('could not correct');
 
     expect(campaign.stateOf(journal).entries).toEqual([
       {
         id: written.value.id,
         text: 'The airlock opened on the second try.',
+        currentVersionId: corrected.value.id,
         corrections: 1,
       },
     ]);
@@ -94,10 +96,20 @@ describe('correcting an entry', () => {
     });
     if (!once.ok) throw new Error('could not correct');
 
-    campaign.append({ type: ENTRY_REVISED, revises: once.value.id, payload: { text: 'third' } });
+    const twice = campaign.append({
+      type: ENTRY_REVISED,
+      revises: once.value.id,
+      payload: { text: 'third' },
+    });
+    if (!twice.ok) throw new Error('could not correct');
 
     expect(campaign.stateOf(journal).entries).toEqual([
-      { id: written.value.id, text: 'third', corrections: 2 },
+      {
+        id: written.value.id,
+        text: 'third',
+        currentVersionId: twice.value.id,
+        corrections: 2,
+      },
     ]);
   });
 
@@ -126,6 +138,70 @@ describe('correcting an entry', () => {
     });
 
     expect(campaign.stateOf(journal).entries).toEqual([]);
+  });
+});
+
+describe('which version a correction supersedes', () => {
+  it('names the creating event until the entry has been corrected', () => {
+    const campaign = openWith(aLog());
+    const written = campaign.append({ type: ENTRY_CREATED, payload: { text: 'first' } });
+    if (!written.ok) throw new Error('could not write');
+
+    const entry = campaign.stateOf(journal).entries[0];
+    expect(entry?.currentVersionId).toBe(written.value.id);
+    expect(entry?.currentVersionId).toBe(entry?.id);
+  });
+
+  it('names the most recent correction after one', () => {
+    const campaign = openWith(aLog());
+    const written = campaign.append({ type: ENTRY_CREATED, payload: { text: 'first' } });
+    if (!written.ok) throw new Error('could not write');
+
+    const corrected = campaign.append({
+      type: ENTRY_REVISED,
+      revises: written.value.id,
+      payload: { text: 'second' },
+    });
+    if (!corrected.ok) throw new Error('could not correct');
+
+    expect(campaign.stateOf(journal).entries[0]?.currentVersionId).toBe(corrected.value.id);
+  });
+
+  it('lets a run of corrections read as a chain rather than a star', () => {
+    const log = aLog();
+    const campaign = openWith(log);
+    campaign.append({ type: ENTRY_CREATED, payload: { text: 'first' } });
+
+    // Correcting the way the window will: always supersede the current version.
+    for (const text of ['second', 'third', 'fourth']) {
+      const entry = campaign.stateOf(journal).entries[0];
+      if (!entry) throw new Error('no entry');
+      campaign.append({ type: ENTRY_REVISED, revises: entry.currentVersionId, payload: { text } });
+    }
+
+    const events = log.read();
+    if (!events.ok) throw new Error('could not read');
+
+    // Each one supersedes the one before it, so the history reads in order.
+    const chain = events.value.map((event) => event.revises ?? null);
+    expect(chain).toEqual([null, events.value[0]?.id, events.value[1]?.id, events.value[2]?.id]);
+    expect(campaign.stateOf(journal).entries[0]?.text).toBe('fourth');
+    expect(campaign.stateOf(journal).entries[0]?.corrections).toBe(3);
+  });
+
+  it('reads back the same whether corrections chained or all named the original', () => {
+    // The older shape still resolves, because a correction is traced back to
+    // the entry it belongs to either way. Chaining is chosen for how the log
+    // reads, not because the other one breaks.
+    const asStar = openWith(aLog());
+    const written = asStar.append({ type: ENTRY_CREATED, payload: { text: 'first' } });
+    if (!written.ok) throw new Error('could not write');
+    asStar.append({ type: ENTRY_REVISED, revises: written.value.id, payload: { text: 'second' } });
+    asStar.append({ type: ENTRY_REVISED, revises: written.value.id, payload: { text: 'third' } });
+
+    const entry = asStar.stateOf(journal).entries[0];
+    expect(entry?.text).toBe('third');
+    expect(entry?.corrections).toBe(2);
   });
 });
 
