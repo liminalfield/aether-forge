@@ -71,6 +71,14 @@ avoids re-sending everything on every keystroke without needing a way to work ou
 A measurement goes in with it, so the day a journal gets large enough to be slow to open is a day
 someone finds out from a number rather than from a complaint.
 
+> **Amended at decomposition, 4 August 2026.** As first written this said the main process sends the
+> changed entry, which meant it speaking to the window unprompted. That is not needed yet: the
+> window is the only thing that can change the campaign, so the answer to its own request carries
+> the entry that changed. Something that speaks first earns its place when something other than the
+> window can change state, and the first of those will be import. The paragraph below about the
+> contract gaining its first push is left in place, deliberately, as the thing that becomes true
+> then.
+
 ### Correcting edits in place, and says so
 
 You click a line, change it, and it is changed. No dialog, no ceremony.
@@ -153,9 +161,10 @@ care.
 **Core gains one field on an entry**, naming the event that holds its current version, so a
 correction can supersede the right thing.
 
-**The IPC contract gains its first push.** Everything so far has been the window asking a question
-and getting an answer. Sending an updated entry when one changes is the main process speaking first,
-which is a new pattern and needs its own care around subscribing and cleaning up.
+**The IPC contract gains its first push, later.** Everything so far has been the window asking a
+question and getting an answer. The main process speaking first is a new pattern needing its own
+care around subscribing and cleaning up, and it is not being built for this feature. See the
+amendment above.
 
 **The application starts using `openCampaign`.** It currently holds a log directly. Once the window
 shows a projection, the campaign has to be the thing it holds, which is what makes appending and
