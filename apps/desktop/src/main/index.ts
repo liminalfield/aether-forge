@@ -1,6 +1,13 @@
 import { join } from 'node:path';
 
-import { createTranslatingLog, type TranslatingLog } from '@aether-forge/core';
+import {
+  createTranslatingLog,
+  describeFailure,
+  journal,
+  openCampaign,
+  type OpenCampaign,
+  type Projection,
+} from '@aether-forge/core';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
@@ -54,10 +61,10 @@ function createWindow(): BrowserWindow {
   return window;
 }
 
-function registerIpcHandlers(log: TranslatingLog): void {
+function registerIpcHandlers(campaign: OpenCampaign): void {
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
-  ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(log, text));
-  ipcMain.handle(IPC.countEvents, () => countEvents(log));
+  ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(campaign, text));
+  ipcMain.handle(IPC.countEvents, () => countEvents(campaign));
 }
 
 void app.whenReady().then(() => {
@@ -76,7 +83,19 @@ void app.whenReady().then(() => {
   // exactly as it was written.
   const log = createTranslatingLog(stored, declareEventTypes());
 
-  registerIpcHandlers(log);
+  // From here the application holds the campaign, not the log. Appending and
+  // the state worked out from it stay in step because they are the same
+  // object; a log written behind the projections' back would leave them stale
+  // and nothing would say so.
+  const opened = openCampaign(log, { projections: [journal as Projection<unknown>] });
+  if (!opened.ok) {
+    // Nothing sensible can be shown for a campaign that cannot be read, and
+    // carrying on would mean a window presenting an empty campaign as though
+    // it were the truth.
+    throw new Error(`this campaign could not be opened: ${describeFailure(opened.failure)}`);
+  }
+
+  registerIpcHandlers(opened.value);
   createWindow();
 
   app.on('activate', () => {

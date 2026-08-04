@@ -85,7 +85,10 @@ export type {
   UnversionedModuleEventDraft,
 } from './translating-log.js';
 
-export { createTranslatingLog, describeFailure } from './translating-log.js';
+export { createTranslatingLog } from './translating-log.js';
+
+export type { CoreFailure } from './failures.js';
+export { describeFailure } from './failures.js';
 
 // --- working out current state ----------------------------------------------
 
