@@ -1,6 +1,10 @@
 # Reading and writing the journal
 
-Status: proposal. Nothing here is built yet, and nothing should be until this is agreed.
+Status: accepted, 4 August 2026. Decomposed into epic
+[#48](https://github.com/liminalfield/aether-forge/issues/48) and its tasks.
+
+If the code and this record ever disagree, the code is right and this needs a note saying what
+changed.
 
 The campaign log works and the window does not use it. You can write something and watch a number go
 up. What you wrote is stored correctly, and then never shown back to you.
