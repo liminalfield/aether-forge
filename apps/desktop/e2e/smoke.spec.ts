@@ -1,7 +1,10 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test';
+import { expect, test, type ElectronApplication } from '@playwright/test';
+
+import { expectedVersion, launchPackagedApp } from './packaged-app';
 
 /**
  * Smoke test against the **packaged** application.
@@ -10,67 +13,19 @@ import { _electron as electron, expect, test, type ElectronApplication } from '@
  * nothing about whether the window opens, whether the preload bridge attaches,
  * or whether the native module loads from outside the asar. This is the only
  * thing in the pipeline that runs the thing we actually ship.
- *
- * It launches the unpacked build rather than the AppImage or the installer:
- * same asar, same unpacked native modules, same main entry point, without
- * needing FUSE on a runner or silently installing something on a machine.
  */
 
-const appRoot = join(__dirname, '..');
-
-function packagedExecutable(): string {
-  const dist = join(appRoot, 'dist');
-
-  if (process.platform === 'linux') {
-    // Fixed by electron-builder's linux.executableName.
-    return join(dist, 'linux-unpacked', 'aether-forge');
-  }
-
-  if (process.platform === 'win32') {
-    // Derived from productName, which contains a space, so it is discovered
-    // rather than spelled out. A wrong guess here would fail only on Windows,
-    // which is the slowest place to find out.
-    const unpacked = join(dist, 'win-unpacked');
-    const exe = existsSync(unpacked)
-      ? readdirSync(unpacked).find((entry) => entry.toLowerCase().endsWith('.exe'))
-      : undefined;
-    if (!exe) throw new Error(`No .exe found in ${unpacked}`);
-    return join(unpacked, exe);
-  }
-
-  throw new Error(`No packaged layout is known for platform ${process.platform}`);
-}
-
-function expectedVersion(): string {
-  const pkg = JSON.parse(readFileSync(join(appRoot, 'package.json'), 'utf8')) as {
-    version: string;
-  };
-  return pkg.version;
-}
-
 let app: ElectronApplication;
+let userDataDir: string;
 
 test.beforeAll(async () => {
-  const executablePath = packagedExecutable();
-
-  if (!existsSync(executablePath)) {
-    throw new Error(
-      `No packaged application at ${executablePath}. ` +
-        'Run `pnpm --filter aether-forge-desktop package:dir` first.',
-    );
-  }
-
-  app = await electron.launch({
-    executablePath,
-    // Ubuntu restricts unprivileged user namespaces, which Chromium's outer
-    // sandbox needs. The renderer keeps sandbox: true in BrowserWindow either
-    // way, and the test below is what proves it.
-    args: process.env['CI'] ? ['--no-sandbox'] : [],
-  });
+  userDataDir = mkdtempSync(join(tmpdir(), 'aether-forge-smoke-'));
+  app = await launchPackagedApp(userDataDir);
 });
 
 test.afterAll(async () => {
   await app?.close();
+  rmSync(userDataDir, { recursive: true, force: true });
 });
 
 test('opens a window titled Aether Forge', async () => {

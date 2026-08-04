@@ -1,11 +1,22 @@
 import { join } from 'node:path';
 
+import type { EventLog } from '@aether-forge/core';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
 import { openCampaignDatabase } from './db';
+import { openEventLog } from './event-log';
+import { countEvents, recordEntry } from './journal';
+import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
+
+/**
+ * Campaigns are not created or chosen yet, so there is exactly one, and it is
+ * the file the bootstrap already opens. Choosing between campaigns is its own
+ * piece of work.
+ */
+const ONLY_CAMPAIGN = 'default';
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -42,18 +53,24 @@ function createWindow(): BrowserWindow {
   return window;
 }
 
-function registerIpcHandlers(): void {
+function registerIpcHandlers(log: EventLog): void {
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
+  ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(log, text));
+  ipcMain.handle(IPC.countEvents, () => countEvents(log));
 }
 
 void app.whenReady().then(() => {
-  registerIpcHandlers();
-
-  // Proves the native module and the migration path work in a packaged build;
-  // the real campaign lifecycle arrives with the first feature milestone.
-  const db = openCampaignDatabase(app.getPath('userData'));
+  const db = openCampaignDatabase(app.getPath('userData'), ONLY_CAMPAIGN);
   app.once('will-quit', () => db.close());
 
+  // The two unpredictable inputs to writing an event, supplied here because
+  // this is the only layer allowed to reach for them.
+  const log = openEventLog(db, ONLY_CAMPAIGN, {
+    now: () => new Date().toISOString(),
+    nextEventId: createUlidSource(),
+  });
+
+  registerIpcHandlers(log);
   createWindow();
 
   app.on('activate', () => {
