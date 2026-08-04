@@ -7,7 +7,12 @@
  * the toy cannot implement trivially is a contract bug, not a toy bug.
  */
 
-import { CORE_CONTRACT_VERSION, type ModuleProjection, type SystemId } from '@aether-forge/core';
+import {
+  CORE_CONTRACT_VERSION,
+  type EventTypeDefinition,
+  type ModuleProjection,
+  type SystemId,
+} from '@aether-forge/core';
 
 export const TOY_SYSTEM_ID: SystemId = 'toy-coinflip';
 
@@ -57,3 +62,13 @@ export const coinTally: ModuleProjection<CoinTally> = {
     };
   },
 };
+
+/**
+ * The event shapes this module owns, and how it reads its own history.
+ *
+ * Declared by the module rather than by the application, because the module is
+ * the only thing that knows what its events mean or how they have changed.
+ */
+export const eventTypes: readonly EventTypeDefinition[] = [
+  { type: COIN_FLIPPED, currentVersion: 1, translations: [] },
+];
