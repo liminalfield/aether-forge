@@ -15,7 +15,7 @@ export default defineConfig({
       // index.ts/testing.
       '@aether-forge/core/testing': resolve(
         import.meta.dirname,
-        'packages/core/src/testing/log-contract.ts',
+        'packages/core/src/testing/index.ts',
       ),
       '@aether-forge/core': pkg('core'),
       '@aether-forge/ui': pkg('ui'),

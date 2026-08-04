@@ -1,31 +1,16 @@
-import type { EventLog } from '@aether-forge/core';
+import { describeFailure, type TranslatingLog } from '@aether-forge/core';
 
 import type { IpcFailure, IpcResult, RecordedEntry } from '../shared/ipc';
+import { ENTRY_CREATED, type EntryCreatedV1 } from './event-types';
 
 /**
  * Writing journal entries into the campaign log.
  *
- * ## The first payload schema
- *
- * `core.entry.created` version 1 carries `{ text: string }`.
- *
- * This is the first event payload the project has ever declared, and payload
- * schemas are permanent: once someone's campaign contains one of these, it has
- * to stay readable. It can still change, but only by declaring version 2 and
- * writing a translation from version 1, never by editing what is stored.
- *
- * A journal entry holding its text is about as safe a first schema as exists,
- * since the session log is the product and prose is what it is made of. The
- * fuller design, covering inline mentions and inline roll results, belongs to
- * the journal's own design record.
+ * The shape of what it writes is declared in `event-types.ts`, alongside every
+ * other event type this build knows. Nothing here names a version: the log
+ * stamps the current one from those declarations, because a caller that names
+ * its own version can name a stale one and nothing would notice.
  */
-
-export const ENTRY_CREATED = 'core.entry.created';
-export const ENTRY_CREATED_SCHEMA_VERSION = 1;
-
-export interface EntryCreated {
-  readonly text: string;
-}
 
 function asIpcFailure(kind: string, detail: string): IpcResult<never> {
   const failure: IpcFailure = { kind, detail };
@@ -39,7 +24,7 @@ function asIpcFailure(kind: string, detail: string): IpcResult<never> {
  * arrives over IPC, and the window is a different process, so "the caller is
  * our own code" is an assumption rather than a fact.
  */
-export function recordEntry(log: EventLog, text: unknown): IpcResult<RecordedEntry> {
+export function recordEntry(log: TranslatingLog, text: unknown): IpcResult<RecordedEntry> {
   if (typeof text !== 'string') {
     return asIpcFailure('invalid-request', 'a journal entry needs text');
   }
@@ -49,23 +34,22 @@ export function recordEntry(log: EventLog, text: unknown): IpcResult<RecordedEnt
     return asIpcFailure('invalid-request', 'a journal entry cannot be empty');
   }
 
-  const appended = log.append<EntryCreated>({
+  const appended = log.append<EntryCreatedV1>({
     type: ENTRY_CREATED,
-    schemaVersion: ENTRY_CREATED_SCHEMA_VERSION,
     payload: { text: trimmed },
   });
 
   if (!appended.ok) {
-    return asIpcFailure(appended.failure.kind, appended.failure.detail);
+    return asIpcFailure(appended.failure.kind, describeFailure(appended.failure));
   }
 
   return { ok: true, value: { seq: appended.value.seq } };
 }
 
 /** How many events this campaign has recorded. */
-export function countEvents(log: EventLog): IpcResult<number> {
+export function countEvents(log: TranslatingLog): IpcResult<number> {
   const counted = log.count();
   return counted.ok
     ? { ok: true, value: counted.value }
-    : asIpcFailure(counted.failure.kind, counted.failure.detail);
+    : asIpcFailure(counted.failure.kind, describeFailure(counted.failure));
 }

@@ -54,5 +54,16 @@ export { createEventSchemas } from './schema.js';
 export type { Result } from './result.js';
 export { failed, ok } from './result.js';
 
+export type {
+  TranslatingLog,
+  TranslatingLogFailure,
+  TranslationFailed,
+  UnversionedCoreEventDraft,
+  UnversionedEventDraft,
+  UnversionedModuleEventDraft,
+} from './translating-log.js';
+
+export { createTranslatingLog, describeFailure } from './translating-log.js';
+
 export type { MemoryEventLogOptions } from './memory-log.js';
 export { createMemoryEventLog } from './memory-log.js';
