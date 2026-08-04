@@ -80,11 +80,11 @@ module.exports = {
       },
     },
     {
-      name: 'core-never-imports-node-builtins',
+      name: 'libraries-never-import-node-builtins',
       severity: 'error',
       comment:
-        'core is a pure kernel: no filesystem, no process, no platform. Platform concerns live behind the IPC contract in apps/desktop.',
-      from: { path: '^packages/core/' },
+        'Nothing under packages/ may touch the platform: no filesystem, no process, no network. core is a pure kernel, and a system module works out state inside the main process where there is no window and no page to reach for. Anything a library needs from the outside world is handed to it as data by apps/desktop.',
+      from: { path: '^packages/' },
       to: { dependencyTypes: ['core'] },
     },
 
