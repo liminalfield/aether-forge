@@ -1,4 +1,4 @@
-import { describeFailure, type TranslatingLog } from '@aether-forge/core';
+import { describeFailure, type OpenCampaign } from '@aether-forge/core';
 
 import type { IpcFailure, IpcResult, RecordedEntry } from '../shared/ipc';
 import { ENTRY_CREATED, type EntryCreatedV1 } from '@aether-forge/core';
@@ -24,7 +24,7 @@ function asIpcFailure(kind: string, detail: string): IpcResult<never> {
  * arrives over IPC, and the window is a different process, so "the caller is
  * our own code" is an assumption rather than a fact.
  */
-export function recordEntry(log: TranslatingLog, text: unknown): IpcResult<RecordedEntry> {
+export function recordEntry(campaign: OpenCampaign, text: unknown): IpcResult<RecordedEntry> {
   if (typeof text !== 'string') {
     return asIpcFailure('invalid-request', 'a journal entry needs text');
   }
@@ -34,7 +34,7 @@ export function recordEntry(log: TranslatingLog, text: unknown): IpcResult<Recor
     return asIpcFailure('invalid-request', 'a journal entry cannot be empty');
   }
 
-  const appended = log.append<EntryCreatedV1>({
+  const appended = campaign.append<EntryCreatedV1>({
     type: ENTRY_CREATED,
     payload: { text: trimmed },
   });
@@ -47,8 +47,8 @@ export function recordEntry(log: TranslatingLog, text: unknown): IpcResult<Recor
 }
 
 /** How many events this campaign has recorded. */
-export function countEvents(log: TranslatingLog): IpcResult<number> {
-  const counted = log.count();
+export function countEvents(campaign: OpenCampaign): IpcResult<number> {
+  const counted = campaign.count();
   return counted.ok
     ? { ok: true, value: counted.value }
     : asIpcFailure(counted.failure.kind, describeFailure(counted.failure));
