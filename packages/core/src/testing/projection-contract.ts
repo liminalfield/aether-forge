@@ -14,6 +14,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { EventEnvelope } from '../event.js';
+import type { ModuleProjection, ProjectionContext } from '../module-projection.js';
 import { replay, type Projection } from '../projection.js';
 
 export function describeProjectionIsPredictable<State>(
@@ -88,4 +89,26 @@ export function describeProjectionIsPredictable<State>(
       expect(withIt).toEqual(withoutIt);
     });
   });
+}
+
+/**
+ * Treat a module's view as an ordinary projection, so the checks above apply to
+ * it too.
+ *
+ * @param context What the module is allowed to read. Most module projections
+ *   ignore it, and a context that throws proves they do.
+ */
+export function asProjection<State>(
+  moduleProjection: ModuleProjection<State>,
+  context: ProjectionContext = {
+    stateOf: () => {
+      throw new Error('this projection was checked without any core state available to it');
+    },
+  },
+): Projection<State> {
+  return {
+    id: moduleProjection.id,
+    initial: () => moduleProjection.initial(),
+    apply: (state, event) => moduleProjection.apply(state, event, context),
+  };
 }

@@ -15,6 +15,11 @@
 import type { EventEnvelope } from './event.js';
 import type { CampaignId } from './identifiers.js';
 import type { LogFailure } from './log.js';
+import {
+  isVisibleToModule,
+  type ModuleProjection,
+  type ProjectionContext,
+} from './module-projection.js';
 import { replay, type Projection } from './projection.js';
 import { failed, ok, type Result } from './result.js';
 import type {
@@ -33,6 +38,14 @@ export interface ProjectionFailed {
 
 export type CampaignFailure = TranslatingLogFailure | ProjectionFailed;
 
+/** Everything a campaign should work out as it reads its log. */
+export interface CampaignViews {
+  /** Views core owns and understands. */
+  readonly projections?: readonly Projection<unknown>[];
+  /** Views a system module owns. Core holds their state without reading it. */
+  readonly moduleProjections?: readonly ModuleProjection<unknown>[];
+}
+
 export interface OpenCampaign {
   readonly campaignId: CampaignId;
 
@@ -47,42 +60,58 @@ export interface OpenCampaign {
     draft: UnversionedEventDraft<Payload>,
   ): Result<EventEnvelope<Payload>, CampaignFailure>;
 
-  /** The current state of a projection this campaign was opened with. */
+  /** The current state of a core projection this campaign was opened with. */
   stateOf<State>(projection: Projection<State>): State;
+
+  /**
+   * The current state of a module's projection.
+   *
+   * Core has held this without ever looking inside it. Only the module that
+   * owns it knows what it means.
+   */
+  moduleStateOf<State>(projection: ModuleProjection<State>): State;
 
   /** How many events this campaign has recorded. */
   count(): Result<number, LogFailure>;
 }
 
-/**
- * Open a campaign and build its projections.
- *
- * @param projections Every view this campaign will be asked for. Asking for one
- *   it was not opened with is a mistake in the calling code rather than a state
- *   to handle, so it throws.
- */
 export function openCampaign(
   log: TranslatingLog,
-  projections: readonly Projection<unknown>[],
+  views: CampaignViews = {},
 ): Result<OpenCampaign, CampaignFailure> {
+  const projections = views.projections ?? [];
+  const moduleProjections = views.moduleProjections ?? [];
+
   const events = log.read();
   if (!events.ok) return events;
 
-  const state = new Map<string, unknown>();
+  // Core state and module state are kept apart. Nothing in core reads inside
+  // the module side; it is stored, handed back, and otherwise left alone.
+  const coreState = new Map<string, unknown>();
+  const moduleState = new Map<string, unknown>();
 
-  function bringUpToDate(
-    projection: Projection<unknown>,
-    produce: () => unknown,
-    doing: string,
-  ): ProjectionFailed | null {
+  const context: ProjectionContext = {
+    stateOf<State>(projection: Projection<State>): State {
+      return readBack(coreState, projection.id, 'core projection') as State;
+    },
+  };
+
+  function readBack(from: Map<string, unknown>, id: string, what: string): unknown {
+    if (!from.has(id)) {
+      throw new Error(`this campaign was not opened with the ${what} "${id}"`);
+    }
+    return from.get(id);
+  }
+
+  function attempt(id: string, doing: string, produce: () => unknown): ProjectionFailed | null {
     try {
-      state.set(projection.id, produce());
+      produce();
       return null;
     } catch (cause) {
       return {
         kind: 'projection-failed',
-        projectionId: projection.id,
-        detail: `${projection.id} threw while ${doing}`,
+        projectionId: id,
+        detail: `${id} threw while ${doing}`,
         cause,
       };
     }
@@ -91,11 +120,24 @@ export function openCampaign(
   // Read once, then build everything from what was read. Reading per projection
   // would be several passes over the same file for the same answer.
   for (const projection of projections) {
-    const wrong = bringUpToDate(
-      projection,
-      () => replay(projection, events.value),
-      'reading the campaign',
+    const wrong = attempt(projection.id, 'reading the campaign', () =>
+      coreState.set(projection.id, replay(projection, events.value)),
     );
+    if (wrong) return failed(wrong);
+  }
+
+  // Module views are built after core ones, so that a module reading a core
+  // projection through the context sees it fully built rather than half way.
+  for (const projection of moduleProjections) {
+    const wrong = attempt(projection.id, 'reading the campaign', () => {
+      let state = projection.initial();
+      for (const event of events.value) {
+        if (isVisibleToModule(event, projection.systemId)) {
+          state = projection.apply(state, event, context);
+        }
+      }
+      moduleState.set(projection.id, state);
+    });
     if (wrong) return failed(wrong);
   }
 
@@ -109,32 +151,40 @@ export function openCampaign(
       ): Result<EventEnvelope<Payload>, CampaignFailure> {
         const appended = log.append(draft);
         if (!appended.ok) return appended;
+        const event = appended.value;
 
         for (const projection of projections) {
-          const wrong = bringUpToDate(
-            projection,
-            () => projection.apply(state.get(projection.id), appended.value),
-            `applying ${appended.value.type}`,
+          const wrong = attempt(projection.id, `applying ${event.type}`, () =>
+            coreState.set(projection.id, projection.apply(coreState.get(projection.id), event)),
           );
           if (wrong) return failed(wrong);
         }
 
-        return ok(appended.value);
+        for (const projection of moduleProjections) {
+          if (!isVisibleToModule(event, projection.systemId)) continue;
+
+          const wrong = attempt(projection.id, `applying ${event.type}`, () =>
+            moduleState.set(
+              projection.id,
+              projection.apply(moduleState.get(projection.id), event, context),
+            ),
+          );
+          if (wrong) return failed(wrong);
+        }
+
+        return ok(event);
       },
 
       stateOf<State>(projection: Projection<State>): State {
-        if (!state.has(projection.id)) {
-          throw new Error(
-            `this campaign was not opened with the projection "${projection.id}", ` +
-              'so it has no state for it',
-          );
-        }
+        // The only assertions in this file, and both describe something the
+        // type system cannot: state stored under an id was produced by the
+        // projection with that id. There is no way to tie a string key to a
+        // type parameter in TypeScript.
+        return readBack(coreState, projection.id, 'core projection') as State;
+      },
 
-        // The only assertion in this file, and it is describing something the
-        // type system cannot: the state stored under an id was produced by the
-        // projection with that id, so it is that projection's State. There is
-        // no way to tie a string key to a type parameter in TypeScript.
-        return state.get(projection.id) as State;
+      moduleStateOf<State>(projection: ModuleProjection<State>): State {
+        return readBack(moduleState, projection.id, 'module projection') as State;
       },
 
       count(): Result<number, LogFailure> {

@@ -124,6 +124,11 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            ...NODE_BUILTINS.map((name) => ({
+              name,
+              message:
+                'Libraries stay platform-neutral. A system module works out state in the main process, where there is no page and no window; anything from the outside world is handed in as data by apps/desktop.',
+            })),
             {
               name: 'electron',
               message: 'Libraries stay platform-neutral. Electron belongs to apps/desktop only.',
@@ -138,6 +143,11 @@ export default tseslint.config(
               group: ['@aether-forge/system-*'],
               message:
                 'Only apps/desktop may import a system module. Core, ui and importers must stay system-agnostic.',
+            },
+            {
+              group: ['node:*'],
+              message:
+                'Libraries stay platform-neutral. Anything from the outside world is handed in as data by apps/desktop.',
             },
             {
               group: ['electron/*'],
@@ -156,6 +166,13 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
+          // Repeated from the packages/** rule above rather than inherited,
+          // because ESLint replaces a rule rather than merging it. Anything
+          // missing here is simply unguarded in core and ui.
+          paths: NODE_BUILTINS.map((name) => ({
+            name,
+            message: 'core and ui are pure: no filesystem, no process, no platform.',
+          })),
           patterns: [
             {
               // The app name is listed alongside the scope because this rule
@@ -166,8 +183,8 @@ export default tseslint.config(
                 'packages/core and packages/ui are the roots of the graph: they import nothing internal.',
             },
             {
-              group: ['electron', 'electron/*'],
-              message: 'core and ui never touch Electron.',
+              group: ['electron', 'electron/*', 'node:*'],
+              message: 'core and ui never touch Electron, and never touch the platform.',
             },
           ],
         },
