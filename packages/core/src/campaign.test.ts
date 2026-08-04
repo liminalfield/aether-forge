@@ -44,10 +44,9 @@ function aLog(): TranslatingLog {
 }
 
 function openWith(log: TranslatingLog) {
-  const opened = openCampaign(log, [
-    journalSummary as Projection<unknown>,
-    everything as Projection<unknown>,
-  ]);
+  const opened = openCampaign(log, {
+    projections: [journalSummary as Projection<unknown>, everything as Projection<unknown>],
+  });
   if (!opened.ok) throw new Error(`could not open: ${opened.failure.kind}`);
   return opened.value;
 }
@@ -148,7 +147,7 @@ describe('when a projection is broken', () => {
 
   it('names it rather than failing silently', () => {
     const log = aLog();
-    const opened = openCampaign(log, [broken as Projection<unknown>]);
+    const opened = openCampaign(log, { projections: [broken as Projection<unknown>] });
     if (!opened.ok) throw new Error('expected to open on an empty campaign');
 
     const appended = opened.value.append({ type: ENTRY, payload: { text: 'a' } });
@@ -163,7 +162,7 @@ describe('when a projection is broken', () => {
     const log = aLog();
     log.append({ type: ENTRY, payload: { text: 'a' } });
 
-    const opened = openCampaign(log, [broken as Projection<unknown>]);
+    const opened = openCampaign(log, { projections: [broken as Projection<unknown>] });
     expect(!opened.ok && opened.failure.kind).toBe('projection-failed');
   });
 });

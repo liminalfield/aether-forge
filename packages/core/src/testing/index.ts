@@ -7,4 +7,4 @@
 
 export { describeEventLogContract, type EventLogUnderTest } from './log-contract.js';
 export { describeSchemaTranslations, type EventTypeSample } from './schema-contract.js';
-export { describeProjectionIsPredictable } from './projection-contract.js';
+export { asProjection, describeProjectionIsPredictable } from './projection-contract.js';
