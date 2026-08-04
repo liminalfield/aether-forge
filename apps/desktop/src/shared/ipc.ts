@@ -16,6 +16,7 @@
 
 export const IPC = {
   getAppVersion: 'app:getVersion',
+  readJournal: 'journal:read',
   recordEntry: 'journal:recordEntry',
   countEvents: 'log:countEvents',
 } as const;
@@ -50,9 +51,36 @@ export interface RecordedEntry {
   readonly seq: number;
 }
 
+/**
+ * One entry, as the window needs it.
+ *
+ * Deliberately not the shape core keeps. The journal projection also carries
+ * the bookkeeping that traces a correction back to the entry it belongs to,
+ * which is how it is worked out and none of the window's business. A channel
+ * is shaped around what is being asked for, not around what happens to be
+ * lying nearby.
+ */
+export interface JournalEntryView {
+  /** Identifies the entry. Unchanged by corrections. */
+  readonly id: string;
+  readonly text: string;
+  /** What a correction of this entry should supersede. */
+  readonly currentVersionId: string;
+  /** How many times it has been corrected. Zero for most entries. */
+  readonly corrections: number;
+}
+
+export interface JournalView {
+  /** In the order they were written, oldest first. */
+  readonly entries: readonly JournalEntryView[];
+}
+
 /** Shape exposed on `window.aetherForge` by the preload script. */
 export interface AetherForgeApi {
   getAppVersion(): Promise<string>;
+
+  /** Every entry in the campaign, oldest first. */
+  readJournal(): Promise<IpcResult<JournalView>>;
 
   /** Write a journal entry into the campaign log. */
   recordEntry(text: string): Promise<IpcResult<RecordedEntry>>;

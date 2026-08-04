@@ -1,6 +1,6 @@
-import { describeFailure, type OpenCampaign } from '@aether-forge/core';
+import { describeFailure, journal, type OpenCampaign } from '@aether-forge/core';
 
-import type { IpcFailure, IpcResult, RecordedEntry } from '../shared/ipc';
+import type { IpcFailure, IpcResult, JournalView, RecordedEntry } from '../shared/ipc';
 import { ENTRY_CREATED, type EntryCreatedV1 } from '@aether-forge/core';
 
 /**
@@ -44,6 +44,28 @@ export function recordEntry(campaign: OpenCampaign, text: unknown): IpcResult<Re
   }
 
   return { ok: true, value: { seq: appended.value.seq } };
+}
+
+/**
+ * Every entry in the campaign, oldest first.
+ *
+ * Reads state the campaign already holds, so this costs nothing beyond copying
+ * it. Nothing is re-read from disk.
+ */
+export function readJournal(campaign: OpenCampaign): IpcResult<JournalView> {
+  const state = campaign.stateOf(journal);
+
+  return {
+    ok: true,
+    value: {
+      entries: state.entries.map((entry) => ({
+        id: entry.id,
+        text: entry.text,
+        currentVersionId: entry.currentVersionId,
+        corrections: entry.corrections,
+      })),
+    },
+  };
 }
 
 /** How many events this campaign has recorded. */
