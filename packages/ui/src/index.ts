@@ -10,7 +10,15 @@
  */
 
 export type { SlotGroup, SlotName, Theme, ThemeColours } from './theme.js';
-export { customPropertiesFor, glacialDark, slot, SLOTS } from './theme.js';
+export {
+  builtInThemes,
+  customPropertiesFor,
+  emberDark,
+  glacialDark,
+  slot,
+  slotsThatDiffer,
+  SLOTS,
+} from './theme.js';
 
 export const tokens = {
   space: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '40px' },

@@ -20,9 +20,14 @@ work rather than behind it, and everything visual afterwards is faster for havin
 The handoff decided something stronger than a colour scheme, and it is worth stating plainly before
 anything else: **a theme is a palette and never new component design.**
 
-The Ironsworn variant of the whole application rotates eleven values and adds zero components. If a
+The Ironsworn variant of the whole application rotates twelve values and adds zero components. If a
 theme ever needs a component to be built differently, the theme system is wrong. That claim is
 testable, and it is the main thing this record is trying to protect.
+
+> **Counted while building it, 5 August 2026 (#87).** The handoff said eleven, and this record
+> repeated it. The real number is twelve: five ground, four ink, two accent, and `outcome.miss`,
+> which the handoff also rotates and did not count. A test asserts the twelve by name so the figure
+> cannot drift again.
 
 Here is a theme, in full:
 
@@ -313,6 +318,19 @@ consistent design becomes an inconsistent one.
 _What would settle it:_ designing them, before the first surface needs one rather than during. The
 journal already has one, showing "Nothing written yet", and it was written without any of this in
 mind.
+
+**What are the seven unspecified slots in each light theme?**
+
+The handoff gives eight of the fifteen slots for Glacial light and Ember light: the page, the raised
+surface, three inks, accent, pressure and the miss colour. The other seven are not stated.
+
+_Why it matters:_ they cannot be derived from the rules the record already gives. In light,
+elevation reverses so a raised surface goes whiter than a tinted page, and Glacial light's raised
+surface is already pure white, which leaves `overlay` with nowhere above it to go. Guessing produces
+a theme that looks nearly right and is wrong in a way nobody can point at.
+
+_What would settle it:_ the designer supplying the remaining seven values for each, which is a short
+job for whoever chose the first eight and an invention for anybody else.
 
 **Are fifteen slots the right number?**
 
