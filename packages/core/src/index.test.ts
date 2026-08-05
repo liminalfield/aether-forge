@@ -3,12 +3,17 @@ import { describe, expect, it } from 'vitest';
 import * as core from './index.js';
 import type {
   CampaignViews,
+  DieSource,
+  DieSpec,
+  DieValue,
   EventEnvelope,
   EventLog,
   ModuleProjection,
   OpenCampaign,
   Projection,
   Result,
+  RollPerformedV1,
+  RollRequest,
   TranslatingLog,
 } from './index.js';
 
@@ -51,6 +56,9 @@ describe('the public surface', () => {
         'buildFromLog',
         'isVisibleToModule',
         'openCampaign',
+        'ROLL_PERFORMED',
+        'rollEventTypes',
+        'readRoll',
       ]),
     );
   });
@@ -67,6 +75,11 @@ describe('the public surface', () => {
       _views: CampaignViews,
       _campaign: OpenCampaign,
       _result: Result<number, string>,
+      _spec: DieSpec,
+      _source: DieSource,
+      _die: DieValue,
+      _request: RollRequest,
+      _roll: RollPerformedV1,
     ): void => undefined;
 
     expect(typeof surface).toBe('function');
