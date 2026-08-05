@@ -1,6 +1,6 @@
 # Themes and components
 
-Status: proposed, 5 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted, 5 August 2026. Not yet decomposed.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
@@ -134,24 +134,55 @@ is a preference rather than a failure.
 
 The handoff locks `outcome.match` to violet and makes it the one slot a person cannot change, on the
 grounds that a match is the single most story-productive event in the system and must never be
-mistaken for another. **This record proposes unlocking it**, for the same reason the contrast rule
-went: it is the same gatekeeping in a smaller place, the glyph already carries the meaning, and a
-locked slot in an otherwise open contract is the kind of exception that gets copied.
+mistaken for another. **It is unlocked here**, for the same reason the contrast rule went: it is the
+same gatekeeping in a smaller place, the glyph already carries the meaning, and a locked slot in an
+otherwise open contract is the kind of exception that gets copied.
 
-Left as a proposal rather than a decision, because it is a change to what the handoff decided and
-the maintainer may prefer to keep one thing fixed.
+Agreed 5 August 2026. All fourteen slots belong to whoever is authoring the theme, with no
+exceptions.
 
-### What a person authoring a theme cannot change
+### A theme is colours, and nothing else
 
-Fonts, spacing, radius, motion timings, glyphs, and the shapes of tracks and clocks.
+Fourteen colour slots. Not fonts, not sizes, not spacing, not the shapes of tracks and clocks.
 
-The reason is the same for all of them: they carry the meaning that makes a screen readable without
-reading it. A progress box is square and a clock is round, and that difference is how you tell your
-own progress from the world's at a glance. Making those configurable would let a person quietly
-destroy the thing the design is for.
+The reasoning is specific rather than a principle, and it is worth keeping because it is the sort of
+thing that gets forgotten and relitigated. Nocturne Writer could offer a broadly configurable
+interface because its interface was a thin frame around a writing canvas, so there was little for a
+bad configuration to break. This application is the opposite. It is dense with detailed chrome:
+meters, tally boxes, clocks, chip rows, rails packed with numbers. Fonts and spacing are
+load-bearing there in a way they are not around a blank page, and a fully configurable version of it
+would be unusable long before it was finished, for the person configuring it and for anyone
+maintaining it.
 
-One exception. Prose weight can be nudged one step, because thin serif type is genuinely harder for
-some people to read and the alternative is that they cannot use the writing surface.
+The shapes stay fixed for a stronger reason. A tally box is square and a clock is round, and that
+difference is how a player tells their own progress from the world's without reading a label. It is
+information, not decoration, and it is not the theme's to move.
+
+This is a scope decision rather than a refusal. There is no slot in the theme file for any of it, so
+nobody is being told no. Adding slots later is additive and breaks nothing, which is why deciding
+narrowly now is cheap.
+
+### Preferences are personal, and do not travel with a theme
+
+Two things people will reasonably want to change are not colours, and putting them in a theme would
+be wrong even though it would be convenient.
+
+**Animation on or off.** The three durations exist because motion carries meaning here, but a person
+who finds movement tiring should be able to switch it off outright, not only through the operating
+system's reduced-motion setting. That setting is still honoured as the default.
+
+**The journal's typeface.** The journal is the one place where somebody is reading continuous prose
+for an hour, and the one place where a font that suits them matters more than the design's
+preference. This is the exception to the section above, and it applies to the writing surface only,
+never to the chrome around it.
+
+Neither belongs in a theme, because a theme is a thing you export and hand to somebody else. Your
+colours are worth sharing. Your need for less movement, or for a particular serif, is yours and
+should not arrive attached to a palette a friend sent you. So they are application preferences,
+stored with the application, and a theme file has no field for either.
+
+That split is worth getting right the first time. A theme format that quietly accumulates personal
+settings becomes a format nobody can share without also sharing how they read.
 
 ### Light is not dark inverted
 
@@ -162,8 +193,8 @@ Elevation reverses. In dark, a raised surface is lighter than the page. In light
 is whiter than a tinted page. Same slot names, opposite direction along the ramp, which is exactly
 why the slots are named `raised` and `sunken` rather than `lighter` and `darker`.
 
-Prose weight goes from 300 to 400, and it is the only typographic value a theme may change, for the
-reason above.
+Prose weight goes from 300 to 400 between dark and light, because thin serif type on a bright ground
+loses its stroke. That is the theme reacting to its own ground rather than a value anybody sets.
 
 ### Components are named in words no rulebook uses
 
@@ -226,8 +257,7 @@ A peer dependency rather than a dependency, so that the application supplies the
 that runs. Two copies of React in one process is a class of bug that is unpleasant to diagnose and
 trivial to avoid.
 
-This is a dependency decision and therefore the maintainer's. It is the first runtime dependency
-`packages/ui` has ever had.
+The first runtime dependency `packages/ui` has ever had, agreed by the maintainer on 5 August 2026.
 
 ### Fonts are bundled, not fetched
 
@@ -242,8 +272,8 @@ Tabular numerals are mandatory on every dice value, meter and clock reading. A n
 width when it changes value is unreadable in a rail, and this is cheaper to decide once than to fix
 per component.
 
-Adding three font families is a licensing decision, so it is the maintainer's, and their attribution
-belongs in `LICENSES.md`.
+Adding three font families is a licensing decision. Agreed by the maintainer on 5 August 2026, with
+their attribution to land in `LICENSES.md` in the same change that adds the files.
 
 ## What we are deliberately not doing
 
