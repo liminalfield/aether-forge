@@ -266,3 +266,104 @@ test('refuses to correct an entry that is not in this campaign', async () => {
     await app.close();
   }
 });
+
+test('clicking an entry lets you change what it says', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.getByLabel('What happened?').fill('The airlock did not open.');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    await page.getByTestId('entry-text').click();
+    await page.getByLabel('Change what this says').fill('The airlock opened on the second try.');
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    await expect(page.getByTestId('entry-text')).toHaveText([
+      'The airlock opened on the second try.',
+    ]);
+    await expect(page.getByTestId('edited')).toBeVisible();
+  } finally {
+    await app.close();
+  }
+});
+
+test('an entry that has not been corrected is not marked as edited', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.getByLabel('What happened?').fill('written once');
+    await page.getByRole('button', { name: 'Record it' }).click();
+
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+    await expect(page.getByTestId('edited')).toHaveCount(0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('changing your mind leaves the entry alone', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.getByLabel('What happened?').fill('as first written');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    await page.getByTestId('entry-text').click();
+    await page.getByLabel('Change what this says').fill('never mind');
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await expect(page.getByTestId('entry-text')).toHaveText(['as first written']);
+    await expect(page.getByTestId('edited')).toHaveCount(0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a correction made in the window survives a restart', async () => {
+  const first = await launchPackagedApp(userDataDir);
+  try {
+    const page = await first.firstWindow();
+    await page.getByLabel('What happened?').fill('as first written');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    await page.getByTestId('entry-text').click();
+    await page.getByLabel('Change what this says').fill('as corrected');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByTestId('entry-text')).toHaveText(['as corrected']);
+  } finally {
+    await first.close();
+  }
+
+  const second = await launchPackagedApp(userDataDir);
+  try {
+    const page = await second.firstWindow();
+    // Rebuilt by replaying the log, not remembered.
+    await expect(page.getByTestId('entry-text')).toHaveText(['as corrected']);
+    await expect(page.getByTestId('edited')).toBeVisible();
+  } finally {
+    await second.close();
+  }
+});
+
+test('can be corrected from the keyboard alone', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.getByLabel('What happened?').fill('as first written');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    // The entry is a button, so it can be reached and used without a mouse.
+    await page.getByTestId('entry-text').focus();
+    await page.keyboard.press('Enter');
+    await page.getByLabel('Change what this says').fill('changed without a mouse');
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    await expect(page.getByTestId('entry-text')).toHaveText(['changed without a mouse']);
+  } finally {
+    await app.close();
+  }
+});
