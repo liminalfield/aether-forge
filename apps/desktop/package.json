@@ -19,7 +19,8 @@
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "package": "electron-builder --publish never",
     "package:dir": "electron-builder --dir --publish never",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "measure": "playwright test --config playwright.measure.config.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.0.2"
