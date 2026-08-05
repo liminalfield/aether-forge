@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { openCampaign } from './campaign.js';
 import { createMemoryEventLog } from './memory-log.js';
+import type { Projection } from './projection.js';
 import {
   readRoll,
   ROLL_PERFORMED,
   rollEventTypes,
+  rolls,
   validateRoll,
   type RollPerformedV1,
+  type RollRequest,
 } from './roll.js';
+import { describeProjectionIsPredictable } from './testing/projection-contract.js';
 import { createEventSchemas } from './schema.js';
 import { describeSchemaTranslations } from './testing/schema-contract.js';
 import { createTranslatingLog, type TranslatingLog } from './translating-log.js';
@@ -460,3 +464,179 @@ describe('reading a reason that is not one', () => {
     ).toBeUndefined();
   });
 });
+
+describe('the roll that stands', () => {
+  const A_D10: RollRequest = { dice: [{ sides: 10, count: 1 }] };
+
+  function showing(value: number): RollPerformedV1 {
+    return { request: A_D10, dice: [{ sides: 10, value, source: { kind: 'manual' } }] };
+  }
+
+  function nowShowing(value: number, because: 'corrected' | 'rerolled'): RollPerformedV1 {
+    return { ...showing(value), supersedes: { because } };
+  }
+
+  function openWithRolls() {
+    const log = aLog();
+    const opened = openCampaign(log, { projections: [rolls as Projection<unknown>] });
+    if (!opened.ok) throw new Error(`could not open: ${opened.failure.kind}`);
+    return opened.value;
+  }
+
+  it('shows a roll nobody has touched', () => {
+    const campaign = openWithRolls();
+    const written = campaign.append({ type: ROLL_PERFORMED, payload: showing(4) });
+    if (!written.ok) throw new Error('could not write');
+
+    expect(campaign.stateOf(rolls).rolls).toEqual([
+      {
+        id: written.value.id,
+        request: A_D10,
+        dice: [{ sides: 10, value: 4, source: { kind: 'manual' } }],
+        currentVersionId: written.value.id,
+        replacements: [],
+      },
+    ]);
+  });
+
+  it('shows the dice that now stand, not the ones first recorded', () => {
+    const campaign = openWithRolls();
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: showing(4) });
+    if (!first.ok) throw new Error('could not write');
+
+    const corrected = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: first.value.id,
+      payload: nowShowing(7, 'corrected'),
+    });
+    if (!corrected.ok) throw new Error('could not correct');
+
+    const [standing] = campaign.stateOf(rolls).rolls;
+    expect(standing?.dice[0]?.value).toBe(7);
+    expect(standing?.id).toBe(first.value.id);
+    expect(standing?.currentVersionId).toBe(corrected.value.id);
+  });
+
+  it('reads three corrections as one roll, not three', () => {
+    const campaign = openWithRolls();
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: showing(4) });
+    if (!first.ok) throw new Error('could not write');
+
+    let previous = first.value.id;
+    for (const value of [7, 2, 9]) {
+      const again = campaign.append({
+        type: ROLL_PERFORMED,
+        revises: previous,
+        payload: nowShowing(value, 'corrected'),
+      });
+      if (!again.ok) throw new Error('could not correct');
+      previous = again.value.id;
+    }
+
+    const state = campaign.stateOf(rolls);
+    expect(state.rolls).toHaveLength(1);
+    expect(state.rolls[0]?.dice[0]?.value).toBe(9);
+    expect(state.rolls[0]?.replacements).toHaveLength(3);
+    expect(state.rolls[0]?.currentVersionId).toBe(previous);
+  });
+
+  it('keeps why each replacement happened, in order', () => {
+    // A count would say how often this changed. The reasons say whether the
+    // player got lucky or kept fixing typos, which is what the log records them
+    // for.
+    const campaign = openWithRolls();
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: showing(4) });
+    if (!first.ok) throw new Error('could not write');
+
+    let previous = first.value.id;
+    for (const [value, because] of [
+      [7, 'corrected'],
+      [2, 'rerolled'],
+      [9, 'corrected'],
+    ] as const) {
+      const again = campaign.append({
+        type: ROLL_PERFORMED,
+        revises: previous,
+        payload: nowShowing(value, because),
+      });
+      if (!again.ok) throw new Error('could not replace');
+      previous = again.value.id;
+    }
+
+    expect(campaign.stateOf(rolls).rolls[0]?.replacements.map((one) => one.because)).toEqual([
+      'corrected',
+      'rerolled',
+      'corrected',
+    ]);
+  });
+
+  it('keeps several rolls apart', () => {
+    const campaign = openWithRolls();
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: showing(4) });
+    const second = campaign.append({ type: ROLL_PERFORMED, payload: showing(8) });
+    if (!first.ok || !second.ok) throw new Error('could not write');
+
+    const corrected = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: second.value.id,
+      payload: nowShowing(3, 'corrected'),
+    });
+    if (!corrected.ok) throw new Error('could not correct');
+
+    const state = campaign.stateOf(rolls);
+    expect(state.rolls.map((one) => one.dice[0]?.value)).toEqual([4, 3]);
+    expect(state.rolls[0]?.replacements).toEqual([]);
+  });
+
+  it.each([
+    [
+      'a replacement of something it has never seen',
+      { revises: 'event-nobody-recorded', payload: nowShowing(7, 'corrected') },
+    ],
+    ['a payload that is not a roll', { payload: { nonsense: true } }],
+    ['a reason on an event that replaces nothing', { payload: nowShowing(7, 'corrected') }],
+    ['a replacement that does not say why', { revises: 'event-1', payload: showing(7) }],
+  ])('ignores %s entirely', (_name, draft) => {
+    // The whole state, not just the list. An event that lands in rollOf while
+    // leaving rolls empty looks harmless and means the projection believes an
+    // event belongs to a roll that does not exist.
+    const campaign = openWithRolls();
+    const untouched = campaign.stateOf(rolls);
+
+    const written = campaign.append({ type: ROLL_PERFORMED, ...draft });
+    if (!written.ok) throw new Error('could not write');
+
+    expect(campaign.stateOf(rolls)).toEqual(untouched);
+  });
+});
+
+describeProjectionIsPredictable(
+  'the roll that stands',
+  () => rolls,
+  () => [
+    {
+      id: 'event-1',
+      seq: 1,
+      at: '2026-08-05T09:00:01.000Z',
+      type: ROLL_PERFORMED,
+      schemaVersion: 1,
+      payload: {
+        request: { dice: [{ sides: 10, count: 1 }] },
+        dice: [{ sides: 10, value: 4, source: { kind: 'manual' } }],
+      },
+    },
+    {
+      id: 'event-2',
+      seq: 2,
+      at: '2026-08-05T09:00:02.000Z',
+      type: ROLL_PERFORMED,
+      schemaVersion: 1,
+      revises: 'event-1',
+      payload: {
+        request: { dice: [{ sides: 10, count: 1 }] },
+        dice: [{ sides: 10, value: 7, source: { kind: 'digital' } }],
+        supersedes: { because: 'rerolled' },
+      },
+    },
+  ],
+);
