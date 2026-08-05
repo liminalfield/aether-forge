@@ -1,6 +1,6 @@
 import { describeSchemaTranslations } from '@aether-forge/core/testing';
 
-import { ENTRY_CREATED, ENTRY_REVISED, ROLL_PERFORMED } from '@aether-forge/core';
+import { ENTRY_CREATED, ENTRY_REVISED, ORACLE_CONSULTED, ROLL_PERFORMED } from '@aether-forge/core';
 import { eventTypes as ironswornEventTypes } from '@aether-forge/system-ironsworn';
 import { eventTypes as toyEventTypes } from '@aether-forge/system-toy';
 
@@ -44,6 +44,16 @@ describeSchemaTranslations('this build', declareEventTypes, [
           { sides: 6, value: 4, source: { kind: 'digital' } },
           { sides: 6, value: 2, source: { kind: 'manual' } },
         ],
+      },
+    },
+  },
+  {
+    type: ORACLE_CONSULTED,
+    payloadsByVersion: {
+      1: {
+        table: 'example.dummy-tables/weather',
+        package: { id: 'example.dummy-tables', version: '1.2.0' },
+        row: { from: 41, to: 60, text: 'Fog, and it is getting worse.' },
       },
     },
   },

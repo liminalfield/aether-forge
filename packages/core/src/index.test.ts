@@ -9,7 +9,10 @@ import type {
   EventEnvelope,
   EventLog,
   ModuleProjection,
+  OracleConsultedV1,
+  OracleRow,
   OpenCampaign,
+  PackageStamp,
   Projection,
   Result,
   RecordedRoll,
@@ -67,6 +70,9 @@ describe('the public surface', () => {
         'readRoll',
         'validateRoll',
         'rolls',
+        'ORACLE_CONSULTED',
+        'oracleEventTypes',
+        'readOracleConsultation',
       ]),
     );
   });
@@ -94,6 +100,9 @@ describe('the public surface', () => {
       _recorded: RecordedRoll,
       _replacement: RollReplacement,
       _rolls: Rolls,
+      _consultation: OracleConsultedV1,
+      _row: OracleRow,
+      _stamp: PackageStamp,
     ): void => undefined;
 
     expect(typeof surface).toBe('function');

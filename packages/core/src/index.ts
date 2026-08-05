@@ -122,6 +122,9 @@ export type {
 } from './roll.js';
 export { readRoll, ROLL_PERFORMED, rollEventTypes, rolls, validateRoll } from './roll.js';
 
+export type { OracleConsultedV1, OracleRow, PackageStamp } from './oracle.js';
+export { ORACLE_CONSULTED, oracleEventTypes, readOracleConsultation } from './oracle.js';
+
 export type { ModuleProjection, ProjectionContext } from './module-projection.js';
 export { isVisibleToModule } from './module-projection.js';
 
