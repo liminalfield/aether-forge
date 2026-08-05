@@ -1,6 +1,7 @@
 import {
   createEventSchemas,
   journalEventTypes,
+  oracleEventTypes,
   rollEventTypes,
   type EventSchemas,
   type EventTypeDefinition,
@@ -21,6 +22,7 @@ export function declareEventTypes(): EventSchemas {
   const everything: readonly EventTypeDefinition[] = [
     ...journalEventTypes,
     ...rollEventTypes,
+    ...oracleEventTypes,
     ...toyEventTypes,
     ...ironswornEventTypes,
   ];
