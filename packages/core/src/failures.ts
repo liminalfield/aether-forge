@@ -11,9 +11,10 @@
 
 import type { ImportFailure } from './bundle.js';
 import type { CampaignFailure } from './campaign.js';
+import type { RollFailure } from './roll.js';
 
 /** Anything core can report going wrong. */
-export type CoreFailure = CampaignFailure | ImportFailure;
+export type CoreFailure = CampaignFailure | ImportFailure | RollFailure;
 
 /**
  * The final branch is a compile-time check: adding a failure kind without
@@ -83,6 +84,18 @@ export function describeFailure(failure: CoreFailure): string {
         `agreeing up to event ${failure.agreedUntil}. They cannot be combined. ` +
         'Keep the imported one as a separate campaign.'
       );
+
+    case 'die-outside-its-range':
+      return (
+        `a ${failure.sides}-sided die cannot show ${failure.value}. ` +
+        'A die shows a whole number from 1 to the number of sides it has.'
+      );
+
+    case 'die-value-is-not-whole':
+      return `a die cannot show ${failure.value}. Dice show whole numbers.`;
+
+    case 'die-has-impossible-sides':
+      return `a die cannot have ${failure.sides} sides`;
 
     default: {
       const unhandled: never = failure;

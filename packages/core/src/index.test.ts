@@ -12,6 +12,7 @@ import type {
   OpenCampaign,
   Projection,
   Result,
+  RollFailure,
   RollPerformedV1,
   RollRequest,
   TranslatingLog,
@@ -59,6 +60,7 @@ describe('the public surface', () => {
         'ROLL_PERFORMED',
         'rollEventTypes',
         'readRoll',
+        'validateRoll',
       ]),
     );
   });
@@ -80,6 +82,7 @@ describe('the public surface', () => {
       _die: DieValue,
       _request: RollRequest,
       _roll: RollPerformedV1,
+      _rollFailure: RollFailure,
     ): void => undefined;
 
     expect(typeof surface).toBe('function');

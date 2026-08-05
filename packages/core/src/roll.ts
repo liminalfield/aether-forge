@@ -19,6 +19,7 @@
  * See `design/rolling-dice.md`.
  */
 
+import { failed, ok, type Result } from './result.js';
 import type { EventTypeDefinition } from './schema.js';
 
 export const ROLL_PERFORMED = 'core.roll.performed';
@@ -168,4 +169,81 @@ export function readRoll(payload: unknown): RollPerformedV1 | undefined {
   if (dice === undefined) return undefined;
 
   return { request: { dice: specs }, dice };
+}
+
+/**
+ * What a die can be wrong about, which is very little.
+ *
+ * `index` is the die's position in the roll, because several dice of the same
+ * size in one roll are otherwise indistinguishable when reporting which one is
+ * the problem.
+ */
+export type RollFailure =
+  | {
+      /** A d10 showing 12, or showing 0. */
+      readonly kind: 'die-outside-its-range';
+      readonly index: number;
+      readonly sides: number;
+      readonly value: number;
+    }
+  | {
+      readonly kind: 'die-value-is-not-whole';
+      readonly index: number;
+      readonly value: number;
+    }
+  | {
+      /** Without a whole number of sides, one to the number of sides means nothing. */
+      readonly kind: 'die-has-impossible-sides';
+      readonly index: number;
+      readonly sides: number;
+    };
+
+/**
+ * The only check that exists on a roll: every die shows a whole number from one
+ * to the number of sides it has.
+ *
+ * A value a rule would forbid is allowed. A combination a rule would forbid is
+ * allowed. Three sixes on three dice is recorded without comment. The
+ * application computes and does not decide, and this is the single place where
+ * anything at all is refused.
+ *
+ * **Deliberately not a general mechanism.** It would be less code to hang an
+ * optional validator off `EventTypeDefinition` and let every event type bring
+ * its own, and that would create precisely the channel this project does not
+ * have: somewhere a module could express "illegal". The absence of that channel
+ * is what makes the sovereignty promise structural rather than a matter of
+ * discipline. So range checking lives here, on core's own event, reachable only
+ * for rolls.
+ *
+ * Separate from `readRoll` on purpose. Reading is permissive because an event
+ * recorded years ago is a fact whatever it contains, and refusing to read one
+ * would lose a campaign rather than protect it. This is for the moment a roll is
+ * recorded, which is the only moment a number can still be questioned.
+ *
+ * It does not check that the dice match what was asked for. Whether a roll may
+ * record dice nobody asked for is an open question in
+ * `design/rolling-dice.md`, and answering it by accident here would settle it
+ * the wrong way round.
+ */
+export function validateRoll(roll: RollPerformedV1): Result<RollPerformedV1, RollFailure> {
+  for (const [index, die] of roll.dice.entries()) {
+    if (!Number.isInteger(die.sides) || die.sides < 1) {
+      return failed({ kind: 'die-has-impossible-sides', index, sides: die.sides });
+    }
+
+    if (!Number.isInteger(die.value)) {
+      return failed({ kind: 'die-value-is-not-whole', index, value: die.value });
+    }
+
+    if (die.value < 1 || die.value > die.sides) {
+      return failed({
+        kind: 'die-outside-its-range',
+        index,
+        sides: die.sides,
+        value: die.value,
+      });
+    }
+  }
+
+  return ok(roll);
 }
