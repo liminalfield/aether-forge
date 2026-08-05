@@ -20,6 +20,9 @@ const api: AetherForgeApi = {
 
   recordEntry: (text) =>
     ipcRenderer.invoke(IPC.recordEntry, text) as Promise<IpcResult<JournalEntryView>>,
+
+  correctEntry: (entryId, text) =>
+    ipcRenderer.invoke(IPC.correctEntry, entryId, text) as Promise<IpcResult<JournalEntryView>>,
 };
 
 contextBridge.exposeInMainWorld('aetherForge', api);

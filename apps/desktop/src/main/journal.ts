@@ -1,7 +1,15 @@
-import { describeFailure, journal, type JournalEntry, type OpenCampaign } from '@aether-forge/core';
+import {
+  describeFailure,
+  ENTRY_CREATED,
+  ENTRY_REVISED,
+  journal,
+  type EntryCreatedV1,
+  type EntryRevisedV1,
+  type JournalEntry,
+  type OpenCampaign,
+} from '@aether-forge/core';
 
 import type { IpcFailure, IpcResult, JournalEntryView, JournalView } from '../shared/ipc';
-import { ENTRY_CREATED, type EntryCreatedV1 } from '@aether-forge/core';
 
 /**
  * Writing journal entries into the campaign log.
@@ -73,4 +81,55 @@ export function recordEntry(campaign: OpenCampaign, text: unknown): IpcResult<Jo
  */
 export function readJournal(campaign: OpenCampaign): IpcResult<JournalView> {
   return { ok: true, value: { entries: campaign.stateOf(journal).entries.map(toView) } };
+}
+
+/**
+ * Change what an entry says.
+ *
+ * Appends a correction superseding the entry's current version. Nothing is
+ * edited, and both events stay in the log.
+ *
+ * Which version to supersede is worked out here rather than taken from the
+ * caller, so a window holding a stale view cannot supersede something that has
+ * already been superseded.
+ */
+export function correctEntry(
+  campaign: OpenCampaign,
+  entryId: unknown,
+  text: unknown,
+): IpcResult<JournalEntryView> {
+  if (typeof entryId !== 'string' || entryId.length === 0) {
+    return asIpcFailure('invalid-request', 'a correction needs to say which entry it corrects');
+  }
+
+  if (typeof text !== 'string') {
+    return asIpcFailure('invalid-request', 'a journal entry needs text');
+  }
+
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return asIpcFailure('invalid-request', 'a journal entry cannot be empty');
+  }
+
+  const entry = campaign.stateOf(journal).entries.find((candidate) => candidate.id === entryId);
+  if (!entry) {
+    return asIpcFailure('unknown-entry', 'that entry is not in this campaign');
+  }
+
+  const appended = campaign.append<EntryRevisedV1>({
+    type: ENTRY_REVISED,
+    revises: entry.currentVersionId,
+    payload: { text: trimmed },
+  });
+
+  if (!appended.ok) {
+    return asIpcFailure(appended.failure.kind, describeFailure(appended.failure));
+  }
+
+  const corrected = campaign.stateOf(journal).entries.find((candidate) => candidate.id === entryId);
+  if (!corrected) {
+    return asIpcFailure('projection-failed', 'the correction was recorded but the entry vanished');
+  }
+
+  return { ok: true, value: toView(corrected) };
 }

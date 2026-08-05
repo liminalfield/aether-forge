@@ -18,6 +18,7 @@ export const IPC = {
   getAppVersion: 'app:getVersion',
   readJournal: 'journal:read',
   recordEntry: 'journal:recordEntry',
+  correctEntry: 'journal:correctEntry',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];
@@ -83,6 +84,18 @@ export interface AetherForgeApi {
    * asking for the whole journal again.
    */
   recordEntry(text: string): Promise<IpcResult<JournalEntryView>>;
+
+  /**
+   * Change what an entry says.
+   *
+   * Nothing is edited. A correction is appended that supersedes the entry's
+   * current version, and both stay in the log forever.
+   *
+   * Takes the entry rather than the version being superseded, so that a window
+   * holding a stale view cannot supersede the wrong thing. Which version that
+   * is gets worked out where the state actually lives.
+   */
+  correctEntry(entryId: string, text: string): Promise<IpcResult<JournalEntryView>>;
 }
 
 declare global {

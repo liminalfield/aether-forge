@@ -45,7 +45,7 @@ test('recording an entry writes it to the log', async () => {
     await page.getByRole('button', { name: 'Record it' }).click();
 
     // Shown back straight away, from the answer to its own request.
-    await expect(page.getByTestId('entry')).toHaveText(['The airlock did not open.']);
+    await expect(page.getByTestId('entry-text')).toHaveText(['The airlock did not open.']);
     await expect(page.getByLabel('What happened?')).toHaveValue('');
   } finally {
     await app.close();
@@ -82,11 +82,11 @@ test('what was written is still there after the application restarts', async () 
   const second = await launchPackagedApp(userDataDir);
   try {
     const page = await second.firstWindow();
-    await expect(page.getByTestId('entry')).toHaveText(['The airlock did not open.']);
+    await expect(page.getByTestId('entry-text')).toHaveText(['The airlock did not open.']);
 
     await page.getByLabel('What happened?').fill('It opened on the second try.');
     await page.getByRole('button', { name: 'Record it' }).click();
-    await expect(page.getByTestId('entry')).toHaveText([
+    await expect(page.getByTestId('entry-text')).toHaveText([
       'The airlock did not open.',
       'It opened on the second try.',
     ]);
@@ -158,7 +158,110 @@ test('shows what was written in the order it was written', async () => {
 
     // Oldest at the top, newest at the bottom. It should read the way it was
     // written, not in reverse.
-    await expect(page.getByTestId('entry')).toHaveText(['first', 'second', 'third']);
+    await expect(page.getByTestId('entry-text')).toHaveText(['first', 'second', 'third']);
+  } finally {
+    await app.close();
+  }
+});
+
+test('correcting an entry changes what it says, and keeps both events', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+
+    await page.getByLabel('What happened?').fill('The airlock did not open.');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    const corrected = await page.evaluate(async () => {
+      const before = await window.aetherForge.readJournal();
+      if (!before.ok) throw new Error('could not read');
+      const entry = before.value.entries[0];
+      if (!entry) throw new Error('no entry');
+      return window.aetherForge.correctEntry(entry.id, 'The airlock opened on the second try.');
+    });
+
+    expect(corrected.ok).toBe(true);
+    expect(corrected.ok && corrected.value.text).toBe('The airlock opened on the second try.');
+    expect(corrected.ok && corrected.value.corrections).toBe(1);
+
+    // Still one entry, saying the corrected thing.
+    const after = await page.evaluate(() => window.aetherForge.readJournal());
+    expect(after.ok && after.value.entries).toHaveLength(1);
+    expect(after.ok && after.value.entries[0]?.text).toBe('The airlock opened on the second try.');
+  } finally {
+    await app.close();
+  }
+});
+
+test('correcting a correction still leaves one entry', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.getByLabel('What happened?').fill('first');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    const result = await page.evaluate(async () => {
+      const read = await window.aetherForge.readJournal();
+      if (!read.ok) throw new Error('could not read');
+      const entry = read.value.entries[0];
+      if (!entry) throw new Error('no entry');
+
+      // Always the entry, never the version. The window never has to know
+      // which version it is superseding.
+      await window.aetherForge.correctEntry(entry.id, 'second');
+      await window.aetherForge.correctEntry(entry.id, 'third');
+      return window.aetherForge.readJournal();
+    });
+
+    expect(result.ok && result.value.entries).toHaveLength(1);
+    expect(result.ok && result.value.entries[0]?.text).toBe('third');
+    expect(result.ok && result.value.entries[0]?.corrections).toBe(2);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a correction survives a restart', async () => {
+  const first = await launchPackagedApp(userDataDir);
+  try {
+    const page = await first.firstWindow();
+    await page.getByLabel('What happened?').fill('as first written');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    await page.evaluate(async () => {
+      const read = await window.aetherForge.readJournal();
+      if (!read.ok) throw new Error('could not read');
+      const entry = read.value.entries[0];
+      if (!entry) throw new Error('no entry');
+      await window.aetherForge.correctEntry(entry.id, 'as corrected');
+    });
+  } finally {
+    await first.close();
+  }
+
+  const second = await launchPackagedApp(userDataDir);
+  try {
+    const page = await second.firstWindow();
+    // Rebuilt from the log, not remembered.
+    await expect(page.getByTestId('entry-text')).toHaveText(['as corrected']);
+  } finally {
+    await second.close();
+  }
+});
+
+test('refuses to correct an entry that is not in this campaign', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    const result = await page.evaluate(() =>
+      window.aetherForge.correctEntry('an-entry-from-somewhere-else', 'nonsense'),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.failure.detail).toBe('that entry is not in this campaign');
   } finally {
     await app.close();
   }
