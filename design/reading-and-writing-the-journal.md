@@ -119,15 +119,19 @@ launching it to being able to read the campaign, on the machine this was develop
 
 | Entries | Launch to readable | Asking for it | Sent to window | On disk  |
 | ------- | ------------------ | ------------- | -------------- | -------- |
-| 0       | 329 ms             | 0 ms          | 0 KB           | 32 KB    |
-| 100     | 328 ms             | 1 ms          | 24 KB          | 56 KB    |
-| 1,000   | 378 ms             | 2 ms          | 243 KB         | 344 KB   |
-| 2,500   | 693 ms             | 5 ms          | 609 KB         | 820 KB   |
-| 5,000   | 1,857 ms           | 10 ms         | 1,220 KB       | 1,600 KB |
-| 10,000  | 7,392 ms           | 16 ms         | 2,440 KB       | 3,172 KB |
+| 0       | 265 ms             | 16 ms         | 0 KB           | 32 KB    |
+| 100     | 287 ms             | 1 ms          | 24 KB          | 56 KB    |
+| 1,000   | 350 ms             | 2 ms          | 243 KB         | 344 KB   |
+| 2,500   | 698 ms             | 5 ms          | 609 KB         | 820 KB   |
+| 5,000   | 1,966 ms           | 8 ms          | 1,220 KB       | 1,600 KB |
+| 10,000  | 7,247 ms           | 19 ms         | 2,440 KB       | 3,172 KB |
+
+One run, so the times move by a few per cent between runs and the sizes do not move at all. The 16
+ms against an empty campaign is the first launch of the six paying for everything that has not been
+loaded yet, not a cost of asking for nothing.
 
 **Sending the whole journal is not the problem, and is not going to become one.** Ten thousand
-entries cross to the window in sixteen milliseconds. The worry that shaped this decision was
+entries cross to the window in under twenty milliseconds. The worry that shaped this decision was
 misplaced, which is the useful thing a measurement does.
 
 **Drawing it is the problem, and it gets worse faster than the journal grows.** Between one thousand
