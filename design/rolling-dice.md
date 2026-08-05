@@ -1,6 +1,7 @@
 # Rolling dice
 
-Status: proposed, 5 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted, 5 August 2026. Feature
+[#67](https://github.com/liminalfield/aether-forge/issues/67), not yet decomposed.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
@@ -131,9 +132,9 @@ Putting a package on the roll as well would mean two records of one fact, and th
 would be empty for every roll that is not a table lookup. The audit trail the brief is asking for
 survives intact, on the event that can actually be affected by a package changing underneath it.
 
-This is a change to a decision in `00-PROJECT-BRIEF.md` and therefore the maintainer's to make. The
-proposed replacement wording: _events that resolve a roll against a table record the content package
-id and version they used_.
+This is a change to a decision in `00-PROJECT-BRIEF.md`. It was raised, agreed on 5 August 2026, and
+the brief now reads: _events that resolve a roll against a table record the content package id and
+version they used_.
 
 ### `request.reason` is dropped
 
@@ -250,12 +251,12 @@ whether "corrected" is enough on its own.
 
 ## What this changes elsewhere
 
-**The module contract changes in two places**, and both are contract-touching. `DieValue.source`
-becomes a record. `RollRequest.reason` is removed. Neither has been implemented, so the cost is
-editing a document rather than migrating anything.
+**The module contract changed in two places**, both contract-touching, in the change that accepted
+this record. `DieValue.source` became a record. `RollRequest.reason` was removed. Neither had been
+implemented, so the cost was editing a document rather than migrating anything.
 
-**The brief needs one amendment**, on roll events and content packages, described above. Nothing
-else here contradicts it.
+**The brief was amended**, on roll events and content packages, described above. Nothing else here
+contradicts it.
 
 **Core gains the roll event family and the oracle consultation event**, declared the way the journal
 events are declared, with their translations from version 1 and a round-trip test.

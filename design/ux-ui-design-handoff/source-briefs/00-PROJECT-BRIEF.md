@@ -40,10 +40,8 @@ The app computes everything and decides nothing.
   events. The log records both what was suggested and what the player chose.
 - No legality enforcement. Range validation only (a d10 can't show 12).
 - **Physical dice are first-class**: every roll surface accepts typed-in die results. Roll events
-  record provenance per die as a record naming where the number came from: `digital`, `manual`, or a
-  named service, which carries that service's own identifiers. Everything downstream is identical
-  regardless of source. Per-campaign default, per-roll override. Applies to oracle d100 rolls too.
-  See `design/rolling-dice.md`.
+  record provenance per die: `digital` | `manual`. Everything downstream is identical regardless of
+  source. Per-campaign default, per-roll override. Applies to oracle d100 rolls too.
 
 ## Core architectural commitments
 
@@ -95,10 +93,8 @@ core must run against both Ironsworn and the toy module in tests, permanently.
   extraction/import tool. Imported data lands in the app data dir as installed packages — never
   referenced in place, never committed to the repo. CI guard fails if content-pattern data lands in
   a commit. Test fixtures use obviously-dummy data.
-- Events that resolve a roll against a table record the content package id + version they used
-  (audit trail; users may update packages mid-campaign). A roll of dice records no package: dice are
-  dice, and only the resolution into a row can be affected by a package changing underneath it. See
-  `design/rolling-dice.md`.
+- Roll events record the content package id + version they rolled against (audit trail; users may
+  update packages mid-campaign).
 
 ### 5. Local-first desktop
 
