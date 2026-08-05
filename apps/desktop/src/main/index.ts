@@ -14,7 +14,7 @@ import { IPC } from '../shared/ipc';
 import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
-import { countEvents, readJournal, recordEntry } from './journal';
+import { readJournal, recordEntry } from './journal';
 import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
@@ -65,7 +65,6 @@ function registerIpcHandlers(campaign: OpenCampaign): void {
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
   ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(campaign, text));
-  ipcMain.handle(IPC.countEvents, () => countEvents(campaign));
 }
 
 void app.whenReady().then(() => {

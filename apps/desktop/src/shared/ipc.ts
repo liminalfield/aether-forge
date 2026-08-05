@@ -18,7 +18,6 @@ export const IPC = {
   getAppVersion: 'app:getVersion',
   readJournal: 'journal:read',
   recordEntry: 'journal:recordEntry',
-  countEvents: 'log:countEvents',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];
@@ -45,11 +44,6 @@ export interface IpcFailure {
 export type IpcResult<Value> =
   | { readonly ok: true; readonly value: Value }
   | { readonly ok: false; readonly failure: IpcFailure };
-
-/** What was recorded, as far as the window needs to know. */
-export interface RecordedEntry {
-  readonly seq: number;
-}
 
 /**
  * One entry, as the window needs it.
@@ -82,11 +76,13 @@ export interface AetherForgeApi {
   /** Every entry in the campaign, oldest first. */
   readJournal(): Promise<IpcResult<JournalView>>;
 
-  /** Write a journal entry into the campaign log. */
-  recordEntry(text: string): Promise<IpcResult<RecordedEntry>>;
-
-  /** How many events this campaign has recorded. */
-  countEvents(): Promise<IpcResult<number>>;
+  /**
+   * Write a journal entry into the campaign log.
+   *
+   * Answers with the entry as recorded, so the window can show it without
+   * asking for the whole journal again.
+   */
+  recordEntry(text: string): Promise<IpcResult<JournalEntryView>>;
 }
 
 declare global {

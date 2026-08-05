@@ -5,7 +5,7 @@ import {
   type AetherForgeApi,
   type IpcResult,
   type JournalView,
-  type RecordedEntry,
+  type JournalEntryView,
 } from '../shared/ipc';
 
 /**
@@ -19,9 +19,7 @@ const api: AetherForgeApi = {
   readJournal: () => ipcRenderer.invoke(IPC.readJournal) as Promise<IpcResult<JournalView>>,
 
   recordEntry: (text) =>
-    ipcRenderer.invoke(IPC.recordEntry, text) as Promise<IpcResult<RecordedEntry>>,
-
-  countEvents: () => ipcRenderer.invoke(IPC.countEvents) as Promise<IpcResult<number>>,
+    ipcRenderer.invoke(IPC.recordEntry, text) as Promise<IpcResult<JournalEntryView>>,
 };
 
 contextBridge.exposeInMainWorld('aetherForge', api);
