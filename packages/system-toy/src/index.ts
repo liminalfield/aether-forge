@@ -9,8 +9,12 @@
 
 import {
   CORE_CONTRACT_VERSION,
+  readRoll,
+  ROLL_PERFORMED,
+  type DieSpec,
   type EventTypeDefinition,
   type ModuleProjection,
+  type RollPerformedV1,
   type SystemId,
 } from '@aether-forge/core';
 
@@ -19,8 +23,13 @@ export const TOY_SYSTEM_ID: SystemId = 'toy-coinflip';
 /** The contract version this module was written against. */
 export const COMPATIBLE_CORE_CONTRACT_VERSION = CORE_CONTRACT_VERSION;
 
-/** A coin is a two-sided die. */
-export const COIN = { sides: 2, count: 1 } as const;
+/**
+ * A coin is a two-sided die.
+ *
+ * The label is this module's own word for it. Core stores it and never reads
+ * it, and it is how a coin flip is told apart from any other two-sided roll.
+ */
+export const COIN: DieSpec = { sides: 2, count: 1, label: 'coin' };
 
 /** The one event this module owns. */
 export const COIN_FLIPPED = 'sys.toy-coinflip.coin.flipped';
@@ -72,3 +81,67 @@ export const coinTally: ModuleProjection<CoinTally> = {
 export const eventTypes: readonly EventTypeDefinition[] = [
   { type: COIN_FLIPPED, currentVersion: 1, translations: [], corrections: 'records-a-change' },
 ];
+
+/**
+ * A coin flip with no module event at all.
+ *
+ * The module contract's stress test claims this system needs zero events of its
+ * own, because a coin flip is a `core.roll.performed` with a two-sided die.
+ * Everything below exists to hold that claim to account. It is the cheapest
+ * possible check that the roll event is not secretly shaped around Ironsworn.
+ *
+ * The module event above is kept, because it is what exercises the paths a
+ * module event goes through: isolation from other modules, translation on read,
+ * and a projection over data core cannot see inside. The two are different
+ * canaries and both are worth having.
+ */
+
+/** Which way a coin fell. Heads is the low face, the way a printed die reads. */
+export function readCoinFlip(roll: RollPerformedV1): 'heads' | 'tails' | undefined {
+  const asked = roll.request.dice;
+  if (asked.length !== 1 || asked[0]?.label !== COIN.label) return undefined;
+
+  const die = roll.dice[0];
+  if (roll.dice.length !== 1 || die === undefined || die.sides !== 2) return undefined;
+
+  if (die.value === 1) return 'heads';
+  if (die.value === 2) return 'tails';
+  return undefined;
+}
+
+/**
+ * How the coin has fallen, worked out from core rolls alone.
+ *
+ * Reads `core.roll.performed` and nothing else. No event of this module's own
+ * takes part, which is the whole point.
+ *
+ * **A limitation worth knowing about.** A module projection is shown every core
+ * event, so this sees every roll in the campaign, including rolls that have
+ * nothing to do with this system. All it can do is recognise its own by the
+ * shape it asked for: one two-sided die labelled `coin`. Nothing stops another
+ * module asking for exactly that. The contract offers no way to scope a core
+ * roll to the system that caused it, and a system with no events of its own has
+ * nothing else to go on. See the note in `02-MODULE-CONTRACT.md`.
+ */
+export const coinRolls: ModuleProjection<CoinTally> = {
+  id: 'sys.toy-coinflip.rolls',
+  systemId: TOY_SYSTEM_ID,
+
+  initial: () => ({ flips: 0, heads: 0, tails: 0 }),
+
+  apply: (state, event) => {
+    if (event.type !== ROLL_PERFORMED) return state;
+
+    const roll = readRoll(event.payload);
+    if (roll === undefined) return state;
+
+    const fell = readCoinFlip(roll);
+    if (fell === undefined) return state;
+
+    return {
+      flips: state.flips + 1,
+      heads: state.heads + (fell === 'heads' ? 1 : 0),
+      tails: state.tails + (fell === 'tails' ? 1 : 0),
+    };
+  },
+};
