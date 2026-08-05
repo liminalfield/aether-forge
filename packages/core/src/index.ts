@@ -111,9 +111,11 @@ export type {
   DieSource,
   DieSpec,
   DieValue,
+  RollContext,
   RollFailure,
   RollPerformedV1,
   RollRequest,
+  RollSupersession,
 } from './roll.js';
 export { readRoll, ROLL_PERFORMED, rollEventTypes, validateRoll } from './roll.js';
 

@@ -97,6 +97,15 @@ export function describeFailure(failure: CoreFailure): string {
     case 'die-has-impossible-sides':
       return `a die cannot have ${failure.sides} sides`;
 
+    case 'replacement-does-not-say-why':
+      return (
+        'this roll replaces an earlier one without saying whether it was corrected ' +
+        'or rerolled. A history that cannot tell those apart is not a record.'
+      );
+
+    case 'says-why-but-replaces-nothing':
+      return 'this roll says why it replaced a roll, and replaces none';
+
     default: {
       const unhandled: never = failure;
       return String(unhandled);

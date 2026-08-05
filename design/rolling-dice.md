@@ -177,9 +177,19 @@ lucky or whether someone kept fixing typos.
 So the payload of a superseding roll carries why:
 
 ```json
-"supersedes": { "roll": "01K9QF3W7ZR8XN2VC4MTBD6H1A", "because": "corrected" }
-"supersedes": { "roll": "01K9QF3W7ZR8XN2VC4MTBD6H1A", "because": "rerolled" }
+"supersedes": { "because": "corrected" }
+"supersedes": { "because": "rerolled" }
 ```
+
+> **Corrected while building it, 5 August 2026 (#72).** As first written, the example above also
+> carried `"roll": "01K9QF3W7ZR8XN2VC4MTBD6H1A"`, naming the roll being replaced. That duplicates
+> the event's own `revises`, which is the same mistake this record rejects `request.reason` for two
+> sections above: two records of one fact eventually disagree. The identifier is gone and only the
+> reason is in the payload.
+>
+> Two halves of one fact now have to agree when a roll is recorded. An event that replaces a roll
+> without a reason, and a reason on an event that replaces nothing, are both refused. That is not a
+> rule about dice and not legality; it is an event that nobody could read back correctly.
 
 The alternative considered was to infer it: a reroll is granted by something, so the new roll would
 have a `causation_id` pointing at a module event, and a correction would not. It was rejected. It

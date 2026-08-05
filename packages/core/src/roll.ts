@@ -19,6 +19,7 @@
  * See `design/rolling-dice.md`.
  */
 
+import type { EventId } from './identifiers.js';
 import { failed, ok, type Result } from './result.js';
 import type { EventTypeDefinition } from './schema.js';
 
@@ -70,16 +71,42 @@ export interface RollRequest {
 }
 
 /**
+ * Why a roll replaced an earlier one.
+ *
+ * `corrected` means the first roll never happened: you typed 4 and the die on
+ * the table says 7. A mistake in recording, not in the fiction.
+ *
+ * `rerolled` means it did happen, it mattered, and a rule replaced it.
+ *
+ * A projection cannot tell them apart and does not need to, because the newest
+ * version wins either way. A person reading their own campaign back cares, and
+ * so does the promise that the log is an honest record. Without this, a history
+ * of six rolls cannot say whether someone got lucky or kept fixing typos.
+ *
+ * A record rather than a bare word so that the open question in the design
+ * record, whether a correction should also say what was wrong, has somewhere to
+ * land without changing this shape.
+ */
+export interface RollSupersession {
+  readonly because: 'corrected' | 'rerolled';
+}
+
+/**
  * Version 1 of a roll.
  *
  * Keeping the request as well as the result is what makes the event still
  * legible years later, after the module that asked for it has been rewritten or
  * replaced. Without it, a roll of three dice is three numbers with no way to
  * tell what they were for or whether one is missing.
+ *
+ * A roll that replaces an earlier one carries the whole new set of dice and says
+ * why. It does not repeat which roll it replaces: the event's own `revises`
+ * already says that, and two records of one fact eventually disagree.
  */
 export interface RollPerformedV1 {
   readonly request: RollRequest;
   readonly dice: readonly DieValue[];
+  readonly supersedes?: RollSupersession;
 }
 
 export const rollEventTypes: readonly EventTypeDefinition[] = [
@@ -168,7 +195,13 @@ export function readRoll(payload: unknown): RollPerformedV1 | undefined {
   const dice = readEach(payload['dice'], readValue);
   if (dice === undefined) return undefined;
 
-  return { request: { dice: specs }, dice };
+  const supersedes = payload['supersedes'];
+  if (supersedes === undefined) return { request: { dice: specs }, dice };
+
+  const because = isRecord(supersedes) ? supersedes['because'] : undefined;
+  if (because !== 'corrected' && because !== 'rerolled') return undefined;
+
+  return { request: { dice: specs }, dice, supersedes: { because } };
 }
 
 /**
@@ -196,7 +229,21 @@ export type RollFailure =
       readonly kind: 'die-has-impossible-sides';
       readonly index: number;
       readonly sides: number;
+    }
+  | {
+      /** It replaces an earlier roll without saying whether that was a correction. */
+      readonly kind: 'replacement-does-not-say-why';
+    }
+  | {
+      /** It says why it replaced a roll, and replaces none. */
+      readonly kind: 'says-why-but-replaces-nothing';
     };
+
+/** What the event around a roll says, which `validateRoll` cannot see for itself. */
+export interface RollContext {
+  /** The roll this one replaces, from the event's `revises`. */
+  readonly supersedes?: EventId;
+}
 
 /**
  * The only check that exists on a roll: every die shows a whole number from one
@@ -225,7 +272,21 @@ export type RollFailure =
  * `design/rolling-dice.md`, and answering it by accident here would settle it
  * the wrong way round.
  */
-export function validateRoll(roll: RollPerformedV1): Result<RollPerformedV1, RollFailure> {
+export function validateRoll(
+  roll: RollPerformedV1,
+  context: RollContext = {},
+): Result<RollPerformedV1, RollFailure> {
+  // Not a rule about dice, and not legality. It is the two halves of one fact
+  // agreeing: an event that replaces a roll and a payload that says why. Either
+  // one alone is an event nobody can read back correctly.
+  const replacesSomething = context.supersedes !== undefined;
+  if (replacesSomething && roll.supersedes === undefined) {
+    return failed({ kind: 'replacement-does-not-say-why' });
+  }
+  if (!replacesSomething && roll.supersedes !== undefined) {
+    return failed({ kind: 'says-why-but-replaces-nothing' });
+  }
+
   for (const [index, die] of roll.dice.entries()) {
     if (!Number.isInteger(die.sides) || die.sides < 1) {
       return failed({ kind: 'die-has-impossible-sides', index, sides: die.sides });
