@@ -90,3 +90,53 @@ test('what was written is still there after the application restarts', async () 
     await second.close();
   }
 });
+
+test('the window can ask for the journal and gets what it wrote', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+
+    await page.getByLabel('What happened?').fill('The airlock did not open.');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('event-count')).toHaveText('1 events recorded');
+
+    // Asked over the contract, from the window, in the packaged application.
+    // Nothing draws it yet; that is the next task.
+    const journal = await page.evaluate(() => window.aetherForge.readJournal());
+
+    expect(journal.ok).toBe(true);
+    expect(journal.ok && journal.value.entries).toHaveLength(1);
+    expect(journal.ok && journal.value.entries[0]?.text).toBe('The airlock did not open.');
+    expect(journal.ok && journal.value.entries[0]?.corrections).toBe(0);
+    // What a correction of this entry would supersede.
+    expect(journal.ok && journal.value.entries[0]?.currentVersionId).toBe(
+      journal.ok ? journal.value.entries[0]?.id : undefined,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('the journal is still there after the application restarts', async () => {
+  const first = await launchPackagedApp(userDataDir);
+  try {
+    const page = await first.firstWindow();
+    await page.getByLabel('What happened?').fill('Written before the restart.');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('event-count')).toHaveText('1 events recorded');
+  } finally {
+    await first.close();
+  }
+
+  const second = await launchPackagedApp(userDataDir);
+  try {
+    const page = await second.firstWindow();
+    const journal = await page.evaluate(() => window.aetherForge.readJournal());
+
+    expect(journal.ok && journal.value.entries.map((entry) => entry.text)).toEqual([
+      'Written before the restart.',
+    ]);
+  } finally {
+    await second.close();
+  }
+});

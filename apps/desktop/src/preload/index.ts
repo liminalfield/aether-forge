@@ -1,6 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { IPC, type AetherForgeApi, type IpcResult, type RecordedEntry } from '../shared/ipc';
+import {
+  IPC,
+  type AetherForgeApi,
+  type IpcResult,
+  type JournalView,
+  type RecordedEntry,
+} from '../shared/ipc';
 
 /**
  * Runs sandboxed with context isolation on. It may use Electron's renderer-side
@@ -9,6 +15,8 @@ import { IPC, type AetherForgeApi, type IpcResult, type RecordedEntry } from '..
  */
 const api: AetherForgeApi = {
   getAppVersion: () => ipcRenderer.invoke(IPC.getAppVersion) as Promise<string>,
+
+  readJournal: () => ipcRenderer.invoke(IPC.readJournal) as Promise<IpcResult<JournalView>>,
 
   recordEntry: (text) =>
     ipcRenderer.invoke(IPC.recordEntry, text) as Promise<IpcResult<RecordedEntry>>,
