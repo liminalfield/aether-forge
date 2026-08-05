@@ -6,7 +6,7 @@ import type {
   TranslatingLog,
 } from '@aether-forge/core';
 import { momentum } from '@aether-forge/system-ironsworn';
-import { coinTally } from '@aether-forge/system-toy';
+import { coinRolls, coinTally } from '@aether-forge/system-toy';
 import { describe, expect, it } from 'vitest';
 
 import { ENTRY_CREATED } from '@aether-forge/core';
@@ -48,6 +48,7 @@ function playTheSession(): OpenCampaign {
     projections: [journalSummary as Projection<unknown>],
     moduleProjections: [
       coinTally as ModuleProjection<unknown>,
+      coinRolls as ModuleProjection<unknown>,
       momentum as ModuleProjection<unknown>,
     ],
   });
@@ -77,10 +78,14 @@ describe('a recorded session', () => {
     const campaign = playTheSession();
 
     expect(campaign.stateOf(journalSummary)).toEqual({
-      entries: 18,
+      entries: 19,
       latest: 'End of session.',
     });
     expect(campaign.moduleStateOf(coinTally)).toEqual({ flips: 8, heads: 5, tails: 3 });
+
+    // The same module, counting the same thing, reached through core rolls with
+    // no event of its own taking part.
+    expect(campaign.moduleStateOf(coinRolls)).toEqual({ flips: 2, heads: 1, tails: 1 });
     expect(campaign.moduleStateOf(momentum)).toEqual({
       current: 4,
       highest: 7,
@@ -95,6 +100,7 @@ describe('a recorded session', () => {
 
     expect(again.stateOf(journalSummary)).toEqual(once.stateOf(journalSummary));
     expect(again.moduleStateOf(coinTally)).toEqual(once.moduleStateOf(coinTally));
+    expect(again.moduleStateOf(coinRolls)).toEqual(once.moduleStateOf(coinRolls));
     expect(again.moduleStateOf(momentum)).toEqual(once.moduleStateOf(momentum));
   });
 
@@ -111,5 +117,12 @@ describe('a recorded session', () => {
     // the same session, which is what a reader of the log would expect.
     expect(campaign.moduleStateOf(coinTally).flips).toBe(8);
     expect(campaign.moduleStateOf(momentum).changes).toBe(9);
+  });
+
+  it('counts a coin flipped as a plain roll, with no event of the module own', () => {
+    // The module contract's stress test says this system needs zero events of
+    // its own. Here it is, in a session that also contains a hundred-sided die
+    // and another module's events, neither of which it counts.
+    expect(playTheSession().moduleStateOf(coinRolls)).toEqual({ flips: 2, heads: 1, tails: 1 });
   });
 });

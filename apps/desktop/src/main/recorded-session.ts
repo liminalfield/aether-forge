@@ -1,8 +1,8 @@
 import type { UnversionedEventDraft } from '@aether-forge/core';
 import { MOMENTUM_CHANGED, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
-import { COIN_FLIPPED, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
+import { COIN, COIN_FLIPPED, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 
-import { ENTRY_CREATED } from '@aether-forge/core';
+import { ENTRY_CREATED, ORACLE_CONSULTED, ROLL_PERFORMED } from '@aether-forge/core';
 
 /**
  * A session, written down as it would have happened.
@@ -16,10 +16,12 @@ import { ENTRY_CREATED } from '@aether-forge/core';
  * neither module should react to, because a module quietly reacting to another
  * module's events is exactly the fault that would otherwise go unnoticed.
  *
- * **Not yet covered: rolls and suggestions.** Those event families have no
- * declared shape yet, and inventing one to make a fixture look complete would
- * commit the project to a permanent shape for the sake of a test. They join
- * this fixture when they are designed.
+ * Rolls joined it once they had a declared shape, including a coin flipped as a
+ * plain core roll with no module event behind it, and an oracle consulted from
+ * a die typed in by hand. Suggestions are still missing, for the same reason
+ * rolls were: that family has no declared shape yet, and inventing one to make
+ * a fixture look complete would commit the project to a permanent shape for the
+ * sake of a test.
  */
 
 const entry = (text: string): UnversionedEventDraft => ({ type: ENTRY_CREATED, payload: { text } });
@@ -34,6 +36,37 @@ const momentum = (by: number, reason: string): UnversionedEventDraft => ({
   type: MOMENTUM_CHANGED,
   systemId: STARFORGED_SYSTEM_ID,
   payload: { by, reason },
+});
+
+/**
+ * A coin flipped as a core roll and nothing else, which is the toy module's
+ * claim that a system can need no events of its own.
+ */
+const coin = (value: 1 | 2): UnversionedEventDraft => ({
+  type: ROLL_PERFORMED,
+  payload: {
+    request: { dice: [COIN] },
+    dice: [{ sides: 2, value, source: { kind: 'digital' } }],
+  },
+});
+
+/** A die typed in by hand, and the row it landed on. Two events, not one. */
+const byHand = (sides: number, value: number): UnversionedEventDraft => ({
+  type: ROLL_PERFORMED,
+  payload: {
+    request: { dice: [{ sides, count: 1 }] },
+    dice: [{ sides, value, source: { kind: 'manual' } }],
+  },
+});
+
+/** Obviously-dummy content. Nothing here comes from a published table. */
+const consulted = (from: number, to: number, text: string): UnversionedEventDraft => ({
+  type: ORACLE_CONSULTED,
+  payload: {
+    table: 'example.dummy-tables/what-the-silence-holds',
+    package: { id: 'example.dummy-tables', version: '0.4.1' },
+    row: { from, to, text },
+  },
 });
 
 export const RECORDED_SESSION: readonly UnversionedEventDraft[] = [
@@ -71,5 +104,10 @@ export const RECORDED_SESSION: readonly UnversionedEventDraft[] = [
   flip('tails'),
   momentum(1, 'a plan, of a sort'),
   entry('I will find out which.'),
+  coin(1),
+  byHand(100, 47),
+  consulted(41, 60, 'Someone has been here more recently than the dust suggests.'),
+  entry('The dust is wrong. Someone swept it.'),
+  coin(2),
   entry('End of session.'),
 ];

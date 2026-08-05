@@ -170,6 +170,21 @@ without core changes. (D) three dice from a dddice room and one typed in after i
 = four `DieValue`s, three with `kind: 'service'` — fits, which is the case the old shape could not
 have held. Pass.
 
+**Open, found by the canary (5 August 2026, #75).** Stress test (B) says the toy needs zero module
+events, and it is true: `packages/system-toy` flips a coin as a `core.roll.performed` with a
+two-sided die and works out its tally from core rolls alone. What that exposed is that a module
+projection is shown every core event, and a core roll says nothing about which system caused it. A
+system with no events of its own can recognise its own rolls only by the shape it asked for, by
+convention, and nothing stops another module asking for exactly the same shape. There is a test in
+the toy asserting this happens rather than pretending it does not.
+
+Whether that matters is undecided. It only bites when two systems are active in one campaign and
+both roll the same dice with the same label, which no product feature currently allows. The options
+if it ever does bite are to scope a roll to a system, which puts a module concept on a core event, or
+to accept that a system wanting its rolls kept separate needs an event of its own. Neither is worth
+choosing now, and it is written down so the next person meets it as a known limit rather than a
+surprise.
+
 ## 6. Checks — structural move/action definitions (assisted-but-sovereign)
 
 ```ts
