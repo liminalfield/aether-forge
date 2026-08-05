@@ -87,34 +87,59 @@ The cost is that a value is no longer visible to TypeScript. A component asking 
 both the CSS and the type from that list keeps the typo caught, and the list is small enough that
 this is cheap.
 
-### A theme is data, and it validates when drawn rather than when saved
+### A theme is data, and nothing about it is corrected
 
 A theme is a small JSON document. It can be exported, shared and imported, which is the same
 distribution model as content packages.
 
-Two rules exist on the fourteen slots. Ink is contrast-checked against ground: primary at 7:1,
-secondary and muted at 4.5:1. And accent and pressure must differ by at least sixty degrees of hue,
-because accent means the player's own progress and pressure means the world closing in, and a
-campaign where those two read as the same colour is unreadable at a glance.
+The application computes two things about it and shows them to whoever is authoring it. How each ink
+slot contrasts against the ground it sits on, and how far apart accent and pressure are in hue.
+Those are worth knowing: accent means the player's own progress and pressure means the world closing
+in, and a campaign where they read as the same colour is hard to follow at a glance.
 
-**A theme that fails either rule still saves.** The application corrects the value when it draws,
-and says so in the editor.
+**Then it draws exactly what it was given.** No correction, no clamping, no substituted value.
 
-That is the sovereignty rule, in a place nobody would have thought to look for it. The application
-computes and does not decide. Refusing to save someone's theme because the contrast is poor is the
-same category of mistake as refusing to record a roll because the rules forbid it, and once one
-surface starts blocking, the argument for the next one gets easier.
+> **Changed at review, 5 August 2026.** As first written, this said a failing theme still saves and
+> the application corrects the value when it draws. The maintainer pushed back on the gatekeeping
+> and was right. The rest of this section is the argument that replaced it.
 
-### The one colour that is not the user's
+Saving a theme and then drawing a different one is not respecting a choice. It moves the refusal
+somewhere the person cannot see, which is worse than refusing honestly, because they have no way to
+tell that what they asked for is not what they got.
 
-`outcome.match` stays violet and cannot be changed.
+The comparison with dice is what settles it. Range validation exists because a d10 showing 12 is not
+a die result at all; no such face exists. Every hex value is a real colour. Low contrast is not an
+impossible state, it is a state someone might want, and there is no version of "a d10 cannot show
+12" that applies to it. So there is no check.
 
-A match is the single most story-productive event in the system and the one signal that must never
-be mistaken for another. Everything else in the outcome group is editable.
+There is also a practical reason not to correct, which is that correcting is very hard to undo. Once
+the application quietly adjusts colours, people author themes against the adjusted output rather
+than against what they typed. Removing the correction later changes how every one of those themes
+looks, through no action of the person who made it. A rule that can only be added, never removed,
+deserves more certainty than this one has.
 
-Every outcome also carries a glyph as well as a hue: strong `▲`, weak `◐`, miss `▼`, match `✦`. A
-colourblind reader, or a reader with a badly chosen palette, still reads the screen. Colour is never
-the only carrier of meaning, and this is where that gets decided once rather than argued per screen.
+The one thing that is refused is a value that is not a colour, because it cannot be drawn at all.
+That is the whole of the validation.
+
+### The outcome glyphs are not decoration
+
+Every outcome carries a glyph as well as a hue: strong `▲`, weak `◐`, miss `▼`, match `✦`. Colour is
+never the only carrier of meaning, so a colourblind reader, or a reader who has chosen a palette
+nobody else would, still reads the screen.
+
+That is decided once here rather than argued per screen, and it is what makes the section above
+affordable. If colour were the only signal, an unreadable palette would make the application
+unusable and the pressure to correct it would be real. With a glyph beside every outcome, a palette
+is a preference rather than a failure.
+
+The handoff locks `outcome.match` to violet and makes it the one slot a person cannot change, on the
+grounds that a match is the single most story-productive event in the system and must never be
+mistaken for another. **This record proposes unlocking it**, for the same reason the contrast rule
+went: it is the same gatekeeping in a smaller place, the glyph already carries the meaning, and a
+locked slot in an otherwise open contract is the kind of exception that gets copied.
+
+Left as a proposal rather than a decision, because it is a change to what the handoff decided and
+the maintainer may prefer to keep one thing fixed.
 
 ### What a person authoring a theme cannot change
 
@@ -290,6 +315,10 @@ be expected to fire during this work rather than treated as a surprise when it d
 **If a theme turns out to need a component built differently**, then a theme is not a palette, the
 central claim here is false, and the slot contract needs rethinking before people have authored
 themes against it.
+
+**If people author unreadable themes and then report the application as broken**, then showing a
+contrast figure was not enough information, and what is missing is a better way to say it rather
+than a rule that overrides them.
 
 **If custom properties make components hard to test**, because a component's appearance now lives
 outside the component, then the trade bought theming at the cost of the thing that keeps a component
