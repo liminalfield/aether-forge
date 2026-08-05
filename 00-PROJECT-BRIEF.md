@@ -117,8 +117,26 @@ core must run against both Ironsworn and the toy module in tests, permanently.
 - Maps (wave 2): SVG-first behind a renderer interface; PixiJS only if profiling demands.
 - Tests: Vitest everywhere; Playwright Electron smoke tests (launch → create campaign → roll →
   verify journal event) in the packaging pipeline.
-- Design system from day one: design tokens + component layer (Radix primitives acceptable base).
-  Modules contribute theme tokens (Starforged = dark sci-fi; classic = iron-age austerity).
+- Design system from day one: design tokens as CSS custom properties, plus a component layer.
+  A value baked into a rendered style cannot be reached by a theme loaded at runtime, which is why
+  the tokens are properties rather than JavaScript values.
+- **A theme is fourteen colour slots and nothing else.** Not fonts, sizes, spacing, or the shapes of
+  tracks and clocks. This interface is dense with chrome and those are load-bearing in a way they are
+  not around a blank page; a square tally box and a round clock are how the player's progress is told
+  from the world's without reading a label. Themes are JSON, exportable and shareable. Four ship
+  built in (Starforged = glacial dark, Ironsworn = ember warm), each with a light variant, and light
+  is not dark inverted.
+- **Nothing about a theme is corrected.** Contrast and hue separation are computed and shown to
+  whoever is authoring it, never altered. The only value refused is one that is not a colour. Drawing
+  something other than what a person asked for moves the refusal where they cannot see it.
+- **Preferences are not themes.** Turning animation off, and choosing the journal's typeface, are
+  personal and stored with the application, so they never travel attached to a palette someone
+  shared. The journal's typeface is the one exception to colours-only, and it covers the writing
+  surface, never the chrome around it.
+- `packages/ui` takes React as a peer dependency, so the application supplies the single copy.
+  Literata, Archivo and IBM Plex Mono are bundled rather than fetched, because the application is
+  offline-first and the renderer's content security policy forbids another origin. Their attribution
+  belongs in `LICENSES.md`. See `design/themes-and-components.md`.
 
 ## Monorepo layout
 
