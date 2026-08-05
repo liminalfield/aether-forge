@@ -52,7 +52,7 @@ Here is a theme, in full:
 }
 ```
 
-Fourteen slots in four groups, and that is the whole surface a person authoring a theme touches. A
+Fifteen slots in four groups, and that is the whole surface a person authoring a theme touches. A
 component never names a colour; it names a slot:
 
 ```css
@@ -63,7 +63,7 @@ component never names a colour; it names a slot:
 }
 ```
 
-Switching theme sets fourteen custom properties on the root element. Nothing re-renders, nothing is
+Switching theme sets fifteen custom properties on the root element. Nothing re-renders, nothing is
 rebuilt, and no component knows it happened.
 
 ## Decisions
@@ -138,12 +138,17 @@ mistaken for another. **It is unlocked here**, for the same reason the contrast 
 same gatekeeping in a smaller place, the glyph already carries the meaning, and a locked slot in an
 otherwise open contract is the kind of exception that gets copied.
 
-Agreed 5 August 2026. All fourteen slots belong to whoever is authoring the theme, with no
+Agreed 5 August 2026. All fifteen slots belong to whoever is authoring the theme, with no
 exceptions.
+
+> **Counted while building it, 5 August 2026 (#86).** This record said fourteen slots throughout,
+> taking the number from the handoff. The handoff counted fourteen _editable_ slots and treated the
+> match colour as a locked sixteenth thing rather than a slot. Unlocking it makes the count fifteen:
+> five ground, four ink, two accent, four outcome. Corrected everywhere it appeared.
 
 ### A theme is colours, and nothing else
 
-Fourteen colour slots. Not fonts, not sizes, not spacing, not the shapes of tracks and clocks.
+Fifteen colour slots. Not fonts, not sizes, not spacing, not the shapes of tracks and clocks.
 
 The reasoning is specific rather than a principle, and it is worth keeping because it is the sort of
 thing that gets forgotten and relitigated. Nocturne Writer could offer a broadly configurable
@@ -309,7 +314,7 @@ _What would settle it:_ designing them, before the first surface needs one rathe
 journal already has one, showing "Nothing written yet", and it was written without any of this in
 mind.
 
-**Are fourteen slots the right number?**
+**Are fifteen slots the right number?**
 
 It is enough for the four built-in themes, which is real evidence, and the ember variant rotating
 eleven values with no component changes is a genuine test of it.
