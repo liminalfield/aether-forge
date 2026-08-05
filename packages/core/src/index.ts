@@ -107,8 +107,15 @@ export {
 export type { EntryCreatedV1, EntryRevisedV1, Journal, JournalEntry } from './journal.js';
 export { ENTRY_CREATED, ENTRY_REVISED, journal, journalEventTypes } from './journal.js';
 
-export type { DieSource, DieSpec, DieValue, RollPerformedV1, RollRequest } from './roll.js';
-export { readRoll, ROLL_PERFORMED, rollEventTypes } from './roll.js';
+export type {
+  DieSource,
+  DieSpec,
+  DieValue,
+  RollFailure,
+  RollPerformedV1,
+  RollRequest,
+} from './roll.js';
+export { readRoll, ROLL_PERFORMED, rollEventTypes, validateRoll } from './roll.js';
 
 export type { ModuleProjection, ProjectionContext } from './module-projection.js';
 export { isVisibleToModule } from './module-projection.js';
