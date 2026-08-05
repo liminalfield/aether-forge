@@ -110,6 +110,16 @@ export interface EventSchemas {
   /** Whether this type has been declared. */
   knows(type: EventType): boolean;
 
+  /**
+   * Every type declared so far, in the order they were declared.
+   *
+   * Here so that a check can ask what a build knows rather than being handed a
+   * list and trusting it. Without that, a test covering "every event type" can
+   * only cover the ones it was told about, which is how a newly declared type
+   * ends up with no coverage and nothing saying so.
+   */
+  declaredTypes(): readonly EventType[];
+
   /** The version new events of this type are written at. */
   currentVersion(type: EventType): Result<number, SchemaFailure>;
 
@@ -183,6 +193,10 @@ export function createEventSchemas(): EventSchemas {
 
     knows(type: EventType): boolean {
       return declared.has(type);
+    },
+
+    declaredTypes(): readonly EventType[] {
+      return [...declared.keys()];
     },
 
     currentVersion(type: EventType): Result<number, SchemaFailure> {

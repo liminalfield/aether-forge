@@ -36,11 +36,21 @@ export function describeSchemaTranslations(
 ): void {
   describe(`${name} can still read every version it has ever written`, () => {
     it('has a sample for every declared type', () => {
-      // Without this, adding an event type and forgetting a sample would make
-      // the rest of these checks quietly cover less than they appear to.
+      // Both directions, and the second one is the point. Checking only that
+      // every sample is declared leaves the case this was written to prevent:
+      // declaring a type and forgetting its sample, so that everything below
+      // covers less than it appears to and nothing says so. That is exactly
+      // what happened when core.roll.performed was declared.
       for (const sample of samples) {
         expect(schemas().knows(sample.type), `${sample.type} is not declared`).toBe(true);
       }
+
+      const sampled = new Set(samples.map((sample) => sample.type));
+      const unsampled = schemas()
+        .declaredTypes()
+        .filter((type) => !sampled.has(type));
+
+      expect(unsampled, `declared with no sample payload: ${unsampled.join(', ')}`).toEqual([]);
       expect(samples.length).toBeGreaterThan(0);
     });
 
