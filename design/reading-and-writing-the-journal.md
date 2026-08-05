@@ -68,8 +68,7 @@ The accepted event log record left this open on purpose and said it should be se
 rather than guessing. This is the simple end of that: whole thing once, then small updates. It
 avoids re-sending everything on every keystroke without needing a way to work out differences.
 
-A measurement goes in with it, so the day a journal gets large enough to be slow to open is a day
-someone finds out from a number rather than from a complaint.
+A measurement went in with it, and it settled the question. See below.
 
 > **Amended at decomposition, 4 August 2026.** As first written this said the main process sends the
 > changed entry, which meant it speaking to the window unprompted. That is not needed yet: the
@@ -113,6 +112,48 @@ The cost of waiting is real and worth stating plainly: the writing surface gets 
 writing is the product. The judgement is that a second pass at the editor is cheaper than carrying
 an editor that cannot yet do its job, and that the second pass will be better informed by then.
 
+## What was measured
+
+Campaigns seeded through the real log, then opened in the packaged application. Times are from
+launching it to being able to read the campaign, on the machine this was developed on.
+
+| Entries | Launch to readable | Asking for it | Sent to window | On disk  |
+| ------- | ------------------ | ------------- | -------------- | -------- |
+| 0       | 265 ms             | 16 ms         | 0 KB           | 32 KB    |
+| 100     | 287 ms             | 1 ms          | 24 KB          | 56 KB    |
+| 1,000   | 350 ms             | 2 ms          | 243 KB         | 344 KB   |
+| 2,500   | 698 ms             | 5 ms          | 609 KB         | 820 KB   |
+| 5,000   | 1,966 ms           | 8 ms          | 1,220 KB       | 1,600 KB |
+| 10,000  | 7,247 ms           | 19 ms         | 2,440 KB       | 3,172 KB |
+
+One run, so the times move by a few per cent between runs and the sizes do not move at all. The 16
+ms against an empty campaign is the first launch of the six paying for everything that has not been
+loaded yet, not a cost of asking for nothing.
+
+**Sending the whole journal is not the problem, and is not going to become one.** Ten thousand
+entries cross to the window in under twenty milliseconds. The worry that shaped this decision was
+misplaced, which is the useful thing a measurement does.
+
+**Drawing it is the problem, and it gets worse faster than the journal grows.** Between one thousand
+and ten thousand entries the journal grows tenfold and the wait grows twentyfold, because every
+entry is an element on the page whether or not anyone is looking at it.
+
+So: comfortable to a couple of thousand entries, noticeable at five thousand, and unusable at ten.
+For scale, an entry here is a paragraph, so ten thousand of them is a campaign someone has written
+in for years.
+
+**What to do when it matters**, and it is not what this record originally assumed. The fix is to
+draw fewer entries, not to send fewer. Show a window of the journal around where the reader is and
+add to it as they scroll. Nothing about the message needs changing, which is worth knowing before
+anyone spends a week making it smaller.
+
+Not doing that now. At a thousand entries the application opens in under four tenths of a second,
+and building for a campaign nobody has yet written is how a simple thing becomes a complicated one.
+
+The measurement lives in `apps/desktop/measure` and is run with
+`pnpm --filter aether-forge-desktop measure`. It is deliberately not part of the test suite: it
+answers a question rather than guarding against a regression.
+
 ## What we are deliberately not doing
 
 **Inline entity mentions.** Entities do not exist.
@@ -126,18 +167,10 @@ bring it home. Putting a menu item on it is related work and its own piece.
 **Deleting an entry.** History is append-only. What deletion would even mean here is a question for
 the compaction feature, not for a journal.
 
-**Anything for very long journals.** No paging, no virtualised list. See the open question.
+**Anything for very long journals.** No paging, no virtualised list. Measured rather than guessed
+at: see above for when this stops being true and what to do about it.
 
 ## Open questions
-
-**When does a journal get too large to send or to draw?**
-
-Both the whole-journal message and drawing every entry are fine at the sizes a solo campaign
-plausibly reaches, and "plausibly" is doing real work in that sentence.
-
-_What would settle it:_ measuring the message size and the time to first paint at one hundred, one
-thousand and ten thousand entries, and picking a threshold from those numbers rather than from
-nerves.
 
 **Should the window show what an entry said before?**
 
