@@ -340,9 +340,10 @@ for the reader.
 
 ### Physical dice are first-class
 
-Every roll surface accepts typed-in die results. Roll events record provenance per die, `digital` or
-`manual`, and everything downstream behaves identically regardless of which it was. This applies to
-oracle rolls as much as to move rolls.
+Every roll surface accepts typed-in die results. Roll events record provenance per die as a record
+naming where the number came from: `digital`, `manual`, or a named service carrying that service's
+own identifiers. Everything downstream behaves identically regardless of which it was. This applies
+to oracle rolls as much as to move rolls. See `design/rolling-dice.md`.
 
 Rolling and interpreting are separate concerns. Oracle providers resolve a result they are handed;
 they do not roll. That seam is what makes manual entry work everywhere without special cases.
