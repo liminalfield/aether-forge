@@ -130,28 +130,45 @@ whose `resolve` consults campaign state (chaos factor as a core resource/track) 
 ```ts
 interface DieSpec { sides: number; count: number; label?: string }
 
+// where a number came from; a record rather than a word so a service can carry its own
+// identifiers without a contract-touching change once campaigns exist. See design/rolling-dice.md
+type DieSource =
+  | { kind: 'digital' }
+  | { kind: 'manual' }
+  | { kind: 'service'; service: string; ref: string };
+
 interface DieValue {
   sides: number;
-  value: number;                     // range-validated only; never legality-policed
-  source: 'digital' | 'manual';
+  value: number;                     // range-validated only (1..sides); never legality-policed
+  source: DieSource;
 }
 
 interface RollRequest {
   dice: DieSpec[];                   // e.g. Starforged action roll: [d6, d10, d10]
-  reason?: { kind: 'table' | 'check' | 'free'; refId?: string };
 }
 
 interface RollResult { dice: DieValue[]; request: RollRequest }
 // persisted as core.roll.performed; provenance per die, so mixed physical/digital rolls are native
+// a roll names no content package: only resolving it against a table can be affected by a
+// package changing underneath it, and §4's OracleOutcome carries that
 ```
+
+`RollRequest` has no `reason`. It duplicated `causationId`, which already points at the module event
+saying which check was invoked, and it put a module-shaped identifier inside a core payload.
 
 Interpretation of results (hit/miss/degrees/crits) is module territory, expressed as §6 outcomes —
 core knows numbers, never meanings.
 
+A superseding roll says why it supersedes: `corrected` (the first roll never happened, it was a
+recording mistake) or `rerolled` (it did happen, and a rule replaced it). Projections do not care,
+since the newest wins either way; a person reading their campaign back does.
+
 **Stress test.** (A) action roll d6+2d10, progress roll 2d10 only, "reroll any die" asset ability =
-a new `core.roll.performed` with `revises` — all fit. (B) toy: single d2. (C) d20+mods vs DC,
-advantage = `{ sides: 20, count: 2 }` + module interpretation picks one — fits without core
-changes. Pass.
+a new `core.roll.performed` with `revises` and `because: 'rerolled'` — all fit. (B) toy: single d2.
+(C) d20+mods vs DC, advantage = `{ sides: 20, count: 2 }` + module interpretation picks one — fits
+without core changes. (D) three dice from a dddice room and one typed in after it fell on the floor
+= four `DieValue`s, three with `kind: 'service'` — fits, which is the case the old shape could not
+have held. Pass.
 
 ## 6. Checks — structural move/action definitions (assisted-but-sovereign)
 
