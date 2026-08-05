@@ -92,6 +92,10 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       '**/*.tsbuildinfo',
+      // A design-tool export and its runtime, vendored as a visual reference and
+      // never built or shipped. Linting someone else's generated bundle tells us
+      // nothing and fails loudly.
+      'design/ux-ui-design-handoff/**',
     ],
   },
 
