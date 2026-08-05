@@ -20,6 +20,7 @@
     "package": "electron-builder --publish never",
     "package:dir": "electron-builder --dir --publish never",
     "test:e2e": "playwright test",
+    "test:e2e:isolated": "xvfb-run --auto-servernum env -u WAYLAND_DISPLAY -u XDG_SESSION_TYPE playwright test",
     "measure": "playwright test --config playwright.measure.config.ts"
   },
   "dependencies": {
