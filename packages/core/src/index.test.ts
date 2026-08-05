@@ -12,9 +12,11 @@ import type {
   OpenCampaign,
   Projection,
   Result,
+  RollContext,
   RollFailure,
   RollPerformedV1,
   RollRequest,
+  RollSupersession,
   TranslatingLog,
 } from './index.js';
 
@@ -83,6 +85,8 @@ describe('the public surface', () => {
       _request: RollRequest,
       _roll: RollPerformedV1,
       _rollFailure: RollFailure,
+      _rollContext: RollContext,
+      _supersession: RollSupersession,
     ): void => undefined;
 
     expect(typeof surface).toBe('function');

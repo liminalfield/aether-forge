@@ -308,3 +308,155 @@ describe('reading and checking are different jobs', () => {
     expect(validateRoll(read).ok).toBe(false);
   });
 });
+
+describe('a roll that replaces an earlier one', () => {
+  const FIRST: RollPerformedV1 = {
+    request: { dice: [{ sides: 10, count: 1 }] },
+    dice: [{ sides: 10, value: 4, source: { kind: 'manual' } }],
+  };
+
+  function replacing(value: number, because: 'corrected' | 'rerolled'): RollPerformedV1 {
+    return {
+      request: { dice: [{ sides: 10, count: 1 }] },
+      dice: [{ sides: 10, value, source: { kind: 'manual' } }],
+      supersedes: { because },
+    };
+  }
+
+  it('keeps both events, and says which was a correction', () => {
+    const log = aLog();
+    const campaign = openWith(log);
+
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: FIRST });
+    if (!first.ok) throw new Error('could not write the first roll');
+
+    const second = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: first.value.id,
+      payload: replacing(7, 'corrected'),
+    });
+    if (!second.ok) throw new Error('could not correct the roll');
+
+    const events = log.read();
+    if (!events.ok) throw new Error('could not read the log');
+
+    // The whole point: nothing was edited, and the log says why the second one
+    // is there rather than leaving a reader to guess.
+    expect(events.value.map((event) => readRoll(event.payload)?.dice[0]?.value)).toEqual([4, 7]);
+    expect(events.value[1]?.revises).toBe(first.value.id);
+    expect(readRoll(events.value[1]?.payload)?.supersedes).toEqual({ because: 'corrected' });
+  });
+
+  it('tells a reroll apart from a correction in the raw events', () => {
+    const log = aLog();
+    const campaign = openWith(log);
+
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: FIRST });
+    if (!first.ok) throw new Error('could not write the first roll');
+
+    const again = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: first.value.id,
+      payload: replacing(9, 'rerolled'),
+    });
+    if (!again.ok) throw new Error('could not reroll');
+
+    const events = log.read();
+    if (!events.ok) throw new Error('could not read the log');
+
+    expect(readRoll(events.value[1]?.payload)?.supersedes).toEqual({ because: 'rerolled' });
+  });
+
+  it('reads as a chain when a replacement is itself replaced', () => {
+    const log = aLog();
+    const campaign = openWith(log);
+
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: FIRST });
+    if (!first.ok) throw new Error('could not write the first roll');
+
+    const second = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: first.value.id,
+      payload: replacing(7, 'corrected'),
+    });
+    if (!second.ok) throw new Error('could not correct the roll');
+
+    const third = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: second.value.id,
+      payload: replacing(2, 'corrected'),
+    });
+    if (!third.ok) throw new Error('could not correct the correction');
+
+    // A chain, not a star. Each replacement points at the version it actually
+    // replaced, which is what makes the history readable in order.
+    expect(second.value.revises).toBe(first.value.id);
+    expect(third.value.revises).toBe(second.value.id);
+    expect(third.value.revises).not.toBe(first.value.id);
+  });
+
+  it('survives being written and read back with its reason', () => {
+    const campaign = openWith(aLog());
+    const first = campaign.append({ type: ROLL_PERFORMED, payload: FIRST });
+    if (!first.ok) throw new Error('could not write the first roll');
+
+    const corrected = replacing(7, 'corrected');
+    const second = campaign.append({
+      type: ROLL_PERFORMED,
+      revises: first.value.id,
+      payload: corrected,
+    });
+    if (!second.ok) throw new Error('could not correct the roll');
+
+    expect(readRoll(second.value.payload)).toEqual(corrected);
+  });
+});
+
+describe('the two halves of a replacement have to agree', () => {
+  const A_ROLL: RollPerformedV1 = {
+    request: { dice: [{ sides: 6, count: 1 }] },
+    dice: [{ sides: 6, value: 3, source: { kind: 'digital' } }],
+  };
+
+  it('refuses a replacement that does not say why', () => {
+    const checked = validateRoll(A_ROLL, { supersedes: 'event-1' });
+    expect(checked.ok).toBe(false);
+    if (checked.ok) return;
+    expect(checked.failure.kind).toBe('replacement-does-not-say-why');
+  });
+
+  it('refuses a reason on a roll that replaces nothing', () => {
+    const checked = validateRoll({ ...A_ROLL, supersedes: { because: 'rerolled' } });
+    expect(checked.ok).toBe(false);
+    if (checked.ok) return;
+    expect(checked.failure.kind).toBe('says-why-but-replaces-nothing');
+  });
+
+  it('accepts a first roll that replaces nothing and says nothing', () => {
+    expect(validateRoll(A_ROLL).ok).toBe(true);
+  });
+
+  it('accepts a replacement that says why', () => {
+    const checked = validateRoll(
+      { ...A_ROLL, supersedes: { because: 'corrected' } },
+      { supersedes: 'event-1' },
+    );
+    expect(checked.ok).toBe(true);
+  });
+});
+
+describe('reading a reason that is not one', () => {
+  it.each([
+    ['a reason nobody declared', { because: 'improved' }],
+    ['no reason inside', {}],
+    ['not a record', 'corrected'],
+  ])('says no to %s', (_name, supersedes) => {
+    expect(
+      readRoll({
+        request: { dice: [] },
+        dice: [],
+        supersedes,
+      }),
+    ).toBeUndefined();
+  });
+});
