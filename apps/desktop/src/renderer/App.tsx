@@ -87,20 +87,22 @@ export function App(): React.JSX.Element {
         )}
 
         {entries?.map((entry) => (
-          <article key={entry.id} data-testid="entry" style={{ whiteSpace: 'pre-wrap' }}>
-            {entry.text}
+          <article key={entry.id} data-testid="entry">
+            <p data-testid="entry-text" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              {entry.text}
+            </p>
             {entry.corrections > 0 && (
-              <span
+              <p
                 data-testid="edited"
                 title={`Corrected ${entry.corrections} ${entry.corrections === 1 ? 'time' : 'times'}`}
                 style={{
+                  margin: `${tokens.space.xs} 0 0`,
                   color: tokens.color.textMuted,
                   fontSize: tokens.fontSize.sm,
-                  marginLeft: tokens.space.sm,
                 }}
               >
                 edited
-              </span>
+              </p>
             )}
           </article>
         ))}
