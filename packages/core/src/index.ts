@@ -111,13 +111,16 @@ export type {
   DieSource,
   DieSpec,
   DieValue,
+  RecordedRoll,
   RollContext,
   RollFailure,
   RollPerformedV1,
+  RollReplacement,
   RollRequest,
+  Rolls,
   RollSupersession,
 } from './roll.js';
-export { readRoll, ROLL_PERFORMED, rollEventTypes, validateRoll } from './roll.js';
+export { readRoll, ROLL_PERFORMED, rollEventTypes, rolls, validateRoll } from './roll.js';
 
 export type { ModuleProjection, ProjectionContext } from './module-projection.js';
 export { isVisibleToModule } from './module-projection.js';

@@ -19,7 +19,9 @@
  * See `design/rolling-dice.md`.
  */
 
+import type { EventEnvelope } from './event.js';
 import type { EventId } from './identifiers.js';
+import type { Projection } from './projection.js';
 import { failed, ok, type Result } from './result.js';
 import type { EventTypeDefinition } from './schema.js';
 
@@ -308,3 +310,113 @@ export function validateRoll(
 
   return ok(roll);
 }
+
+/** One time a roll was replaced, and why. */
+export interface RollReplacement {
+  readonly id: EventId;
+  readonly because: RollSupersession['because'];
+}
+
+/** A roll, as it now stands. */
+export interface RecordedRoll {
+  /** The event that first recorded it. A roll keeps this identity through every replacement. */
+  readonly id: EventId;
+
+  readonly request: RollRequest;
+
+  /** The dice as they now stand, which is the newest set recorded. */
+  readonly dice: readonly DieValue[];
+
+  /**
+   * The event holding the dice above.
+   *
+   * The same as `id` until the roll is replaced, and then the most recent
+   * replacement. The next replacement supersedes this, so a history reads as a
+   * chain rather than as several events all claiming to replace the original.
+   */
+  readonly currentVersionId: EventId;
+
+  /**
+   * Every replacement, oldest first.
+   *
+   * A count would say how often this roll changed. The reasons say whether the
+   * player got lucky or kept fixing typos, which is the whole reason the log
+   * records them, so a reader should not have to go back to the raw events for
+   * it.
+   */
+  readonly replacements: readonly RollReplacement[];
+}
+
+export interface Rolls {
+  /** In the order they were first recorded. */
+  readonly rolls: readonly RecordedRoll[];
+
+  /**
+   * Which roll each event belongs to, so that replacing a replacement resolves
+   * back to the roll it started as.
+   *
+   * A plain object rather than a Map, so the state stays something that can be
+   * written out unchanged when snapshots arrive.
+   */
+  readonly rollOf: Readonly<Record<EventId, EventId>>;
+}
+
+/** Every roll in the campaign, each showing the dice that now stand. */
+export const rolls: Projection<Rolls> = {
+  id: 'core.rolls',
+
+  initial: () => ({ rolls: [], rollOf: {} }),
+
+  apply: (state, event: EventEnvelope): Rolls => {
+    if (event.type !== ROLL_PERFORMED) return state;
+
+    const roll = readRoll(event.payload);
+    if (roll === undefined) return state;
+
+    const replaces = event.revises;
+
+    if (replaces === undefined) {
+      // A payload saying why it replaced something, on an event that replaces
+      // nothing, is refused when it is recorded. One in a log is a state to
+      // leave alone rather than guess about.
+      if (roll.supersedes !== undefined) return state;
+
+      return {
+        rolls: [
+          ...state.rolls,
+          {
+            id: event.id,
+            request: roll.request,
+            dice: roll.dice,
+            currentVersionId: event.id,
+            replacements: [],
+          },
+        ],
+        rollOf: { ...state.rollOf, [event.id]: event.id },
+      };
+    }
+
+    if (roll.supersedes === undefined) return state;
+
+    // Replacing something this campaign has never seen is not something to
+    // guess about either.
+    const rollId = state.rollOf[replaces];
+    if (rollId === undefined) return state;
+
+    const because = roll.supersedes.because;
+
+    return {
+      rolls: state.rolls.map((recorded) =>
+        recorded.id === rollId
+          ? {
+              ...recorded,
+              dice: roll.dice,
+              currentVersionId: event.id,
+              replacements: [...recorded.replacements, { id: event.id, because }],
+            }
+          : recorded,
+      ),
+      rollOf: { ...state.rollOf, [event.id]: rollId },
+    };
+  },
+};
