@@ -10,10 +10,8 @@ something, you roll, and what you rolled means something. It is the last large u
 the model, and almost everything visible in the design waits on it. The verdict card is the
 centrepiece of the whole interface and it is a picture of one check.
 
-The project promises that the application computes everything and decides nothing. A check is the
-hardest place to keep that promise. The application knows the rules and it knows the character, so
-it would be easy to let it pick the stat, roll, and apply the result while the player watches. Most
-of this record is about not doing that.
+The application knows the rules and it knows the character. It could pick the stat, roll, and apply
+the result while the player watches. It must not.
 
 ## The whole thing, once, in order
 
@@ -30,16 +28,13 @@ A player faces down something dangerous. Here is every event that produces, in t
 | 52     | `core.suggestion.adjusted`       | 51        | the player made it −2                                     |
 | 53     | `sys.ironsworn.momentum.changed` | 52        | −2                                                        |
 
-Eight events for one move. That is a lot, and it is worth seeing the number now rather than after
-agreeing to the design.
+Eight events for one move.
 
-What the eight buy is that each step can be read, changed or refused on its own, and that a year
-later the log still says what the application proposed and what the player did about it.
+Four are mechanics: the invocation, the roll, the outcome, the change to momentum. Four are the
+record of what was suggested: 46, 47, 51 and 52.
 
-Four of them are mechanics: the invocation, the roll, the outcome, and the change to momentum. The
-other four, numbered 46, 47, 51 and 52, are the record of what was suggested. Take those four out
-and the campaign ends in exactly the same state. What you lose is any way to tell whether the player
-chose Kinetic or was told to.
+Remove those four and the campaign ends in the same state. You lose the ability to tell whether the
+player chose Kinetic or was told to.
 
 Here is the resolution, in full:
 
@@ -61,7 +56,7 @@ Here is the resolution, in full:
 ```
 
 Core stores that payload and never looks inside it. `weak-hit` means nothing to core, and neither
-does the identifier naming the move.
+does the move identifier.
 
 ## Decisions
 
@@ -73,28 +68,24 @@ The alternative is to store only the dice, and ask the module what they meant ev
 read. That is tempting, because then correcting a rule would correct every campaign that ever used
 it.
 
-It would also break the guarantee everything else here depends on, which is that the same log always
-produces the same state. If a module's answer is worked out at reading time, then updating that
-module changes campaigns that were finished years ago. A player who has not opened their game since
-last winter would find a hit had become a miss, with nothing anywhere recording that it changed.
+It also breaks the guarantee everything else depends on: the same log always produces the same
+state. Updating a module would change campaigns finished years ago. A player who has not opened
+their game since last winter would find a hit had become a miss, with nothing recording the change.
 
-So interpretation works the same way rolling does. Both happen once, before the event is written,
-and everything afterwards reads the recorded answer instead of working it out again.
+Interpretation works the way rolling does. It happens once, before the event is written. Everything
+afterwards reads the recorded answer.
 
-There is a real cost. A module with a bug in it writes wrong outcomes, and fixing the module later
-does not fix those events. They have to be corrected one at a time, by appending a revision, the
-same way anything else in the log is corrected. That is worse for the person who hit the bug and
-better for everybody whose finished campaigns stay as they left them.
+A module with a bug writes wrong outcomes. Fixing the module does not fix them. Each one has to be
+corrected by hand, by appending a revision.
 
 ### Core never learns what a stat is
 
 The events on either side of a roll belong to the module. Core owns the dice and the audit trail; it
 does not own the meaning.
 
-This is why there are two module events rather than one. Putting the inputs on the roll would mean
-core carrying a stat, and putting the outcome there would mean core carrying a hit. Neither word
-belongs anywhere in `packages/core`, and the whole architecture exists so that another system can
-arrive without touching it.
+There are two module events rather than one because of this. Putting the inputs on the roll would
+mean core carrying a stat. Putting the outcome there would mean core carrying a hit. Neither word
+belongs in `packages/core`.
 
 The identifiers a module writes into its own payloads, like
 `starforged/moves/adventure/face_danger`, are data rather than vocabulary. Core stores that string
@@ -105,18 +96,15 @@ and never reads it.
 Four things can happen to a suggestion: it is offered, and then accepted, adjusted, or declined. All
 four are core events, and they are the only part of this that core understands.
 
-**A declined suggestion is recorded**, and this is the part that matters most. If declining left no
-trace, the log would say what the player did and never what they turned down. There would then be no
-way to check the claim that the application decides nothing, because a campaign where every
-suggestion was taken and one where none were ever offered would look identical. A history where
-every suggestion was taken and a history where none were offered look identical unless the offer is
-written down.
+**A declined suggestion is recorded.** Without it, a campaign where every suggestion was taken and
+one where none were ever offered look identical. There would be no way to check whether the
+application decides anything.
 
-Accepting a suggestion is what writes whatever it proposed into the log. The module supplies the
-proposal, core writes it, and the module never writes anything itself. This is not a matter of
-trusting modules to behave. A module has no way to write to the log at all. For anything to be
-applied without a person accepting it, the contract would have to grow a new channel, and somebody
-would have to decide to add one.
+Accepting a suggestion writes what it proposed into the log. The module supplies the proposal and
+core writes it.
+
+A module cannot write to the log at all. Applying something without a person accepting it would need
+a new channel in the contract, which somebody would have to add on purpose.
 
 ### The suggestion events are the record of what was suggested, and the module event is not
 
@@ -131,8 +119,7 @@ eventually disagree.
 
 This is the same mistake three times over. It happened with `request.reason` on a roll, with the
 identifier inside a superseding roll, and with the rolled number inside an oracle consultation. Each
-time, one fact was about to be written in two places. Naming the pattern here should make the fourth
-one quicker to spot.
+time, one fact was about to be written in two places. Watch for the fourth.
 
 So the module event says what the check was run with. The core events say where those values came
 from. Following `causation_id` backwards from the invocation reaches the acceptance that produced
@@ -144,22 +131,18 @@ A player can pick any stat the check offers, or none of them. They can set a mod
 They can decline the roll's outcome by revising it. There is no state a check can be in that the
 application will not record.
 
-This is not a rule anybody has to remember, and it must not become one. There is nowhere in the
-contract to put the word "illegal". A check does two things: it says what inputs it takes, and it
-says what a result means. Neither of those lets a module say no. Keeping it that way is the whole
-design.
+There is nowhere in the contract to put the word "illegal". A check does two things: it says what
+inputs it takes, and it says what a result means. Neither lets a module say no.
 
-The one check that exists is the same one dice have: a value has to be a number. That is not a
-judgement about play.
+The only thing refused is a value that is not a number.
 
 ### A check may not roll at all
 
 Some procedures have no dice. A check whose roll is absent runs the same path, gathers the same
 inputs, and produces an outcome from them alone.
 
-This looks like a minor case and is not. It is how a system with fewer dice, or a procedure like
-taking stock of where you are, uses the machinery that already exists rather than needing a second
-kind built alongside it.
+A system with fewer dice than Ironsworn uses the same machinery. So does a procedure like taking
+stock of where you are. Neither needs a second kind of check built for it.
 
 ### A module proposes drafts, not events
 
