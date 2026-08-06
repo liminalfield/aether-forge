@@ -367,3 +367,73 @@ test('can be corrected from the keyboard alone', async () => {
     await app.close();
   }
 });
+
+test('reads as a document, in the typeface it was written for', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.evaluate(() => document.fonts.ready);
+    await page.getByLabel('What happened?').fill('The airlock did not open.');
+    await page.getByRole('button', { name: 'Record it' }).click();
+    await expect(page.getByTestId('entry')).toHaveCount(1);
+
+    const prose = await page.getByTestId('entry-text').evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        family: style.fontFamily,
+        size: style.fontSize,
+        weight: style.fontWeight,
+        lineHeight: style.lineHeight,
+      };
+    });
+
+    // The design's prose treatment, checked on the thing a person actually
+    // reads rather than on a stylesheet.
+    expect(prose.family).toContain('Literata');
+    expect(prose.size).toBe('18px');
+    expect(prose.weight).toBe('300');
+    expect(prose.lineHeight).toBe('28.8px');
+  } finally {
+    await app.close();
+  }
+});
+
+test('keeps the reading column narrow enough to read', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.evaluate(() => document.fonts.ready);
+
+    const column = await page.evaluate(() => {
+      const main = document.querySelector('main');
+      return main === null ? null : main.getBoundingClientRect().width;
+    });
+
+    // A measure that runs the width of a window is a measure nobody finishes a
+    // paragraph in. The cap is in characters, so this is a bound rather than a
+    // number: wide enough to be a column, narrow enough to be a column.
+    expect(column).not.toBeNull();
+    expect(column).toBeLessThan(900);
+    expect(column).toBeGreaterThan(300);
+  } finally {
+    await app.close();
+  }
+});
+
+test('writing happens in the same typeface as reading', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.evaluate(() => document.fonts.ready);
+
+    // What is typed here is the text that will be read back afterwards, so a
+    // person should be looking at the shapes they are going to live with.
+    const family = await page
+      .getByLabel('What happened?')
+      .evaluate((node) => getComputedStyle(node).fontFamily);
+
+    expect(family).toContain('Literata');
+  } finally {
+    await app.close();
+  }
+});

@@ -20,17 +20,6 @@ export {
   shouldAnimate,
 } from './motion.js';
 
-export type { MotionPreference } from './motion.js';
-export {
-  duration,
-  EASING,
-  isMotionPreference,
-  MOTION,
-  MOTION_PREFERENCES,
-  motionProperties,
-  shouldAnimate,
-} from './motion.js';
-
 export type { Colour, InkContrast, ThemeReport } from './colour.js';
 export {
   contrastBetween,
@@ -58,3 +47,6 @@ export { family, TABULAR_NUMERALS, tokens, typeProperties } from './tokens.js';
 
 export type { ButtonProps, ButtonWeight } from './Button.js';
 export { Button } from './Button.js';
+
+export type { WritingSurfaceProps } from './WritingSurface.js';
+export { WritingSurface } from './WritingSurface.js';
