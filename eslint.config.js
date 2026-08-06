@@ -120,6 +120,30 @@ export default tseslint.config(
     },
   },
 
+  // --- colour belongs in a theme, not in a component ---
+  //
+  // A theme reaches components as CSS custom properties, which is what lets a
+  // theme loaded from a file change code that has already rendered. A colour
+  // written into a component is invisible to that, and the screen it is on
+  // stops responding to the theme without anything saying so.
+  //
+  // packages/ui/src/theme.ts is where the built-in themes live, so it is the
+  // one place exempt. See design/themes-and-components.md.
+  {
+    files: ['packages/ui/src/**/*.{ts,tsx}', 'apps/desktop/src/renderer/**/*.{ts,tsx}'],
+    ignores: ['packages/ui/src/theme.ts', '**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/^\\s*(#[0-9a-fA-F]{3,8}|rgba?\\(|hsla?\\(|color-mix\\()/]',
+          message:
+            'Colour belongs in a theme. Use slot(group, name) from @aether-forge/ui, and add the colour to packages/ui/src/theme.ts if it needs a slot.',
+        },
+      ],
+    },
+  },
+
   // --- packages/* may never depend on the app, on Electron, or on a system module ---
   {
     files: ['packages/**/*.ts'],

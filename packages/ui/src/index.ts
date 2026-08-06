@@ -1,23 +1,21 @@
 /**
- * `@aether-forge/ui`: design tokens and (later) the component layer.
+ * `@aether-forge/ui`: design tokens, themes and the component layer.
  *
  * Imports nothing internal, ever. Subject to the same vocabulary rule as
- * `core`: no rulebook words. System modules contribute their own theme tokens
- * that override these defaults.
+ * `core`: no rulebook words.
+ *
+ * Colour lives in `theme.ts` and reaches components as CSS custom properties.
+ * Everything below is fixed: sizes, spacing and the type scale are not a
+ * theme's to change, because they are load-bearing in an interface this dense.
  */
+
+export type { SlotGroup, SlotName, Theme, ThemeColours } from './theme.js';
+export { customPropertiesFor, glacialDark, slot, SLOTS } from './theme.js';
 
 export const tokens = {
   space: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '40px' },
-  radius: { sm: '2px', md: '6px', lg: '12px' },
+  radius: { sm: '3px', md: '6px', lg: '10px', pill: '999px' },
   fontSize: { sm: '0.875rem', md: '1rem', lg: '1.25rem', xl: '1.75rem' },
-  color: {
-    surface: '#101216',
-    surfaceRaised: '#181b21',
-    text: '#e6e8ec',
-    textMuted: '#9aa1ad',
-    accent: '#6ea8fe',
-    border: '#2a2f38',
-  },
 } as const;
 
 export type Tokens = typeof tokens;

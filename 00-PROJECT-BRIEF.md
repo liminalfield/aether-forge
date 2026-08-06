@@ -120,7 +120,7 @@ core must run against both Ironsworn and the toy module in tests, permanently.
 - Design system from day one: design tokens as CSS custom properties, plus a component layer.
   A value baked into a rendered style cannot be reached by a theme loaded at runtime, which is why
   the tokens are properties rather than JavaScript values.
-- **A theme is fourteen colour slots and nothing else.** Not fonts, sizes, spacing, or the shapes of
+- **A theme is fifteen colour slots and nothing else.** Not fonts, sizes, spacing, or the shapes of
   tracks and clocks. This interface is dense with chrome and those are load-bearing in a way they are
   not around a blank page; a square tally box and a round clock are how the player's progress is told
   from the world's without reading a label. Themes are JSON, exportable and shareable. Four ship

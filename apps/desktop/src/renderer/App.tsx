@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { tokens } from '@aether-forge/ui';
+import { slot, tokens } from '@aether-forge/ui';
 
 import type { JournalEntryView } from '../shared/ipc';
 
@@ -13,8 +13,8 @@ import type { JournalEntryView } from '../shared/ipc';
  * without touching any of it.
  */
 const primaryButton = {
-  background: tokens.color.accent,
-  color: tokens.color.surface,
+  background: slot('accent', 'accent'),
+  color: slot('ground', 'base'),
   border: 'none',
   borderRadius: tokens.radius.md,
   padding: `${tokens.space.sm} ${tokens.space.md}`,
@@ -25,8 +25,8 @@ const primaryButton = {
 
 const quietButton = {
   background: 'none',
-  color: tokens.color.textMuted,
-  border: `1px solid ${tokens.color.border}`,
+  color: slot('ink', 'muted'),
+  border: `1px solid ${slot('ink', 'hairline')}`,
   borderRadius: tokens.radius.md,
   padding: `${tokens.space.sm} ${tokens.space.md}`,
   font: 'inherit',
@@ -124,24 +124,24 @@ export function App(): React.JSX.Element {
         display: 'flex',
         flexDirection: 'column',
         gap: tokens.space.lg,
-        background: tokens.color.surface,
-        color: tokens.color.text,
+        background: slot('ground', 'base'),
+        color: slot('ink', 'primary'),
         fontFamily: 'system-ui, sans-serif',
         lineHeight: 1.6,
       }}
     >
       <header>
         <h1 style={{ fontSize: tokens.fontSize.xl, margin: 0 }}>Aether Forge</h1>
-        <p style={{ color: tokens.color.textMuted, margin: `${tokens.space.xs} 0 0` }}>
+        <p style={{ color: slot('ink', 'muted'), margin: `${tokens.space.xs} 0 0` }}>
           {version === null ? 'Connecting…' : `Version ${version}`}
         </p>
       </header>
 
       <section data-testid="journal" style={{ display: 'grid', gap: tokens.space.md }}>
-        {entries === null && <p style={{ color: tokens.color.textMuted }}>Reading the campaign…</p>}
+        {entries === null && <p style={{ color: slot('ink', 'muted') }}>Reading the campaign…</p>}
 
         {entries?.length === 0 && (
-          <p style={{ color: tokens.color.textMuted }}>Nothing written yet.</p>
+          <p style={{ color: slot('ink', 'muted') }}>Nothing written yet.</p>
         )}
 
         {entries?.map((entry) => (
@@ -165,9 +165,9 @@ export function App(): React.JSX.Element {
                     if (event.key === 'Escape') stopCorrecting();
                   }}
                   style={{
-                    background: tokens.color.surfaceRaised,
-                    color: tokens.color.text,
-                    border: `1px solid ${tokens.color.border}`,
+                    background: slot('ground', 'raised'),
+                    color: slot('ink', 'primary'),
+                    border: `1px solid ${slot('ink', 'hairline')}`,
                     borderRadius: tokens.radius.md,
                     padding: tokens.space.sm,
                     font: 'inherit',
@@ -217,7 +217,7 @@ export function App(): React.JSX.Element {
                     title={`Corrected ${entry.corrections} ${entry.corrections === 1 ? 'time' : 'times'}`}
                     style={{
                       margin: `${tokens.space.xs} 0 0`,
-                      color: tokens.color.textMuted,
+                      color: slot('ink', 'muted'),
                       fontSize: tokens.fontSize.sm,
                     }}
                   >
@@ -237,7 +237,7 @@ export function App(): React.JSX.Element {
         }}
         style={{ display: 'grid', gap: tokens.space.sm }}
       >
-        <label htmlFor="entry" style={{ color: tokens.color.textMuted }}>
+        <label htmlFor="entry" style={{ color: slot('ink', 'muted') }}>
           What happened?
         </label>
         <textarea
@@ -246,9 +246,9 @@ export function App(): React.JSX.Element {
           rows={4}
           onChange={(event) => setText(event.target.value)}
           style={{
-            background: tokens.color.surfaceRaised,
-            color: tokens.color.text,
-            border: `1px solid ${tokens.color.border}`,
+            background: slot('ground', 'raised'),
+            color: slot('ink', 'primary'),
+            border: `1px solid ${slot('ink', 'hairline')}`,
             borderRadius: tokens.radius.md,
             padding: tokens.space.sm,
             font: 'inherit',
@@ -261,7 +261,7 @@ export function App(): React.JSX.Element {
       </form>
 
       {problem !== null && (
-        <p data-testid="problem" role="alert" style={{ color: '#ff8f8f', margin: 0 }}>
+        <p data-testid="problem" role="alert" style={{ color: slot('outcome', 'miss'), margin: 0 }}>
           {problem}
         </p>
       )}
