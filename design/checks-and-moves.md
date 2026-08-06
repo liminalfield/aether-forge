@@ -176,36 +176,40 @@ the shape as described and nothing here is built for it.
 
 ## Open questions
 
-**How much can a player adjust before it stops being the same suggestion?**
+**Can a player change what a suggestion applies to, or only how much?**
 
-`adjusted` is one of the four things that can happen to a suggestion, and the obvious case is a
-number: the application proposes −1 momentum and the player makes it −2. What is unclear is whether
-adjustment reaches anything other than a number.
+The application suggests "Momentum −1". The player changes the number to −2. That case works.
 
-_Why it matters:_ if anything about a proposal can be adjusted, then a module has to describe which
-parts are adjustable and what the limits are, and a suggestion stops being a small thing.
+Some suggestions have no number. "Mark progress on the Kingfisher repair" has a target rather than
+an amount. "Pay the price" has neither.
 
-If only a number can be adjusted, a suggestion stays simple. A player who wants to change anything
-else has to decline it and do that thing by hand. That is more work for them, and nobody has
-measured how often it would come up.
+Three answers are possible:
 
-_What would settle it:_ building the narrow version, playing with it, and counting how often
-declining turns out to be someone's way of adjusting something that was not a number.
+- **Only the amount.** To mark a different track, you decline the suggestion and mark it yourself.
+- **The amount and the target.** You can redirect "mark progress" to a different vow without
+  declining it.
+- **Anything.** A module describes every part of a proposal and says which parts can be changed.
 
-**Does a check need to record what it was reading at the time?**
+The first keeps a suggestion small. The third means a module has to describe its own proposals in
+enough detail for an interface to edit them, which is a large addition to the contract.
 
-An interpretation often depends on campaign state: a progress roll reads the track it is rolling
-against. That value is in the log already, as whatever event last changed it, so the outcome can be
-explained by replaying. But nothing points at it directly.
+_What would settle it:_ build the first, play with it, and count how often declining turns out to be
+somebody's way of changing a target.
 
-_Why it matters:_ if understanding event 50 means first replaying everything before it, then reading
-the log is a much bigger job than it sounds, and only a program can do it. If instead every check
-writes down the values it read, those events get bigger, and the same fact ends up recorded twice:
-once where it was set, and again inside the check. This record argues against exactly that a few
-sections above.
+**Does a resolved check record the campaign values it was reading?**
 
-_What would settle it:_ trying to explain a progress roll from the log alone, once there are
-progress tracks to roll against.
+You roll against a progress track. The track has seven boxes filled at that moment. The resolved
+event says "strong hit".
+
+Does it also say the track was at seven?
+
+- **No.** That number is already in the log, in whatever event last marked the track. To find it,
+  replay the log up to that point.
+- **Yes.** Reading the one event tells you why the outcome was what it was. The seven is then
+  recorded twice, which is the duplication this record argues against three sections above.
+
+_What would settle it:_ once progress tracks exist, try to explain one progress roll to somebody
+using only the log, and see whether replaying it first was necessary.
 
 ## What this changes elsewhere
 
