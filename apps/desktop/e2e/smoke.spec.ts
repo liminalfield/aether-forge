@@ -40,7 +40,10 @@ test('answers app:getVersion over the IPC contract', async () => {
   // package.json and it cannot reach Electron. Seeing the real version on
   // screen proves the whole round trip, preload bridge included. Asserting the
   // exact value rather than any text is what makes this catch a broken handler.
-  await expect(page.getByText(`Version ${expectedVersion()}`)).toBeVisible();
+  // Found through its test id rather than its wording, so the design can say it
+  // however it likes. The exact value is still asserted, and it still has to
+  // have crossed the preload bridge to be on screen at all.
+  await expect(page.getByTestId('version')).toHaveText(`v${expectedVersion()}`);
 });
 
 test('keeps Node and Electron out of the renderer', async () => {
