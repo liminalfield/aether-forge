@@ -1,6 +1,15 @@
 import { describeSchemaTranslations } from '@aether-forge/core/testing';
 
-import { ENTRY_CREATED, ENTRY_REVISED, ORACLE_CONSULTED, ROLL_PERFORMED } from '@aether-forge/core';
+import {
+  ENTRY_CREATED,
+  ENTRY_REVISED,
+  ORACLE_CONSULTED,
+  ROLL_PERFORMED,
+  SUGGESTION_ACCEPTED,
+  SUGGESTION_ADJUSTED,
+  SUGGESTION_DECLINED,
+  SUGGESTION_OFFERED,
+} from '@aether-forge/core';
 import { eventTypes as ironswornEventTypes } from '@aether-forge/system-ironsworn';
 import { eventTypes as toyEventTypes } from '@aether-forge/system-toy';
 
