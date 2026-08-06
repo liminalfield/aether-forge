@@ -9,6 +9,17 @@
  * theme's to change, because they are load-bearing in an interface this dense.
  */
 
+export type { Colour, InkContrast, ThemeReport } from './colour.js';
+export {
+  contrastBetween,
+  hueOf,
+  hueSeparation,
+  luminanceOf,
+  over,
+  parseColour,
+  reportOn,
+} from './colour.js';
+
 export type { SlotGroup, SlotName, Theme, ThemeColours } from './theme.js';
 export {
   builtInThemes,
