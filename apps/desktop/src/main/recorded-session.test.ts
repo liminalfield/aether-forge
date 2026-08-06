@@ -5,8 +5,14 @@ import type {
   Projection,
   TranslatingLog,
 } from '@aether-forge/core';
-import { momentum } from '@aether-forge/system-ironsworn';
+import {
+  MOMENTUM_CHANGED,
+  momentum,
+  MOVE_INVOKED,
+  MOVE_RESOLVED,
+} from '@aether-forge/system-ironsworn';
 import { coinRolls, coinTally } from '@aether-forge/system-toy';
+import { SUGGESTION_DECLINED, SUGGESTION_OFFERED } from '@aether-forge/core';
 import { describe, expect, it } from 'vitest';
 
 import { ENTRY_CREATED } from '@aether-forge/core';
@@ -78,7 +84,7 @@ describe('a recorded session', () => {
     const campaign = playTheSession();
 
     expect(campaign.stateOf(journalSummary)).toEqual({
-      entries: 19,
+      entries: 21,
       latest: 'End of session.',
     });
     expect(campaign.moduleStateOf(coinTally)).toEqual({ flips: 8, heads: 5, tails: 3 });
@@ -117,6 +123,36 @@ describe('a recorded session', () => {
     // the same session, which is what a reader of the log would expect.
     expect(campaign.moduleStateOf(coinTally).flips).toBe(8);
     expect(campaign.moduleStateOf(momentum).changes).toBe(9);
+  });
+
+  it('contains one complete check', () => {
+    // The regression net had rolls but never a whole check. This is the first
+    // time it replays an invocation, a roll, an outcome and what was proposed
+    // about it.
+    const types = RECORDED_SESSION.map((draft) => draft.type);
+
+    expect(types).toContain(MOVE_INVOKED);
+    expect(types).toContain(MOVE_RESOLVED);
+    expect(types.indexOf(MOVE_INVOKED)).toBeLessThan(types.indexOf(MOVE_RESOLVED));
+  });
+
+  it('contains a suggestion somebody refused', () => {
+    // The point of having one. A session where every suggestion was accepted
+    // would not exercise the thing the audit trail exists for.
+    const types = RECORDED_SESSION.map((draft) => draft.type);
+
+    expect(types).toContain(SUGGESTION_OFFERED);
+    expect(types).toContain(SUGGESTION_DECLINED);
+  });
+
+  it('leaves momentum alone where the effect was refused', () => {
+    // The refusal is not decoration. Nothing reached momentum from that check,
+    // and the total is the same as it would have been without it.
+    const afterTheCheck = RECORDED_SESSION.slice(
+      RECORDED_SESSION.findIndex((draft) => draft.type === MOVE_RESOLVED),
+    );
+
+    expect(afterTheCheck.map((draft) => draft.type)).not.toContain(MOMENTUM_CHANGED);
   });
 
   it('counts a coin flipped as a plain roll, with no event of the module own', () => {
