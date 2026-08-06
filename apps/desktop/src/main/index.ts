@@ -8,6 +8,7 @@ import {
   type OpenCampaign,
   type Projection,
 } from '@aether-forge/core';
+import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
@@ -15,6 +16,7 @@ import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
 import { correctEntry, readJournal, recordEntry } from './journal';
+import { readPreferences, writePreferences } from './preferences';
 import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
@@ -61,13 +63,44 @@ function createWindow(): BrowserWindow {
   return window;
 }
 
-function registerIpcHandlers(campaign: OpenCampaign): void {
+function registerIpcHandlers(campaign: OpenCampaign, userDataDir: string): void {
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
   ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(campaign, text));
   ipcMain.handle(IPC.correctEntry, (_event, entryId: unknown, text: unknown) =>
     correctEntry(campaign, entryId, text),
   );
+
+  ipcMain.handle(IPC.readPreferences, () => ({
+    ok: true as const,
+    value: readPreferences(userDataDir),
+  }));
+
+  ipcMain.handle(IPC.setMotionPreference, (_event, motion: unknown) => {
+    // Refused because it is not a value this build knows, which is a different
+    // thing from disapproving of the choice. There is no wrong answer here,
+    // only answers that are not one of the three.
+    if (!isMotionPreference(motion)) {
+      return {
+        ok: false as const,
+        failure: {
+          kind: 'unknown-motion-preference',
+          detail: `${String(motion)} is not one of ${MOTION_PREFERENCES.join(', ')}`,
+        },
+      };
+    }
+
+    try {
+      writePreferences(userDataDir, { motion });
+    } catch (cause) {
+      return {
+        ok: false as const,
+        failure: { kind: 'storage-failed', detail: String(cause) },
+      };
+    }
+
+    return { ok: true as const, value: readPreferences(userDataDir) };
+  });
 }
 
 void app.whenReady().then(() => {
@@ -98,7 +131,7 @@ void app.whenReady().then(() => {
     throw new Error(`this campaign could not be opened: ${describeFailure(opened.failure)}`);
   }
 
-  registerIpcHandlers(opened.value);
+  registerIpcHandlers(opened.value, app.getPath('userData'));
   createWindow();
 
   app.on('activate', () => {

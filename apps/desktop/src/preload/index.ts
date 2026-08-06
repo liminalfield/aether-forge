@@ -6,6 +6,7 @@ import {
   type IpcResult,
   type JournalView,
   type JournalEntryView,
+  type PreferencesView,
 } from '../shared/ipc';
 
 /**
@@ -23,6 +24,12 @@ const api: AetherForgeApi = {
 
   correctEntry: (entryId, text) =>
     ipcRenderer.invoke(IPC.correctEntry, entryId, text) as Promise<IpcResult<JournalEntryView>>,
+
+  readPreferences: () =>
+    ipcRenderer.invoke(IPC.readPreferences) as Promise<IpcResult<PreferencesView>>,
+
+  setMotionPreference: (motion) =>
+    ipcRenderer.invoke(IPC.setMotionPreference, motion) as Promise<IpcResult<PreferencesView>>,
 };
 
 contextBridge.exposeInMainWorld('aetherForge', api);

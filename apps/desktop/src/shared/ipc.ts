@@ -19,6 +19,8 @@ export const IPC = {
   readJournal: 'journal:read',
   recordEntry: 'journal:recordEntry',
   correctEntry: 'journal:correctEntry',
+  readPreferences: 'preferences:read',
+  setMotionPreference: 'preferences:setMotion',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];
@@ -70,6 +72,17 @@ export interface JournalView {
   readonly entries: readonly JournalEntryView[];
 }
 
+/**
+ * What a person has chosen about how the application behaves for them.
+ *
+ * Not part of a campaign and not part of a theme. It belongs to the person and
+ * their machine, so it does not travel with either.
+ */
+export interface PreferencesView {
+  /** `follow-the-system`, `on` or `off`. Kept as text, so an unknown value can cross and be refused. */
+  readonly motion: string;
+}
+
 /** Shape exposed on `window.aetherForge` by the preload script. */
 export interface AetherForgeApi {
   getAppVersion(): Promise<string>;
@@ -96,6 +109,17 @@ export interface AetherForgeApi {
    * is gets worked out where the state actually lives.
    */
   correctEntry(entryId: string, text: string): Promise<IpcResult<JournalEntryView>>;
+
+  /** What this person has chosen. Answers with the defaults when nothing is stored. */
+  readPreferences(): Promise<IpcResult<PreferencesView>>;
+
+  /**
+   * Choose whether the application moves.
+   *
+   * Answers with the preferences as they now stand, so the window does not have
+   * to ask again, and so it learns immediately if the value was refused.
+   */
+  setMotionPreference(motion: string): Promise<IpcResult<PreferencesView>>;
 }
 
 declare global {
