@@ -144,6 +144,30 @@ inputs, and produces an outcome from them alone.
 A system with fewer dice than Ironsworn uses the same machinery. So does a procedure like taking
 stock of where you are. Neither needs a second kind of check built for it.
 
+### A resolved check records the values it was reading
+
+You roll against a progress track with seven boxes filled. The resolved event says "strong hit". It
+also says the track was at seven.
+
+The application could work that out either way, by replaying the log up to that event, so this is
+not about what can be shown on screen.
+
+It is about corrections. If somebody later revises an old event that marked the track, replaying now
+gives a different number than was true at the time. The outcome is already recorded, so it stays
+"strong hit". A reader then sees a strong hit next to a track that replay says was at six, and six
+may not produce a strong hit. The log contradicts itself and there is no way to tell which half is
+wrong.
+
+Recording the seven says what the player was looking at when they rolled.
+
+This is the same reasoning that records the outcome instead of recomputing it. It is also not the
+duplication this record argues against elsewhere: "the track was at seven" is a computed value at a
+moment, not a second copy of the event that set it, in the same way a roll records the dice rather
+than a random seed.
+
+What a check reads is whatever its inputs took from campaign state, so the module already knows the
+list. It records the values it used, and nothing else.
+
 ### A module proposes drafts, not events
 
 The module contract currently says a suggestion's `events(ctx)` returns `EventEnvelope[]`. That is
@@ -195,21 +219,6 @@ enough detail for an interface to edit them, which is a large addition to the co
 
 _What would settle it:_ build the first, play with it, and count how often declining turns out to be
 somebody's way of changing a target.
-
-**Does a resolved check record the campaign values it was reading?**
-
-You roll against a progress track. The track has seven boxes filled at that moment. The resolved
-event says "strong hit".
-
-Does it also say the track was at seven?
-
-- **No.** That number is already in the log, in whatever event last marked the track. To find it,
-  replay the log up to that point.
-- **Yes.** Reading the one event tells you why the outcome was what it was. The seven is then
-  recorded twice, which is the duplication this record argues against three sections above.
-
-_What would settle it:_ once progress tracks exist, try to explain one progress roll to somebody
-using only the log, and see whether replaying it first was necessary.
 
 ## What this changes elsewhere
 
