@@ -194,27 +194,36 @@ interface CheckDefinition {
   docRef?: string;                   // full text in the reference browser
   roll: RollRequest | null;          // null = no-roll procedure
   inputs: CheckInput[];              // stat choice, modifiers — all user-editable at execution
-  interpret(result: RollResult, inputs: Record<string, number>): CheckOutcome;
+  interpret(roll: RollPerformedV1 | null, inputs: Record<string, number>): CheckOutcome;
 }
 
 interface CheckInput {
   id: string; label: string;
   kind: 'choice' | 'number';
-  options?: Array<{ id: string; label: string; value: number }>;  // e.g. stats
-  suggest?(ctx: CampaignContext): { value: number; why: string } | null; // asset hints etc.
+  source: 'chosen' | 'read';         // picked by the player, or taken off the campaign
+  options?: CheckOption[];           // e.g. stats
+  suggest?(ctx: ProjectionContext): { value: number; why: string } | undefined;
 }
 
 interface CheckOutcome {
-  id: string;                        // "strong_hit", "weak_hit_match", "crit_fail" — module-defined, opaque to core
+  id: string;                        // "strong_hit", "weak_hit_match" — module-defined, opaque to core
   label: string;
   summary: string;                   // rendered outcome text
-  suggestions: EffectSuggestion[];   // NEVER auto-applied
+  suggests: EffectSuggestion[];      // NEVER auto-applied
 }
 
 interface EffectSuggestion {
   id: string;
   label: string;                     // "Momentum −1", "Mark progress"
-  events(ctx: CampaignContext): EventEnvelope[];  // what accepting would append
+  fields: ProposalField[];           // every part a person may change; required, may be empty
+  proposes: UnversionedEventDraft;   // one thing, so two effects can be refused separately
+}
+
+interface ProposalField {
+  id: string;                        // names a key in the proposed payload
+  label: string;
+  kind: 'number' | 'choice' | 'text';
+  options?: CheckOption[];
 }
 ```
 
@@ -223,13 +232,35 @@ Sovereignty is structural: core's execution UI is generically
 decision lands as `core.suggestion.*` events. Modules cannot enforce because the contract has no
 enforcement channel — there is nowhere to put "illegal".
 
+**`interpret` runs once.** Its answer is written into the module's own resolution event and never
+worked out again while reading. Asking a module what the dice meant every time the log is read would
+mean that updating a module changes campaigns finished years ago.
+
+**A resolved check records the inputs it ran with**, including those whose `source` is `read`. That
+is how it carries the campaign values it was looking at: revise an old event that marked a track and
+replay gives a different number than was true at the time, so the log would show a strong hit beside
+a track value that could not have produced one.
+
+**`proposes` is a draft, not an envelope.** Core assigns the identifier, the position, the timestamp
+and the schema version. A module filling those in would leave core with two bad choices: ignore
+them, which makes the fields pointless, or trust them, which lets a module hand out positions in a
+log it cannot see.
+
+**`fields` is required.** If describing a proposal's parts were optional, some suggestions could be
+adjusted and some could not, and a player pressing adjust would be guessing at which kind was in
+front of them.
+
+**The invocation event carries what the check ran with, and not what was suggested.** Which values
+the application proposed is already in the `core.suggestion.*` events, with the reason given. Two
+records of one fact eventually disagree.
+
 **Stress test.** (A) Face Danger: 3 stat options, Kinetic surfaces via `suggest`, weak hit suggests
-momentum event — natural fit. Progress rolls: `roll` uses 2d10, `interpret` reads the track value
-from inputs. (B) toy: one check, coin flip, two outcomes, zero suggestions — trivially
-implementable (canary passes). (C) 5e attack: inputs = attack bonus (from computed sheet, §7),
-interpret handles nat-20; suggestions = "roll damage" (a follow-up check). Degrades gracefully:
-whatever 5e can't encode structurally simply ships as reference docs (option-1 behaviour), which
-the contract permits by making everything optional beyond `id`/`name`. Pass.
+a momentum event — natural fit. Progress rolls: `roll` uses 2d10, and the track value arrives as an
+input with `source: 'read'`, so recording the inputs records what was read. (B) toy: one check, coin
+flip, two outcomes, zero suggestions — trivially implementable (canary passes). (C) 5e attack:
+inputs = attack bonus (from computed sheet, §7), interpret handles nat-20; suggestions = "roll
+damage" (a follow-up check). Degrades gracefully: whatever 5e cannot encode structurally ships as
+reference docs, which the contract permits by making everything optional beyond `id`/`name`. Pass.
 
 ## 7. Entities, sheets, tracks
 

@@ -122,6 +122,17 @@ export type {
 } from './roll.js';
 export { readRoll, ROLL_PERFORMED, rollEventTypes, rolls, validateRoll } from './roll.js';
 
+export type {
+  CheckDefinition,
+  CheckInput,
+  CheckOption,
+  CheckOutcome,
+  EffectSuggestion,
+  InputSource,
+  ProposalField,
+} from './check.js';
+export { describesEveryField } from './check.js';
+
 export type { OracleConsultedV1, OracleRow, PackageStamp } from './oracle.js';
 export { ORACLE_CONSULTED, oracleEventTypes, readOracleConsultation } from './oracle.js';
 
