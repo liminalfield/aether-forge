@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { openCampaign } from './campaign.js';
 import { createMemoryEventLog } from './memory-log.js';
+import type { Projection } from './projection.js';
 import { createEventSchemas } from './schema.js';
 import {
   readAdjustment,
@@ -11,8 +12,10 @@ import {
   SUGGESTION_DECLINED,
   SUGGESTION_OFFERED,
   suggestionEventTypes,
+  suggestions,
   type SuggestionOfferedV1,
 } from './suggestion.js';
+import { describeProjectionIsPredictable } from './testing/projection-contract.js';
 import { describeSchemaTranslations } from './testing/schema-contract.js';
 import { createTranslatingLog, type TranslatingLog } from './translating-log.js';
 
@@ -186,5 +189,127 @@ describeSchemaTranslations(
     { type: SUGGESTION_ACCEPTED, payloadsByVersion: { 1: {} } },
     { type: SUGGESTION_ADJUSTED, payloadsByVersion: { 1: { used: { by: -2 } } } },
     { type: SUGGESTION_DECLINED, payloadsByVersion: { 1: {} } },
+  ],
+);
+
+describe('what became of every suggestion', () => {
+  function openWithSuggestions() {
+    const log = aLog();
+    const opened = openCampaign(log, { projections: [suggestions as Projection<unknown>] });
+    if (!opened.ok) throw new Error(`could not open: ${opened.failure.kind}`);
+    return opened.value;
+  }
+
+  function offer(campaign: ReturnType<typeof openWithSuggestions>, id: string) {
+    const written = campaign.append({
+      type: SUGGESTION_OFFERED,
+      payload: { ...AN_OFFER, suggestion: id },
+    });
+    if (!written.ok) throw new Error('could not offer');
+    return written.value.id;
+  }
+
+  it('shows one nobody has answered yet', () => {
+    // A real state rather than a missing one. A suggestion can sit unanswered
+    // for as long as a person likes.
+    const campaign = openWithSuggestions();
+    offer(campaign, 'example.dummy/one');
+
+    expect(campaign.stateOf(suggestions).offers.map((each) => each.fate)).toEqual(['offered']);
+  });
+
+  it('keeps a declined suggestion, and says it was declined', () => {
+    const campaign = openWithSuggestions();
+    const offered = offer(campaign, 'example.dummy/one');
+    campaign.append({ type: SUGGESTION_DECLINED, causationId: offered, payload: {} });
+
+    const [only] = campaign.stateOf(suggestions).offers;
+    expect(only?.fate).toBe('declined');
+    expect(only?.label).toBe('Spend one from the resource');
+  });
+
+  it('records what a player used when they adjusted it', () => {
+    const campaign = openWithSuggestions();
+    const offered = offer(campaign, 'example.dummy/one');
+    campaign.append({
+      type: SUGGESTION_ADJUSTED,
+      causationId: offered,
+      payload: { used: { by: -2 } },
+    });
+
+    const [only] = campaign.stateOf(suggestions).offers;
+    expect(only?.fate).toBe('adjusted');
+    expect(only?.used).toEqual({ by: -2 });
+    // What was proposed is still there beside what was used.
+    expect(only?.proposes.payload).toEqual({ by: -1, reason: 'a hard landing' });
+  });
+
+  it('keeps several suggestions apart', () => {
+    const campaign = openWithSuggestions();
+    const first = offer(campaign, 'example.dummy/one');
+    const second = offer(campaign, 'example.dummy/two');
+
+    campaign.append({ type: SUGGESTION_ACCEPTED, causationId: first, payload: {} });
+    campaign.append({ type: SUGGESTION_DECLINED, causationId: second, payload: {} });
+
+    expect(campaign.stateOf(suggestions).offers.map((each) => each.fate)).toEqual([
+      'accepted',
+      'declined',
+    ]);
+  });
+
+  it.each([
+    ['an answer to something it has never seen', { causationId: 'event-nobody-offered' }],
+    ['an answer that points at nothing', {}],
+  ])('ignores %s entirely', (_name, extra) => {
+    const campaign = openWithSuggestions();
+    const before = campaign.stateOf(suggestions);
+
+    campaign.append({ type: SUGGESTION_DECLINED, ...extra, payload: {} });
+
+    expect(campaign.stateOf(suggestions)).toEqual(before);
+  });
+
+  it('ignores an offer that is not one', () => {
+    const campaign = openWithSuggestions();
+    campaign.append({ type: SUGGESTION_OFFERED, payload: { nonsense: true } });
+
+    expect(campaign.stateOf(suggestions).offers).toEqual([]);
+  });
+
+  it('lets a person change an answer by answering again', () => {
+    // Not a correction. The first answer happened and stays in the log; this is
+    // a second decision, later.
+    const campaign = openWithSuggestions();
+    const offered = offer(campaign, 'example.dummy/one');
+
+    campaign.append({ type: SUGGESTION_DECLINED, causationId: offered, payload: {} });
+    campaign.append({ type: SUGGESTION_ACCEPTED, causationId: offered, payload: {} });
+
+    expect(campaign.stateOf(suggestions).offers[0]?.fate).toBe('accepted');
+  });
+});
+
+describeProjectionIsPredictable(
+  'what became of every suggestion',
+  () => suggestions,
+  () => [
+    {
+      id: 'event-1',
+      seq: 1,
+      at: '2026-08-06T09:00:01.000Z',
+      type: SUGGESTION_OFFERED,
+      schemaVersion: 1,
+      payload: AN_OFFER,
+    },
+    {
+      id: 'event-2',
+      seq: 2,
+      at: '2026-08-06T09:00:02.000Z',
+      type: SUGGESTION_DECLINED,
+      schemaVersion: 1,
+      causationId: 'event-1',
+      payload: {},
+    },
   ],
 );

@@ -15,7 +15,9 @@
  * See `design/checks-and-moves.md`.
  */
 
+import type { EventEnvelope } from './event.js';
 import type { EventId } from './identifiers.js';
+import type { Projection } from './projection.js';
 import type { EventTypeDefinition } from './schema.js';
 
 export const SUGGESTION_OFFERED = 'core.suggestion.offered';
@@ -152,3 +154,73 @@ export interface SuggestionRecord {
   /** Present when the fate is `adjusted`. */
   readonly used?: Readonly<Record<string, unknown>>;
 }
+
+/** Every suggestion in the campaign, and what became of each. */
+export interface Suggestions {
+  /** In the order they were offered. */
+  readonly offers: readonly SuggestionRecord[];
+  /**
+   * Which offer each answer belongs to.
+   *
+   * A plain object rather than a Map, so the state stays something that can be
+   * written out unchanged when snapshots arrive.
+   */
+  readonly answerTo: Readonly<Record<EventId, EventId>>;
+}
+
+const ANSWERS: Readonly<Record<string, SuggestionFate>> = {
+  [SUGGESTION_ACCEPTED]: 'accepted',
+  [SUGGESTION_ADJUSTED]: 'adjusted',
+  [SUGGESTION_DECLINED]: 'declined',
+};
+
+/**
+ * What was proposed, and what happened to it.
+ *
+ * A declined suggestion stays here. So does one nobody has answered yet, which
+ * is a real state rather than a missing one: a suggestion can sit unanswered
+ * for as long as a person likes.
+ *
+ * An answer is matched to its offer through the event's own causation. An
+ * answer that points at nothing this campaign has seen is left alone rather
+ * than guessed about.
+ */
+export const suggestions: Projection<Suggestions> = {
+  id: 'core.suggestions',
+
+  initial: () => ({ offers: [], answerTo: {} }),
+
+  apply: (state, event: EventEnvelope): Suggestions => {
+    if (event.type === SUGGESTION_OFFERED) {
+      const offer = readOffer(event.payload);
+      if (offer === undefined) return state;
+
+      const record: SuggestionRecord = {
+        id: event.id,
+        suggestion: offer.suggestion,
+        label: offer.label,
+        proposes: offer.proposes,
+        fate: 'offered',
+        ...(offer.why === undefined ? {} : { why: offer.why }),
+      };
+
+      return { offers: [...state.offers, record], answerTo: state.answerTo };
+    }
+
+    const fate = ANSWERS[event.type];
+    if (fate === undefined) return state;
+
+    const answers = event.causationId;
+    if (answers === undefined) return state;
+    if (!state.offers.some((offer) => offer.id === answers)) return state;
+
+    const used = fate === 'adjusted' ? readAdjustment(event.payload)?.used : undefined;
+
+    return {
+      offers: state.offers.map((offer) =>
+        offer.id === answers ? { ...offer, fate, ...(used === undefined ? {} : { used }) } : offer,
+      ),
+      answerTo: { ...state.answerTo, [event.id]: answers },
+    };
+  },
+};
