@@ -95,6 +95,10 @@ export const momentum: ModuleProjection<Momentum> = {
  * Declared by the module rather than by the application, because the module is
  * the only thing that knows what its events mean or how they have changed.
  */
+/** The two event types a check writes either side of its roll. */
+export const MOVE_INVOKED = 'sys.ironsworn-starforged.move.invoked';
+export const MOVE_RESOLVED = 'sys.ironsworn-starforged.move.resolved';
+
 export const eventTypes: readonly EventTypeDefinition[] = [
   {
     type: MOMENTUM_CHANGED,
@@ -104,11 +108,11 @@ export const eventTypes: readonly EventTypeDefinition[] = [
     // not pretending it moved by something else.
     corrections: 'records-a-change',
   },
+  // Both say what the check ran with and what it came to, so both can be
+  // restated. Neither records a change to anything.
+  { type: MOVE_INVOKED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
+  { type: MOVE_RESOLVED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
 ];
-
-/** The two event types a check writes either side of its roll. */
-export const MOVE_INVOKED = 'sys.ironsworn-starforged.move.invoked';
-export const MOVE_RESOLVED = 'sys.ironsworn-starforged.move.resolved';
 
 /**
  * The stats a character rolls with.
