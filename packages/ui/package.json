@@ -31,7 +31,18 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/react": "19.2.18",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    }
   }
 }
