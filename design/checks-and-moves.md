@@ -127,9 +127,12 @@ This record proposes that it carries the first three and not the last.
 
 What the application suggested is already in events 46 and 47, in full, with the reason it gave. A
 second copy inside the module's payload is two records of one fact, and two records of one fact
-eventually disagree. It is also the same mistake this project has now caught three times: on
-`request.reason`, on the identifier inside a superseding roll, and on the number inside an oracle
-consultation. The pattern is worth naming rather than rediscovering.
+eventually disagree.
+
+This is the same mistake three times over. It happened with `request.reason` on a roll, with the
+identifier inside a superseding roll, and with the rolled number inside an oracle consultation. Each
+time, one fact was about to be written in two places. Naming the pattern here should make the fourth
+one quicker to spot.
 
 So the module event says what the check was run with. The core events say where those values came
 from. Following `causation_id` backwards from the invocation reaches the acceptance that produced
@@ -142,8 +145,9 @@ They can decline the roll's outcome by revising it. There is no state a check ca
 application will not record.
 
 This is not a rule anybody has to remember, and it must not become one. There is nowhere in the
-contract to put "illegal": a check declares inputs and interprets results, and neither of those is a
-channel through which a module could refuse. Keeping it that way is the whole design.
+contract to put the word "illegal". A check does two things: it says what inputs it takes, and it
+says what a result means. Neither of those lets a module say no. Keeping it that way is the whole
+design.
 
 The one check that exists is the same one dice have: a value has to be a number. That is not a
 judgement about play.
@@ -162,10 +166,12 @@ kind built alongside it.
 The module contract currently says a suggestion's `events(ctx)` returns `EventEnvelope[]`. That is
 wrong and this record corrects it.
 
-An envelope carries an identifier, a position in the log, a timestamp and a schema version. Every
-one of those is core's to assign when it writes, and a module that filled them in would either be
-ignored or believed, and both are bad. A module returns a draft: a type, a payload, and nothing
-else.
+An envelope carries an identifier, a position in the log, a timestamp and a schema version. Core
+assigns all four when it writes the event. If a module filled them in, core would have two choices
+and neither is good: ignore what the module wrote, which makes the fields pointless, or trust it,
+which lets a module hand out positions in a log it cannot see.
+
+A module returns a draft instead: a type, a payload, and nothing else.
 
 ## What we are deliberately not doing
 
@@ -193,13 +199,15 @@ the shape as described and nothing here is built for it.
 number: the application proposes −1 momentum and the player makes it −2. What is unclear is whether
 adjustment reaches anything other than a number.
 
-_Why it matters:_ if a proposal is adjustable in general, then a module has to describe what about
-it is adjustable, and the shape of a suggestion grows a great deal. If it is one number, the shape
-stays small and a player wanting something else declines and does it by hand, which is more steps
-for a case nobody has measured.
+_Why it matters:_ if anything about a proposal can be adjusted, then a module has to describe which
+parts are adjustable and what the limits are, and a suggestion stops being a small thing.
 
-_What would settle it:_ playing with the narrow version and noticing how often declining is used as
-a way of adjusting something that was not a number.
+If only a number can be adjusted, a suggestion stays simple. A player who wants to change anything
+else has to decline it and do that thing by hand. That is more work for them, and nobody has
+measured how often it would come up.
+
+_What would settle it:_ building the narrow version, playing with it, and counting how often
+declining turns out to be someone's way of adjusting something that was not a number.
 
 **Does a check need to record what it was reading at the time?**
 
@@ -209,8 +217,9 @@ explained by replaying. But nothing points at it directly.
 
 _Why it matters:_ if understanding event 50 means first replaying everything before it, then reading
 the log is a much bigger job than it sounds, and only a program can do it. If instead every check
-records the values it read, payloads grow and the same fact lives in two places, which this record
-spends a section above arguing against.
+writes down the values it read, those events get bigger, and the same fact ends up recorded twice:
+once where it was set, and again inside the check. This record argues against exactly that a few
+sections above.
 
 _What would settle it:_ trying to explain a progress roll from the log alone, once there are
 progress tracks to roll against.
