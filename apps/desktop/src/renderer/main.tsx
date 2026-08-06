@@ -1,7 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { customPropertiesFor, glacialDark } from '@aether-forge/ui';
+import { customPropertiesFor, glacialDark, typeProperties } from '@aether-forge/ui';
+
+import './fonts.css';
 
 import { App } from './App';
 
@@ -11,7 +13,10 @@ import { App } from './App';
  * is this same loop with different values, and nothing that has already
  * rendered has to know.
  */
-for (const [property, value] of Object.entries(customPropertiesFor(glacialDark))) {
+for (const [property, value] of Object.entries({
+  ...customPropertiesFor(glacialDark),
+  ...typeProperties(),
+})) {
   document.documentElement.style.setProperty(property, value);
 }
 

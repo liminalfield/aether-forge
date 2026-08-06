@@ -41,6 +41,27 @@ Every dependency must pass `pnpm check:licenses`, which enforces an SPDX allowli
 Adding an SPDX identifier to either list is a deliberate decision that belongs in its own PR, with
 the reasoning written down.
 
+## Bundled typefaces
+
+Three typefaces ship inside the application as files rather than being fetched. It is offline-first,
+so a font that needs the network is a font that is sometimes not there, and the renderer's content
+security policy forbids loading from another origin in any case.
+
+All three are licensed under the [SIL Open Font License 1.1](https://openfontlicense.org), which is
+GPL-compatible and places no restriction on bundling them in an application.
+
+| Typeface      | Used for                                  | Copyright                                           |
+| ------------- | ----------------------------------------- | --------------------------------------------------- |
+| Literata      | prose and display                         | Copyright 2017 The Literata Project Authors         |
+| Archivo       | interface text and labels                 | Copyright 2020 The Archivo Project Authors          |
+| IBM Plex Mono | dice, meters and small capitalised labels | Copyright 2017 IBM Corp., Reserved Font Name "Plex" |
+
+The files live in `apps/desktop/src/renderer/fonts`, and the full licence text ships with the
+application in `apps/desktop/src/renderer/fonts/OFL.txt`.
+
+These are not npm dependencies, so `pnpm check:licenses` does not see them. That guard reads the
+dependency tree, and a committed file is not in it. This section is the record instead.
+
 ## Game content
 
 Game content is **not** covered by either license above.
