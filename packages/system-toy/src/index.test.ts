@@ -1,12 +1,19 @@
 import { asProjection, describeProjectionIsPredictable } from '@aether-forge/core/testing';
-import { ROLL_PERFORMED, type EventEnvelope, type RollPerformedV1 } from '@aether-forge/core';
+import {
+  ROLL_PERFORMED,
+  sequenceCheck,
+  type EventEnvelope,
+  type RollPerformedV1,
+} from '@aether-forge/core';
 import { describe, expect, it } from 'vitest';
 
 import {
-  coinRolls,
-  coinTally,
+  CALL_IT,
+  checks,
   COIN,
   COIN_FLIPPED,
+  coinRolls,
+  coinTally,
   COMPATIBLE_CORE_CONTRACT_VERSION,
   readCoinFlip,
   TOY_SYSTEM_ID,
@@ -184,5 +191,91 @@ describe('a coin flip with no module event at all', () => {
     };
 
     expect(tally(rolled(someoneElsesCoin))).toEqual({ flips: 1, heads: 1, tails: 0 });
+  });
+});
+
+describe('the whole system, as one check', () => {
+  function aCoinRollOf(value: number): RollPerformedV1 {
+    return {
+      request: { dice: [COIN] },
+      dice: [{ sides: 2, value, source: { kind: 'digital' } }],
+    };
+  }
+
+  it('needs no inputs and proposes nothing', () => {
+    // The contract's stress test says this system needs neither. A check with
+    // no opinion about what should happen next has to work as well as one that
+    // has plenty.
+    expect(CALL_IT.inputs).toEqual([]);
+    expect(CALL_IT.interpret(aCoinRollOf(1), {}).suggests).toEqual([]);
+  });
+
+  it('says which way it fell', () => {
+    expect(CALL_IT.interpret(aCoinRollOf(1), {}).id).toBe('heads');
+    expect(CALL_IT.interpret(aCoinRollOf(2), {}).id).toBe('tails');
+  });
+
+  it('gives the same answer for the same roll, every time', () => {
+    expect(CALL_IT.interpret(aCoinRollOf(1), {})).toEqual(CALL_IT.interpret(aCoinRollOf(1), {}));
+  });
+
+  it('says so rather than picking a side when the roll was not a coin', () => {
+    const aTenSidedDie: RollPerformedV1 = {
+      request: { dice: [{ sides: 10, count: 1 }] },
+      dice: [{ sides: 10, value: 7, source: { kind: 'manual' } }],
+    };
+
+    expect(CALL_IT.interpret(aTenSidedDie, {}).id).toBe('not-a-coin');
+    expect(CALL_IT.interpret(null, {}).id).toBe('not-a-coin');
+  });
+
+  it('asks for exactly one coin', () => {
+    expect(CALL_IT.roll).toEqual({ dice: [COIN] });
+  });
+
+  it('is the only check this module offers', () => {
+    expect(checks).toEqual([CALL_IT]);
+  });
+});
+
+describe('running the toy check through core', () => {
+  it('produces an invocation, a roll and a resolution, and nothing else', () => {
+    // The canary. If a coin flip cannot be a check trivially, the contract is
+    // wrong and the toy is not what needs fixing.
+    const roll: RollPerformedV1 = {
+      request: { dice: [COIN] },
+      dice: [{ sides: 2, value: 1, source: { kind: 'digital' } }],
+    };
+
+    const drafts = sequenceCheck({
+      check: CALL_IT,
+      systemId: TOY_SYSTEM_ID,
+      offered: [],
+      inputs: {},
+      roll,
+      outcome: CALL_IT.interpret(roll, {}),
+      answers: {},
+      events: {
+        invoked: 'sys.toy-coinflip.check.invoked',
+        resolved: 'sys.toy-coinflip.check.resolved',
+      },
+    });
+
+    expect(drafts.map((each) => each.draft.type)).toEqual([
+      'sys.toy-coinflip.check.invoked',
+      ROLL_PERFORMED,
+      'sys.toy-coinflip.check.resolved',
+    ]);
+  });
+
+  it('needed no change to core to do it', () => {
+    // Nothing in the check is toy-shaped: a request, a roll, an outcome with an
+    // identifier core has no opinion about.
+    expect(
+      CALL_IT.interpret(
+        { request: { dice: [COIN] }, dice: [{ sides: 2, value: 2, source: { kind: 'manual' } }] },
+        {},
+      ).id,
+    ).toBe('tails');
   });
 });
