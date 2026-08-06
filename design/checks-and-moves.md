@@ -168,6 +168,29 @@ than a random seed.
 What a check reads is whatever its inputs took from campaign state, so the module already knows the
 list. It records the values it used, and nothing else.
 
+### Every part of a suggestion can be changed, and describing them is compulsory
+
+The application suggests "Momentum −1" and the player makes it −2. Some suggestions have no number:
+"Mark progress on the Kingfisher repair" has a target instead.
+
+A player can change any part of any suggestion. A proposal describes its own fields, and the
+contract requires it rather than allowing it.
+
+The narrower option was to allow only an amount to change. It costs less, and it means some
+suggestions can be adjusted and some cannot, because some have no amount in them. The player presses
+adjust and sometimes nothing happens. Whether it works depends on which suggestion is in front of
+them, which is not something anybody can learn.
+
+Making the description optional produces the same problem by a different route. Modules would
+describe some proposals and not others, and the player would still be guessing.
+
+So a proposal carries a small description of its fields: what each one is, and what kind of value it
+takes. Every module pays that cost. The toy pays nothing, because its check proposes nothing, and
+that is the canary confirming the addition is not Ironsworn-shaped.
+
+The player's change is recorded on `core.suggestion.adjusted`, so the log holds what was proposed
+and what was used.
+
 ### A module proposes drafts, not events
 
 The module contract currently says a suggestion's `events(ctx)` returns `EventEnvelope[]`. That is
@@ -198,34 +221,20 @@ its checks in code, which is enough to prove the shape and is how the toy will a
 **Follow-up checks.** A suggestion whose proposal is "now roll damage" is a chain of checks. It fits
 the shape as described and nothing here is built for it.
 
-## Open questions
-
-**Can a player change what a suggestion applies to, or only how much?**
-
-The application suggests "Momentum −1". The player changes the number to −2. That case works.
-
-Some suggestions have no number. "Mark progress on the Kingfisher repair" has a target rather than
-an amount. "Pay the price" has neither.
-
-Three answers are possible:
-
-- **Only the amount.** To mark a different track, you decline the suggestion and mark it yourself.
-- **The amount and the target.** You can redirect "mark progress" to a different vow without
-  declining it.
-- **Anything.** A module describes every part of a proposal and says which parts can be changed.
-
-The first keeps a suggestion small. The third means a module has to describe its own proposals in
-enough detail for an interface to edit them, which is a large addition to the contract.
-
-_What would settle it:_ build the first, play with it, and count how often declining turns out to be
-somebody's way of changing a target.
-
 ## What this changes elsewhere
 
-**The module contract changes in three places**, all of §6. `EffectSuggestion.events` returns drafts
-rather than envelopes. `CheckOutcome` gains nothing but its recording is now specified: the outcome
-is written into the module's own event rather than recomputed. And the note about what the
-invocation event carries drops the suggestion audit, which lives in core events.
+**The module contract changes in four places**, all of §6.
+
+`EffectSuggestion.events` returns drafts rather than envelopes.
+
+`EffectSuggestion` gains a description of its own fields, so any part of a proposal can be changed.
+Compulsory, not optional.
+
+`CheckOutcome` is recorded rather than recomputed, and it carries the campaign values the check
+read.
+
+The note about what the invocation event carries drops the suggestion audit, which lives in core
+events.
 
 **Core gains the `core.suggestion.*` family**: offered, accepted, adjusted, declined. Four event
 types, and the only part of a check core understands.
@@ -254,3 +263,7 @@ reader sees one thing rather than eight.
 in it, then the contract is stopping them saying no directly while letting them say it sideways.
 That is worse than giving them a proper way to refuse, because the refusal still reaches the player
 and nothing in the log records that it happened.
+
+**If describing every field of a proposal turns out to be more work than modules will do well**, so
+that the descriptions are thin or wrong and the interface renders nonsense, then compulsory was the
+wrong call and the narrower version should return, with the inconsistency accepted and stated.
