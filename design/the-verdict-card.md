@@ -60,6 +60,21 @@ Typing a number every roll is worse to use and costs nothing later. It is also n
 the usual sense: every input is editable at the point of rolling anyway, permanently, because that
 is what the application promises. This changes how often you use that, not whether it exists.
 
+### The main process rolls, and the window can hand in dice instead
+
+Randomness lives in the main process, beside the other two unpredictable inputs it already supplies
+when an event is written: the time, and the identifier.
+
+The window can supply die values instead of asking for a roll. That is not a concession for testing.
+It is manual entry, which every roll surface has to accept anyway, because a person throwing real
+dice types in what they showed.
+
+So a test that needs known dice uses the same route a player uses with a handful of dice on the
+table. There is no test-only path, and nothing has to be reached into.
+
+When the window supplies nothing, the main process rolls and the dice are recorded as digital. When
+it supplies values, they are recorded as manual. Everything downstream is identical.
+
 ### The card is a component, and it knows nothing about Ironsworn
 
 The handoff describes the card in Starforged terms: an action die in a box, `+adds =`, a total,
@@ -114,18 +129,6 @@ or a piece of litter, and the answer probably depends on how long ago it was.
 
 _What would settle it:_ leaving one unanswered on purpose during a session and seeing whether it is
 wanted or in the way.
-
-**Does the roll happen in the main process or the window?**
-
-Randomness has to come from somewhere. The main process already supplies the two unpredictable
-inputs for writing an event, so it is the obvious place.
-
-_Why it matters:_ if the window rolls, the number crosses the contract as data and the main process
-records what it was told, which makes a test that fixes the dice trivial. If the main process rolls,
-the window cannot influence it, and fixing the dice for a test means reaching into the main process.
-
-_What would settle it:_ writing the first packaged test that needs a known roll, and seeing which
-version is possible to write.
 
 ## What this changes elsewhere
 
