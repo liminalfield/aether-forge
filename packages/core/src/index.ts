@@ -133,6 +133,24 @@ export type {
 } from './check.js';
 export { describesEveryField } from './check.js';
 
+export type {
+  SuggestionAcceptedV1,
+  SuggestionAdjustedV1,
+  SuggestionDeclinedV1,
+  SuggestionFate,
+  SuggestionOfferedV1,
+  SuggestionRecord,
+} from './suggestion.js';
+export {
+  readAdjustment,
+  readOffer,
+  SUGGESTION_ACCEPTED,
+  SUGGESTION_ADJUSTED,
+  SUGGESTION_DECLINED,
+  SUGGESTION_OFFERED,
+  suggestionEventTypes,
+} from './suggestion.js';
+
 export type { OracleConsultedV1, OracleRow, PackageStamp } from './oracle.js';
 export { ORACLE_CONSULTED, oracleEventTypes, readOracleConsultation } from './oracle.js';
 

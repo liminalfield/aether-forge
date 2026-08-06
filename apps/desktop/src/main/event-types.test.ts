@@ -57,5 +57,19 @@ describeSchemaTranslations('this build', declareEventTypes, [
       },
     },
   },
+  {
+    type: SUGGESTION_OFFERED,
+    payloadsByVersion: {
+      1: {
+        suggestion: 'example.dummy/spend-one',
+        label: 'Spend one from the resource',
+        why: 'the approach was costly',
+        proposes: { type: 'sys.example.resource.moved', payload: { by: -1 } },
+      },
+    },
+  },
+  { type: SUGGESTION_ACCEPTED, payloadsByVersion: { 1: {} } },
+  { type: SUGGESTION_ADJUSTED, payloadsByVersion: { 1: { used: { by: -2 } } } },
+  { type: SUGGESTION_DECLINED, payloadsByVersion: { 1: {} } },
   ...moduleSamples,
 ]);
