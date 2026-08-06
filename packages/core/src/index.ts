@@ -134,6 +134,14 @@ export type {
 export { describesEveryField } from './check.js';
 
 export type {
+  CheckRun,
+  OfferedInput,
+  SequencedDraft,
+  SuggestionAnswer,
+} from './running-a-check.js';
+export { sequenceCheck } from './running-a-check.js';
+
+export type {
   SuggestionAcceptedV1,
   SuggestionAdjustedV1,
   SuggestionDeclinedV1,
