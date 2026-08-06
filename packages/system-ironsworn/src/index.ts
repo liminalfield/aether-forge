@@ -9,8 +9,13 @@
 
 import {
   CORE_CONTRACT_VERSION,
+  readRoll,
+  type CheckDefinition,
+  type CheckOutcome,
+  type EffectSuggestion,
   type EventTypeDefinition,
   type ModuleProjection,
+  type RollPerformedV1,
   type SystemId,
 } from '@aether-forge/core';
 
@@ -100,3 +105,122 @@ export const eventTypes: readonly EventTypeDefinition[] = [
     corrections: 'records-a-change',
   },
 ];
+
+/** The two event types a check writes either side of its roll. */
+export const MOVE_INVOKED = 'sys.ironsworn-starforged.move.invoked';
+export const MOVE_RESOLVED = 'sys.ironsworn-starforged.move.resolved';
+
+/**
+ * The stats a character rolls with.
+ *
+ * Rulebook vocabulary, which is exactly why it lives here and not in core.
+ */
+export const STATS = ['edge', 'heart', 'iron', 'shadow', 'wits'] as const;
+
+/**
+ * Face Danger, as a check.
+ *
+ * The first check with everything in it: a choice the application has an
+ * opinion about, dice, an interpretation, and a proposed effect the player can
+ * change or refuse.
+ *
+ * The action die is added to the stat and any bonus, and the total is compared
+ * against each challenge die. Beating both is a strong hit, beating one is a
+ * weak hit, beating neither is a miss.
+ */
+export const FACE_DANGER: CheckDefinition = {
+  id: 'starforged/moves/adventure/face_danger',
+  name: 'Face Danger',
+
+  roll: {
+    dice: [
+      { sides: 6, count: 1, label: 'action' },
+      { sides: 10, count: 2, label: 'challenge' },
+    ],
+  },
+
+  inputs: [
+    {
+      id: 'stat',
+      label: 'Stat',
+      kind: 'choice',
+      source: 'chosen',
+      options: STATS.map((stat) => ({ id: stat, label: stat, value: 0 })),
+    },
+    { id: 'bonus', label: 'Bonus', kind: 'number', source: 'chosen' },
+  ],
+
+  interpret: (roll, inputs) => interpretFaceDanger(roll, inputs),
+};
+
+/** Everything the check offers. One is enough to prove the shape carries a real system. */
+export const checks: readonly CheckDefinition[] = [FACE_DANGER];
+
+function interpretFaceDanger(
+  roll: RollPerformedV1 | null,
+  inputs: Readonly<Record<string, number>>,
+): CheckOutcome {
+  const read = roll === null ? undefined : readRoll(roll);
+  const action = read?.dice[0];
+  const challenge = read?.dice.slice(1) ?? [];
+
+  if (action === undefined || challenge.length !== 2) {
+    return {
+      id: 'unreadable',
+      label: 'Unreadable',
+      summary: 'That roll was not an action roll.',
+      suggests: [],
+    };
+  }
+
+  const total = action.value + (inputs['stat'] ?? 0) + (inputs['bonus'] ?? 0);
+  const beaten = challenge.filter((die) => total > die.value).length;
+
+  if (beaten === 2) {
+    return {
+      id: 'strong-hit',
+      label: 'Strong hit',
+      summary: 'You do it, and you are in control.',
+      suggests: [momentumSuggestion(1, 'a clean success')],
+    };
+  }
+
+  if (beaten === 1) {
+    return {
+      id: 'weak-hit',
+      label: 'Weak hit',
+      summary: 'You do it, but at a cost.',
+      suggests: [momentumSuggestion(-1, 'a cost paid')],
+    };
+  }
+
+  return {
+    id: 'miss',
+    label: 'Miss',
+    summary: 'It goes badly.',
+    suggests: [momentumSuggestion(-2, 'it went badly')],
+  };
+}
+
+/**
+ * What the module proposes doing about an outcome.
+ *
+ * Every field of the proposal is described, because the contract requires it. A
+ * proposal describing only some of its payload would be adjustable in parts,
+ * and a player pressing adjust would be guessing at which parts.
+ */
+function momentumSuggestion(by: number, reason: string): EffectSuggestion {
+  return {
+    id: `${FACE_DANGER.id}#momentum`,
+    label: `Momentum ${by > 0 ? '+' : ''}${by}`,
+    fields: [
+      { id: 'by', label: 'Amount', kind: 'number' as const },
+      { id: 'reason', label: 'Reason', kind: 'text' as const },
+    ],
+    proposes: {
+      type: MOMENTUM_CHANGED,
+      systemId: STARFORGED_SYSTEM_ID,
+      payload: { by, reason },
+    },
+  };
+}
