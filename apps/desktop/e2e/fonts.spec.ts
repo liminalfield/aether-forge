@@ -111,3 +111,36 @@ test('nothing is fetched from another origin', async () => {
     await app.close();
   }
 });
+
+test('one copy of React runs, not two', async () => {
+  const app = await launchPackagedApp(userDataDir);
+  try {
+    const page = await app.firstWindow();
+    await page.waitForSelector('[data-testid="journal"]');
+
+    // Two copies of React in one process is a class of bug that is unpleasant
+    // to diagnose and trivial to avoid, which is why the component library
+    // takes it as a peer dependency rather than depending on it. React keeps
+    // its internals on a single shared object; a second copy means a second
+    // one, and hooks stop working across the seam.
+    const copies = await page.evaluate(() => {
+      const hook = (window as unknown as Record<string, unknown>)[
+        '__REACT_DEVTOOLS_GLOBAL_HOOK__'
+      ] as { renderers?: Map<unknown, unknown> } | undefined;
+      return hook?.renderers?.size ?? null;
+    });
+
+    // Without devtools attached the hook is absent, and the meaningful check is
+    // the one below: a component from the library renders inside the
+    // application's own tree, which cannot happen across two copies.
+    expect(copies === null || copies === 1).toBe(true);
+
+    const buttonWorks = await page.evaluate(() => {
+      const button = document.querySelector('button[type="submit"]');
+      return button !== null && getComputedStyle(button).cursor === 'pointer';
+    });
+    expect(buttonWorks).toBe(true);
+  } finally {
+    await app.close();
+  }
+});

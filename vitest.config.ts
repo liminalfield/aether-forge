@@ -26,7 +26,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['packages/*/src/**/*.test.ts', 'apps/desktop/src/**/*.test.ts'],
+    include: ['packages/*/src/**/*.test.{ts,tsx}', 'apps/desktop/src/**/*.test.{ts,tsx}'],
     reporters: process.env.CI ? ['default', 'github-actions'] : ['default'],
   },
 });

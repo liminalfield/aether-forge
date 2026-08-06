@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { slot, tokens } from '@aether-forge/ui';
+import { Button, slot, tokens } from '@aether-forge/ui';
 
 import type { JournalEntryView } from '../shared/ipc';
 
@@ -12,27 +12,6 @@ import type { JournalEntryView } from '../shared/ipc';
  * the markup is kept simple so that a real design can replace the styling
  * without touching any of it.
  */
-const primaryButton = {
-  background: slot('accent', 'accent'),
-  color: slot('ground', 'base'),
-  border: 'none',
-  borderRadius: tokens.radius.md,
-  padding: `${tokens.space.sm} ${tokens.space.md}`,
-  font: 'inherit',
-  fontWeight: 600,
-  cursor: 'pointer',
-} as const;
-
-const quietButton = {
-  background: 'none',
-  color: slot('ink', 'muted'),
-  border: `1px solid ${slot('ink', 'hairline')}`,
-  borderRadius: tokens.radius.md,
-  padding: `${tokens.space.sm} ${tokens.space.md}`,
-  font: 'inherit',
-  cursor: 'pointer',
-} as const;
-
 export function App(): React.JSX.Element {
   const [version, setVersion] = useState<string | null>(null);
   const [entries, setEntries] = useState<readonly JournalEntryView[] | null>(null);
@@ -175,12 +154,12 @@ export function App(): React.JSX.Element {
                   }}
                 />
                 <div style={{ display: 'flex', gap: tokens.space.sm }}>
-                  <button type="submit" disabled={busy} style={primaryButton}>
+                  <Button type="submit" disabled={busy}>
                     Save
-                  </button>
-                  <button type="button" onClick={stopCorrecting} style={quietButton}>
+                  </Button>
+                  <Button weight="quiet" onClick={stopCorrecting}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             ) : (
@@ -255,9 +234,9 @@ export function App(): React.JSX.Element {
             resize: 'vertical',
           }}
         />
-        <button type="submit" disabled={busy} style={{ ...primaryButton, justifySelf: 'start' }}>
+        <Button type="submit" disabled={busy} style={{ justifySelf: 'start' }}>
           Record it
-        </button>
+        </Button>
       </form>
 
       {problem !== null && (
