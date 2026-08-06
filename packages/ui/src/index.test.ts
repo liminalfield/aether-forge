@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { tokens } from './index.js';
-import { customPropertiesFor, glacialDark, slot, SLOTS, type Theme } from './theme.js';
+import {
+  builtInThemes,
+  customPropertiesFor,
+  emberDark,
+  glacialDark,
+  slot,
+  slotsThatDiffer,
+  SLOTS,
+  type Theme,
+} from './theme.js';
 
 describe('@aether-forge/ui', () => {
   it('exposes a token scale', () => {
@@ -92,5 +101,68 @@ describe('turning a theme into properties', () => {
     };
 
     expect(customPropertiesFor(nonsense)['--accent-pressure']).toBe('k');
+  });
+});
+
+describe('a theme is a palette and never new component design', () => {
+  it('produces exactly the same properties whichever theme it is', () => {
+    // The claim the whole design system rests on, and the only assertion here
+    // that really proves it. If two themes ever produced different property
+    // names, something drawing would have to know which theme was in use.
+    expect(Object.keys(customPropertiesFor(glacialDark))).toEqual(
+      Object.keys(customPropertiesFor(emberDark)),
+    );
+  });
+
+  it('moves twelve values between glacial and ember, and nothing else', () => {
+    // Twelve, not the eleven the handoff claimed. It counted the five ground
+    // slots, four ink and two accent, and did not count outcome.miss, which it
+    // also rotates. Asserted rather than quoted so the number cannot drift.
+    expect(slotsThatDiffer(glacialDark, emberDark)).toEqual([
+      '--ground-void',
+      '--ground-sunken',
+      '--ground-base',
+      '--ground-raised',
+      '--ground-overlay',
+      '--ink-primary',
+      '--ink-secondary',
+      '--ink-muted',
+      '--ink-hairline',
+      '--accent-accent',
+      '--accent-pressure',
+      '--outcome-miss',
+    ]);
+  });
+
+  it('keeps strong, weak and match meaning the same thing in both', () => {
+    // An outcome that reads the same whichever system you are playing is worth
+    // more than a warmer green.
+    for (const name of ['strong', 'weak', 'match'] as const) {
+      expect(glacialDark.outcome[name], name).toBe(emberDark.outcome[name]);
+    }
+  });
+
+  it('says a theme differs from itself in nothing at all', () => {
+    expect(slotsThatDiffer(glacialDark, glacialDark)).toEqual([]);
+  });
+});
+
+describe('the themes that ship', () => {
+  it('lists them', () => {
+    expect(builtInThemes.map((theme) => theme.name)).toEqual(['Glacial dark', 'Ember dark']);
+  });
+
+  it('gives every one of them all fifteen slots', () => {
+    for (const theme of builtInThemes) {
+      expect(Object.keys(customPropertiesFor(theme)), theme.name).toHaveLength(15);
+    }
+  });
+
+  it('gives every one of them a value in every slot', () => {
+    for (const theme of builtInThemes) {
+      for (const [property, value] of Object.entries(customPropertiesFor(theme))) {
+        expect(value, `${theme.name} ${property}`).not.toBe('');
+      }
+    }
   });
 });
