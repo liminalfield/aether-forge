@@ -3,6 +3,7 @@ import {
   journalEventTypes,
   oracleEventTypes,
   rollEventTypes,
+  suggestionEventTypes,
   type EventSchemas,
   type EventTypeDefinition,
 } from '@aether-forge/core';
@@ -23,6 +24,7 @@ export function declareEventTypes(): EventSchemas {
     ...journalEventTypes,
     ...rollEventTypes,
     ...oracleEventTypes,
+    ...suggestionEventTypes,
     ...toyEventTypes,
     ...ironswornEventTypes,
   ];

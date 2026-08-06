@@ -1,6 +1,15 @@
 import { describeSchemaTranslations } from '@aether-forge/core/testing';
 
-import { ENTRY_CREATED, ENTRY_REVISED, ORACLE_CONSULTED, ROLL_PERFORMED } from '@aether-forge/core';
+import {
+  ENTRY_CREATED,
+  ENTRY_REVISED,
+  ORACLE_CONSULTED,
+  ROLL_PERFORMED,
+  SUGGESTION_ACCEPTED,
+  SUGGESTION_ADJUSTED,
+  SUGGESTION_DECLINED,
+  SUGGESTION_OFFERED,
+} from '@aether-forge/core';
 import { eventTypes as ironswornEventTypes } from '@aether-forge/system-ironsworn';
 import { eventTypes as toyEventTypes } from '@aether-forge/system-toy';
 
@@ -57,5 +66,19 @@ describeSchemaTranslations('this build', declareEventTypes, [
       },
     },
   },
+  {
+    type: SUGGESTION_OFFERED,
+    payloadsByVersion: {
+      1: {
+        suggestion: 'example.dummy/spend-one',
+        label: 'Spend one from the resource',
+        why: 'the approach was costly',
+        proposes: { type: 'sys.example.resource.moved', payload: { by: -1 } },
+      },
+    },
+  },
+  { type: SUGGESTION_ACCEPTED, payloadsByVersion: { 1: {} } },
+  { type: SUGGESTION_ADJUSTED, payloadsByVersion: { 1: { used: { by: -2 } } } },
+  { type: SUGGESTION_DECLINED, payloadsByVersion: { 1: {} } },
   ...moduleSamples,
 ]);
