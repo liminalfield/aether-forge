@@ -10,9 +10,10 @@ something, you roll, and what you rolled means something. It is the last large u
 the model, and almost everything visible in the design waits on it. The verdict card is the
 centrepiece of the whole interface and it is a picture of one check.
 
-It is also where the promise the project is built on either becomes real or quietly does not. The
-application computes everything and decides nothing. A check is the one place where it would be
-easiest, and most tempting, to decide.
+The project promises that the application computes everything and decides nothing. A check is the
+hardest place to keep that promise. The application knows the rules and it knows the character, so
+it would be easy to let it pick the stat, roll, and apply the result while the player watches. Most
+of this record is about not doing that.
 
 ## The whole thing, once, in order
 
@@ -29,13 +30,16 @@ A player faces down something dangerous. Here is every event that produces, in t
 | 52     | `core.suggestion.adjusted`       | 51        | the player made it −2                                     |
 | 53     | `sys.ironsworn.momentum.changed` | 52        | −2                                                        |
 
-Eight events for one move. That is the cost, and it buys the thing the product exists for: every one
-of those steps is separately visible, separately revisable, and separately declinable. Read it back
-in a year and it says what the application proposed and what the player actually did about it.
+Eight events for one move. That is a lot, and it is worth seeing the number now rather than after
+agreeing to the design.
 
-Two of them are the audit trail rather than the mechanics. Delete 46, 47, 51 and 52 and the campaign
-still ends up in the same state; what you lose is any way to tell whether the player chose Kinetic
-or was told to.
+What the eight buy is that each step can be read, changed or refused on its own, and that a year
+later the log still says what the application proposed and what the player did about it.
+
+Four of them are mechanics: the invocation, the roll, the outcome, and the change to momentum. The
+other four, numbered 46, 47, 51 and 52, are the record of what was suggested. Take those four out
+and the campaign ends in exactly the same state. What you lose is any way to tell whether the player
+chose Kinetic or was told to.
 
 Here is the resolution, in full:
 
@@ -56,7 +60,8 @@ Here is the resolution, in full:
 }
 ```
 
-Core stores that and never opens it. `weak-hit` is a word core has no opinion about.
+Core stores that payload and never looks inside it. `weak-hit` means nothing to core, and neither
+does the identifier naming the move.
 
 ## Decisions
 
@@ -64,19 +69,22 @@ Core stores that and never opens it. `weak-hit` is a word core has no opinion ab
 
 A module says what a roll meant. That answer is written into the event and never worked out again.
 
-The alternative is to record only the dice and ask the module to interpret them each time the log is
-read. It is tempting, because it means a fixed rule fixes the past too. It is also the end of the
-guarantee everything else rests on: the same log always produces the same projection. Under that
-model, updating a module rewrites campaigns that were finished years ago, silently, and a player who
-never touched their game finds a hit turned into a miss.
+The alternative is to store only the dice, and ask the module what they meant every time the log is
+read. That is tempting, because then correcting a rule would correct every campaign that ever used
+it.
 
-So interpretation joins rolling. Both are done once, before the event exists, and everything
-downstream reads the answer rather than recomputing it.
+It would also break the guarantee everything else here depends on, which is that the same log always
+produces the same state. If a module's answer is worked out at reading time, then updating that
+module changes campaigns that were finished years ago. A player who has not opened their game since
+last winter would find a hit had become a miss, with nothing anywhere recording that it changed.
 
-The cost is real and worth stating. A module with a bug in its interpretation writes wrong outcomes,
-and fixing the module does not fix the events. Those get corrected the way anything else does, by
-appending a revision, one at a time, deliberately. That is worse for the mistake and better for
-everything else.
+So interpretation works the same way rolling does. Both happen once, before the event is written,
+and everything afterwards reads the recorded answer instead of working it out again.
+
+There is a real cost. A module with a bug in it writes wrong outcomes, and fixing the module later
+does not fix those events. They have to be corrected one at a time, by appending a revision, the
+same way anything else in the log is corrected. That is worse for the person who hit the bug and
+better for everybody whose finished campaigns stay as they left them.
 
 ### Core never learns what a stat is
 
@@ -97,15 +105,18 @@ and never reads it.
 Four things can happen to a suggestion: it is offered, and then accepted, adjusted, or declined. All
 four are core events, and they are the only part of this that core understands.
 
-**A declined suggestion is recorded.** That is the point. If declining left no trace, the log would
-say what the player did and never what they chose not to do, and the claim that the application
-decides nothing would be unfalsifiable. A history where every suggestion was taken and a history
-where none were offered look identical unless the offer is written down.
+**A declined suggestion is recorded**, and this is the part that matters most. If declining left no
+trace, the log would say what the player did and never what they turned down. There would then be no
+way to check the claim that the application decides nothing, because a campaign where every
+suggestion was taken and one where none were ever offered would look identical. A history where
+every suggestion was taken and a history where none were offered look identical unless the offer is
+written down.
 
-Accepting a suggestion is what appends whatever it proposed. The module supplies the proposal; core
-appends it; nothing is applied by the module itself. That is not a matter of trust. The contract has
-no channel through which a module could write to the log, so "applied automatically" is not a thing
-that can be built without changing the contract, which is a decision rather than an oversight.
+Accepting a suggestion is what writes whatever it proposed into the log. The module supplies the
+proposal, core writes it, and the module never writes anything itself. This is not a matter of
+trusting modules to behave. A module has no way to write to the log at all. For anything to be
+applied without a person accepting it, the contract would have to grow a new channel, and somebody
+would have to decide to add one.
 
 ### The suggestion events are the record of what was suggested, and the module event is not
 
@@ -142,9 +153,9 @@ judgement about play.
 Some procedures have no dice. A check whose roll is absent runs the same path, gathers the same
 inputs, and produces an outcome from them alone.
 
-Written down because it looks like an edge case and is not: it is how a system with fewer dice than
-Ironsworn, or a procedure like taking stock of a situation, uses the same machinery instead of
-needing a second one.
+This looks like a minor case and is not. It is how a system with fewer dice, or a procedure like
+taking stock of where you are, uses the machinery that already exists rather than needing a second
+kind built alongside it.
 
 ### A module proposes drafts, not events
 
@@ -165,8 +176,8 @@ piece of work and the larger one.
 **Progress tracks.** They are the most obvious thing a check wants to mark, and they are entities.
 Same reason.
 
-**The verdict card.** The interface for a check is a design surface, and it needs this to exist
-before it can be built rather than the other way round.
+**The verdict card.** How a check looks on screen is design work, and it needs the check to exist
+first.
 
 **Content packages.** Real checks come from Datasworn. Until the importer exists a module declares
 its checks in code, which is enough to prove the shape and is how the toy will always do it.
@@ -196,8 +207,8 @@ An interpretation often depends on campaign state: a progress roll reads the tra
 against. That value is in the log already, as whatever event last changed it, so the outcome can be
 explained by replaying. But nothing points at it directly.
 
-_Why it matters:_ if a reader has to reconstruct the state at event 50 to understand why 50 says
-what it does, then "the log explains itself" is weaker than it sounds. If instead every check
+_Why it matters:_ if understanding event 50 means first replaying everything before it, then reading
+the log is a much bigger job than it sounds, and only a program can do it. If instead every check
 records the values it read, payloads grow and the same fact lives in two places, which this record
 spends a section above arguing against.
 
@@ -224,15 +235,17 @@ suggestion that was declined.
 
 ## How we would know this design is wrong
 
-**If recording the outcome turns out to freeze real bugs into real campaigns**, often enough that
-people are correcting events by hand, then the trade between a trustworthy log and a fixable one was
-made in the wrong direction, and the answer is probably a supported way to reinterpret a range of
-events rather than abandoning the guarantee.
+**If recording the outcome freezes real bugs into real campaigns**, often enough that people spend
+their evenings correcting events by hand, then this record chose wrong. The fix would probably be a
+supported way to reinterpret a stretch of the log on purpose, rather than going back to working the
+outcome out fresh every time.
 
-**If eight events per move makes the log unreadable**, so that a person scrolling their own campaign
-sees bookkeeping rather than a story, then the audit trail is correct and its presentation is not,
-and the interface needs to fold the suggestion events into the move they belong to.
+**If eight events per move makes the log unreadable**, so that somebody scrolling their own campaign
+sees bookkeeping instead of a story, then the events are right and the way they are shown is wrong.
+The interface would need to fold the four suggestion events into the move they belong to, so a
+reader sees one thing rather than eight.
 
-**If modules end up wanting to refuse things**, and keep finding ways to express refusal through
-inputs that offer no valid option, then sovereignty is being enforced by the shape of the contract
-and worked around in practice, which is worse than an honest enforcement channel would have been.
+**If modules keep finding ways to refuse things anyway**, by offering a choice with no usable option
+in it, then the contract is stopping them saying no directly while letting them say it sideways.
+That is worse than giving them a proper way to refuse, because the refusal still reaches the player
+and nothing in the log records that it happened.
