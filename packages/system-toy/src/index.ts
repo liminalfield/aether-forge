@@ -11,6 +11,7 @@ import {
   CORE_CONTRACT_VERSION,
   readRoll,
   ROLL_PERFORMED,
+  type CheckDefinition,
   type DieSpec,
   type EventTypeDefinition,
   type ModuleProjection,
@@ -145,3 +146,41 @@ export const coinRolls: ModuleProjection<CoinTally> = {
     };
   },
 };
+
+/**
+ * The whole system, as one check.
+ *
+ * The module contract's stress test says this needs no inputs, no suggestions
+ * and no module events. Everything below is that claim held to account. If a
+ * coin flip cannot be a check trivially, the contract is wrong and the toy is
+ * not what needs fixing.
+ *
+ * It proposes nothing, which is the part worth noticing. A check that has an
+ * opinion about what should happen next is the ordinary case, and a check with
+ * no opinion at all has to work just as well.
+ */
+export const CALL_IT: CheckDefinition = {
+  id: 'toy-coinflip/call-it',
+  name: 'Call it',
+  roll: { dice: [COIN] },
+  inputs: [],
+
+  interpret: (roll) => {
+    const fell = roll === null ? undefined : readCoinFlip(roll);
+
+    if (fell === 'heads') {
+      return { id: 'heads', label: 'Heads', summary: 'It came up heads.', suggests: [] };
+    }
+    if (fell === 'tails') {
+      return { id: 'tails', label: 'Tails', summary: 'It came up tails.', suggests: [] };
+    }
+
+    // A roll that is not a coin. The check says so rather than picking a side,
+    // because guessing here would put a campaign in a state nobody could
+    // explain from the log.
+    return { id: 'not-a-coin', label: 'Not a coin', summary: 'That was not a coin.', suggests: [] };
+  },
+};
+
+/** The checks this module offers. One is enough to keep the contract honest. */
+export const checks: readonly CheckDefinition[] = [CALL_IT];
