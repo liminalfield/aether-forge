@@ -140,6 +140,7 @@ export type {
   SuggestionFate,
   SuggestionOfferedV1,
   SuggestionRecord,
+  Suggestions,
 } from './suggestion.js';
 export {
   readAdjustment,
@@ -149,6 +150,7 @@ export {
   SUGGESTION_DECLINED,
   SUGGESTION_OFFERED,
   suggestionEventTypes,
+  suggestions,
 } from './suggestion.js';
 
 export type { OracleConsultedV1, OracleRow, PackageStamp } from './oracle.js';
