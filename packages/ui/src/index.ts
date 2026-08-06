@@ -29,6 +29,17 @@ export function family(role: keyof Tokens['font']): string {
   return `var(--font-${role})`;
 }
 
+export type { MotionPreference } from './motion.js';
+export {
+  duration,
+  EASING,
+  isMotionPreference,
+  MOTION,
+  MOTION_PREFERENCES,
+  motionProperties,
+  shouldAnimate,
+} from './motion.js';
+
 export type { Colour, InkContrast, ThemeReport } from './colour.js';
 export {
   contrastBetween,

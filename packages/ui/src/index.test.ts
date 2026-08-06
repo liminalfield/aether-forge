@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { tokens } from './index.js';
+import {
+  duration,
+  EASING,
+  isMotionPreference,
+  MOTION,
+  motionProperties,
+  shouldAnimate,
+  tokens,
+} from './index.js';
 import {
   builtInThemes,
   customPropertiesFor,
@@ -164,5 +172,56 @@ describe('the themes that ship', () => {
         expect(value, `${theme.name} ${property}`).not.toBe('');
       }
     }
+  });
+});
+
+describe('how much the application moves', () => {
+  it('offers three durations and one curve', () => {
+    expect(Object.keys(MOTION)).toEqual(['enter', 'settle', 'ceremony']);
+    expect(EASING).toBe('cubic-bezier(.2,.8,.2,1)');
+  });
+
+  it('follows the system until somebody says otherwise', () => {
+    expect(shouldAnimate('follow-the-system', false)).toBe(true);
+    expect(shouldAnimate('follow-the-system', true)).toBe(false);
+  });
+
+  it('lets a person override the system in either direction', () => {
+    // Someone who has turned reduced motion on system-wide may still want this
+    // one application to move, and someone whose system says nothing may still
+    // want it still.
+    expect(shouldAnimate('on', true)).toBe(true);
+    expect(shouldAnimate('off', false)).toBe(false);
+  });
+
+  it('removes nothing when it is turned off', () => {
+    // Reduced motion means less movement, not less information. Every property
+    // is present either way, so a component asking for one always gets an
+    // answer and a moment that deserves marking is still marked.
+    expect(Object.keys(motionProperties(false))).toEqual(Object.keys(motionProperties(true)));
+  });
+
+  it('zeroes the durations and keeps the curve', () => {
+    expect(motionProperties(false)).toEqual({
+      '--duration-enter': '0ms',
+      '--duration-settle': '0ms',
+      '--duration-ceremony': '0ms',
+      '--easing': EASING,
+    });
+  });
+
+  it('names a duration without anything writing the property by hand', () => {
+    expect(duration('ceremony')).toBe('var(--duration-ceremony)');
+    // @ts-expect-error a duration that does not exist is a build failure
+    duration('flourish');
+  });
+
+  it.each([
+    ['a value nobody declared', 'sideways'],
+    ['a number', 7],
+    ['nothing', undefined],
+    ['null', null],
+  ])('refuses %s as a preference', (_name, value) => {
+    expect(isMotionPreference(value)).toBe(false);
   });
 });
