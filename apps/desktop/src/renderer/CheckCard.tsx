@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { Chip, ChipRow, ResultCard, slot, tokens, type CardDie } from '@aether-forge/ui';
 
+import { adjustKeyIntent, cardKeyIntent, isAdjustableDraft, type FocusedControl } from './keyboard';
 import type { OfferAnswer, RecordedCheckView, RecordedOfferView } from '../shared/ipc';
 
 /**
@@ -119,6 +120,32 @@ function Offer({
               value={changingTo}
               placeholder={adjustable.label}
               onChange={(event) => setChangingTo(event.target.value)}
+              onKeyDown={(event) => {
+                const intent = adjustKeyIntent(event.key, changingTo);
+
+                // Enter is consumed whatever the draft says, so a value the
+                // field will not use can never fall through to anything that
+                // would answer the offer some other way.
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (intent === 'use' && !busy) {
+                    onAnswer(offer.id, {
+                      kind: 'adjusted',
+                      used: { [adjustable.id]: Number(changingTo) },
+                    });
+                  }
+                }
+
+                // Escape with a draft clears the draft and goes no further.
+                // With nothing typed it is left to bubble, and the card
+                // declines: one press abandons the number, the next the offer.
+                if (intent === 'clear') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setChangingTo('');
+                }
+              }}
               style={{
                 width: '5ch',
                 background: slot('ground', 'overlay'),
@@ -133,7 +160,7 @@ function Offer({
             <Chip
               hint="⌥⏎"
               data-testid="adjust-it"
-              disabled={busy || Number.isNaN(Number(changingTo)) || changingTo.trim() === ''}
+              disabled={busy || !isAdjustableDraft(changingTo)}
               onClick={() =>
                 onAnswer(offer.id, {
                   kind: 'adjusted',
@@ -179,15 +206,23 @@ export function CheckCard({ check, onAnswer, busy }: CheckCardProps): React.JSX.
         const first = waiting[0];
         if (first === undefined || busy) return;
 
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          onAnswer(first.id, { kind: 'declined' });
-        }
+        // The focused control wins. A chip's Enter is that chip's click and
+        // must reach it untouched; the adjust field stops what it consumes
+        // before it gets here. The decision itself lives in keyboard.ts,
+        // where it is tested as the table of cases it is.
+        const focused: FocusedControl =
+          event.target === event.currentTarget
+            ? 'card'
+            : event.target instanceof HTMLButtonElement
+              ? 'chip'
+              : 'field';
+        const withModifier = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
 
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          onAnswer(first.id, { kind: 'accepted' });
-        }
+        const intent = cardKeyIntent(event.key, withModifier, focused);
+        if (intent === 'none') return;
+
+        event.preventDefault();
+        onAnswer(first.id, { kind: intent === 'accept' ? 'accepted' : 'declined' });
       }}
       style={{ outlineColor: slot('accent', 'accent') }}
     >

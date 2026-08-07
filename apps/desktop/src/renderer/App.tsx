@@ -4,10 +4,12 @@ import { Button, slot, TABULAR_NUMERALS, tokens, WritingSurface } from '@aether-
 
 import type {
   CheckView,
+  IpcResult,
   JournalEntryView,
   OfferAnswer,
   RunCheckRequest,
   TimelineItem,
+  TimelineView,
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
 import { Entry } from './Entry';
@@ -86,11 +88,23 @@ export function App(): React.JSX.Element {
    * and an answer writes two, and reassembling that in the window would be a
    * second implementation of what the timeline already works out. The campaign
    * is small enough that reading it is cheaper than keeping two copies in step.
+   *
+   * It returns the fresh timeline rather than applying it, and `arrived` sets
+   * it in the same synchronous block that releases `busy`. Applied inside this
+   * function, the new items rendered one frame before `busy` cleared, and that
+   * frame showed a card that looked ready while the keyboard was still being
+   * ignored. A key pressed into it vanished without a trace.
    */
-  const reread = useCallback(async () => {
-    const timeline = await window.aetherForge.readTimeline();
-    if (timeline.ok) setItems(timeline.value.items);
-    else setProblem(timeline.failure.detail);
+  const reread = useCallback(() => window.aetherForge.readTimeline(), []);
+
+  /** What came back from a reread, applied in one render. */
+  const arrived = useCallback((timeline: IpcResult<TimelineView>) => {
+    if (timeline.ok) {
+      setItems(timeline.value.items);
+      setProblem(null);
+    } else {
+      setProblem(timeline.failure.detail);
+    }
   }, []);
 
   const runACheck = useCallback(
@@ -98,17 +112,13 @@ export function App(): React.JSX.Element {
       setBusy(true);
       try {
         const ran = await window.aetherForge.runCheck(request);
-        if (ran.ok) {
-          await reread();
-          setProblem(null);
-        } else {
-          setProblem(ran.failure.detail);
-        }
+        if (ran.ok) arrived(await reread());
+        else setProblem(ran.failure.detail);
       } finally {
         setBusy(false);
       }
     },
-    [reread],
+    [arrived, reread],
   );
 
   const answerAnOffer = useCallback(
@@ -116,17 +126,13 @@ export function App(): React.JSX.Element {
       setBusy(true);
       try {
         const answered = await window.aetherForge.answerOffer({ offerId, answer });
-        if (answered.ok) {
-          await reread();
-          setProblem(null);
-        } else {
-          setProblem(answered.failure.detail);
-        }
+        if (answered.ok) arrived(await reread());
+        else setProblem(answered.failure.detail);
       } finally {
         setBusy(false);
       }
     },
-    [reread],
+    [arrived, reread],
   );
 
   const saveCorrection = useCallback(async () => {
@@ -138,32 +144,30 @@ export function App(): React.JSX.Element {
       if (corrected.ok) {
         // Nothing was edited. A correction was appended, so the campaign is
         // read again rather than patched in place.
-        await reread();
+        arrived(await reread());
         stopCorrecting();
-        setProblem(null);
       } else {
         setProblem(corrected.failure.detail);
       }
     } finally {
       setBusy(false);
     }
-  }, [correcting, correction, reread, stopCorrecting]);
+  }, [arrived, correcting, correction, reread, stopCorrecting]);
 
   const record = useCallback(async () => {
     setBusy(true);
     try {
       const recorded = await window.aetherForge.recordEntry(text);
       if (recorded.ok) {
-        await reread();
+        arrived(await reread());
         setText('');
-        setProblem(null);
       } else {
         setProblem(recorded.failure.detail);
       }
     } finally {
       setBusy(false);
     }
-  }, [reread, text]);
+  }, [arrived, reread, text]);
 
   return (
     <div
