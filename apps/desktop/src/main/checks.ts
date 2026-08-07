@@ -1,7 +1,7 @@
 import type { CheckDefinition, CheckInput, SystemId } from '@aether-forge/core';
 
 import type { CheckInputView, CheckView, ChecksView } from '../shared/ipc';
-import { LOADED_SYSTEMS, type LoadedSystem } from './systems';
+import { playableSystems, type LoadedSystem } from './systems';
 
 /**
  * Describing a check to the window.
@@ -52,8 +52,12 @@ function describeCheck(check: CheckDefinition, systemId: SystemId): CheckView {
  * In load order, and within a system in the order that system declares them,
  * because a list that reorders itself between two reads is a list a person
  * cannot learn.
+ *
+ * Only systems somebody plays. The toy is loaded and is not one of them:
+ * offering its coin flip beside a real check would be showing somebody a test
+ * fixture. Running one is still possible, which is what the tests do.
  */
-export function describeChecks(systems: readonly LoadedSystem[] = LOADED_SYSTEMS): ChecksView {
+export function describeChecks(systems: readonly LoadedSystem[] = playableSystems()): ChecksView {
   return {
     checks: systems.flatMap((system) =>
       system.checks.map((check) => describeCheck(check, system.systemId)),

@@ -5,21 +5,43 @@ import { describe, expect, it } from 'vitest';
 
 import type { CheckView } from '../shared/ipc';
 import { describeChecks } from './checks';
-import { LOADED_SYSTEMS } from './systems';
+import { LOADED_SYSTEMS, playableSystems } from './systems';
 
 const described = (): readonly CheckView[] => describeChecks().checks;
 
 const find = (id: string): CheckView | undefined => described().find((check) => check.id === id);
 
+/** Everything this build loads, playable or not. */
+const everything = (): readonly CheckView[] => describeChecks(LOADED_SYSTEMS).checks;
+
+const findAnywhere = (id: string): CheckView | undefined =>
+  everything().find((check) => check.id === id);
+
 describe('what crosses to the window', () => {
-  it('describes every check every loaded system declares', () => {
-    const expected = LOADED_SYSTEMS.flatMap((system) => system.checks.map((check) => check.id));
+  it('describes every check a playable system declares', () => {
+    const expected = playableSystems().flatMap((system) => system.checks.map((check) => check.id));
 
     expect(described().map((check) => check.id)).toEqual(expected);
   });
 
+  it('leaves the canary out of what a person is offered', () => {
+    // The toy is loaded so that every contract-consuming path runs against two
+    // systems. It is not a game, and offering its coin flip beside a real check
+    // would be showing somebody a test fixture.
+    expect(described().some((check) => check.systemId === TOY_SYSTEM_ID)).toBe(false);
+    expect(LOADED_SYSTEMS.some((system) => system.systemId === TOY_SYSTEM_ID)).toBe(true);
+  });
+
+  it('describes it perfectly well when asked for it', () => {
+    // Not offered is not the same as not supported. The canary still has to
+    // cross this boundary as cleanly as anything else.
+    const toy = describeChecks(LOADED_SYSTEMS.filter((s) => s.systemId === TOY_SYSTEM_ID));
+
+    expect(toy.checks.map((check) => check.id)).toEqual([CALL_IT.id]);
+  });
+
   it('says which system each one belongs to', () => {
-    expect(find(CALL_IT.id)?.systemId).toBe(TOY_SYSTEM_ID);
+    expect(findAnywhere(CALL_IT.id)?.systemId).toBe(TOY_SYSTEM_ID);
     expect(find(ironswornChecks[0]?.id ?? '')?.systemId).toBe(STARFORGED_SYSTEM_ID);
   });
 
@@ -96,14 +118,14 @@ describe('the toy, which takes no inputs at all', () => {
   it('describes just as well as the one that does', () => {
     // The canary. A check with nothing to fill in has to cross this boundary as
     // cleanly as one with two, or the boundary is shaped around one system.
-    const callIt = find(CALL_IT.id);
+    const callIt = findAnywhere(CALL_IT.id);
 
     expect(callIt?.name).toBe(CALL_IT.name);
     expect(callIt?.inputs).toEqual([]);
   });
 
   it('still says what it will roll', () => {
-    expect(find(CALL_IT.id)?.dice).toHaveLength(1);
+    expect(findAnywhere(CALL_IT.id)?.dice).toHaveLength(1);
   });
 });
 
@@ -127,6 +149,7 @@ describe('a check that rolls nothing', () => {
           invoked: 'sys.example.check.invoked',
           resolved: 'sys.example.check.resolved',
         },
+        playable: true,
       },
     ]).checks[0];
 
@@ -142,7 +165,7 @@ describe('the window is told, never asked to know', () => {
     // one of a choice's values, fails here rather than on screen.
     for (const system of LOADED_SYSTEMS) {
       for (const declared of system.checks) {
-        const crossed = find(declared.id);
+        const crossed = findAnywhere(declared.id);
 
         expect(crossed?.name).toBe(declared.name);
         expect(crossed?.inputs.map((input) => input.label)).toEqual(
