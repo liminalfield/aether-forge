@@ -276,6 +276,12 @@ designed:
 
 ### Invoking a move is its own event, separate from the roll
 
+> Amended by `checks-and-moves.md`, and annotated here later than that record promised, 7 August
+> 2026: the invocation event carries what the check ran with, and not what was suggested. The
+> suggestion audit lives in the `core.suggestion.*` events, which did not exist when this was
+> written. The example chain near the top of this record says "what the app suggested" for event 46
+> for the same reason, and is wrong the same way.
+
 When a move is invoked, that is recorded as an event in its own right, before the roll it causes. It
 carries which move, which stat was chosen, what was added, and which of those the application
 suggested rather than the player deciding.
@@ -402,6 +408,11 @@ Each of these is genuinely undecided. Each says what would settle it.
 
 **How does the window get the campaign's current state?**
 
+> Settled by `reading-and-writing-the-journal.md`, 4 August 2026, by measuring: at ten thousand
+> entries the whole journal crosses the IPC boundary in under twenty milliseconds, and drawing it is
+> where the time goes. The window gets the whole thing, and windowed rendering is the fix if drawing
+> ever matters.
+
 Projections are built in the main process, next to the database. The window needs them, and it
 cannot reach into the main process directly, so the state has to be sent across.
 
@@ -457,6 +468,11 @@ _What would settle it:_ using export and import in practice for a few real trips
 divergence actually happens or is a hypothetical.
 
 **What do we record about where a roll came from?**
+
+> Settled by `rolling-dice.md`, 5 August 2026: each die's source is a record naming where it came
+> from (`digital`, `manual`, or a named service carrying that service's own identifiers), not a word
+> from a fixed list. The same record also decided that a roll names no content package, so the aside
+> below about rolls recording a package version is superseded too.
 
 A roll currently records, for each die, whether it was rolled by the app or typed in by hand.
 

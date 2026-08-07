@@ -1,8 +1,14 @@
 # Module Contract — design sketch (v0)
 
-> Status: design document, not code. These signatures are for stress-testing on paper and as the
-> starting point for `packages/core/src/contract/`. Names obey the vocabulary rule: nothing here
-> may come from a rulebook. Every type that crosses the log boundary is versioned.
+> Status: partly implemented, and amended in place as accepted design records changed it. The
+> envelope (§2), rolls (§5), checks and suggestions (§6) are code, landed as flat modules in
+> `packages/core/src` (`event.ts`, `roll.ts`, `check.ts`, `suggestion.ts` and their neighbours)
+> rather than the `packages/core/src/contract/` directory this sketch named. Content packages
+> (§3), oracle providers (§4), entities, sheets and tracks (§7), flows (§8) and the assembled
+> module shape (§9) remain design only, §7 being the largest unwritten piece. Where an
+> implemented section and the code disagree, the code is right. Names obey the vocabulary rule:
+> nothing here may come from a rulebook. Every type that crosses the log boundary is versioned.
+> Status corrected 7 August 2026; it had claimed "design document, not code" throughout.
 >
 > Stress-test targets: (A) Ironsworn/Starforged, (B) toy coin-flip system, (C) hypothetical 5e SRD.
 > Each section ends with notes on how the three fare. A contract element fails review if the toy
