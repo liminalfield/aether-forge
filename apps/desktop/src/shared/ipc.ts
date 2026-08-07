@@ -20,6 +20,7 @@ export const IPC = {
   recordEntry: 'journal:recordEntry',
   correctEntry: 'journal:correctEntry',
   readChecks: 'checks:read',
+  runCheck: 'checks:run',
   readPreferences: 'preferences:read',
   setMotionPreference: 'preferences:setMotion',
 } as const;
@@ -126,6 +127,85 @@ export interface ChecksView {
   readonly checks: readonly CheckView[];
 }
 
+/** One die, and what it showed. */
+export interface RolledDieView {
+  readonly sides: number;
+  readonly value: number;
+  /** What the module called it, when it called it anything. */
+  readonly label?: string;
+  /**
+   * Where the number came from: `digital`, `manual`, or the name of the service
+   * that supplied it.
+   *
+   * The window shows this and never behaves differently because of it. A die
+   * somebody threw on their table and a die the application rolled reach
+   * exactly the same card.
+   */
+  readonly from: string;
+}
+
+/** A part of a proposal a person may change before taking it. */
+export interface ProposalFieldView {
+  readonly id: string;
+  readonly label: string;
+  readonly kind: 'number' | 'choice' | 'text';
+  readonly options?: readonly CheckOptionView[];
+}
+
+/**
+ * Something the module proposed doing about the outcome, waiting for an answer.
+ *
+ * `id` is the event that offered it, and it is what answering names. An offer
+ * outlives the window that made it: close the application with one unanswered
+ * and it is still unanswered on the way back in.
+ */
+export interface OfferView {
+  readonly id: string;
+  readonly label: string;
+  readonly why?: string;
+  /** What may be changed about it. Empty when nothing may be. */
+  readonly fields: readonly ProposalFieldView[];
+}
+
+/** What a check came to, and what the module proposes doing about it. */
+export interface CheckOutcomeView {
+  readonly id: string;
+  readonly label: string;
+  readonly summary: string;
+}
+
+/**
+ * One check, run.
+ *
+ * What comes back from the first of the two acts. The offers are in the log and
+ * nobody has answered them, which is the state this whole surface is shaped
+ * around.
+ */
+export interface CheckRunView {
+  readonly checkId: string;
+  readonly systemId: string;
+  readonly name: string;
+  readonly outcome: CheckOutcomeView;
+  readonly dice: readonly RolledDieView[];
+  readonly offers: readonly OfferView[];
+}
+
+/** What the window asks for when it wants a check run. */
+export interface RunCheckRequest {
+  readonly systemId: string;
+  readonly checkId: string;
+  /** A number for each input the check takes. */
+  readonly inputs: Readonly<Record<string, number>>;
+  /**
+   * Die values somebody threw themselves, in the order the check asks for them.
+   *
+   * Absent means the application rolls. This is manual entry rather than a way
+   * in for tests: somebody with real dice on the table types in what they
+   * showed, and everything downstream is identical either way.
+   */
+  readonly thrown?: readonly number[];
+}
+
 /**
  * What a person has chosen about how the application behaves for them.
  *
@@ -172,6 +252,16 @@ export interface AetherForgeApi {
    * game it belongs to.
    */
   readChecks(): Promise<IpcResult<ChecksView>>;
+
+  /**
+   * Run a check and write what it produced.
+   *
+   * The first of two acts. This writes the invocation, the roll, the resolution
+   * and the offers, and answers with the outcome so the window can show it.
+   * What the player decides about each offer is said separately, because a
+   * person cannot answer a suggestion they have not seen.
+   */
+  runCheck(request: RunCheckRequest): Promise<IpcResult<CheckRunView>>;
 
   /** What this person has chosen. Answers with the defaults when nothing is stored. */
   readPreferences(): Promise<IpcResult<PreferencesView>>;

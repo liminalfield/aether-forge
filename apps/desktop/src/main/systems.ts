@@ -1,6 +1,16 @@
-import type { CheckDefinition, SystemId } from '@aether-forge/core';
-import { checks as ironswornChecks, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
-import { checks as toyChecks, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
+import type { CheckDefinition, ModuleEventType, SystemId } from '@aether-forge/core';
+import {
+  checks as ironswornChecks,
+  MOVE_INVOKED,
+  MOVE_RESOLVED,
+  STARFORGED_SYSTEM_ID,
+} from '@aether-forge/system-ironsworn';
+import {
+  CHECK_INVOKED,
+  CHECK_RESOLVED,
+  checks as toyChecks,
+  TOY_SYSTEM_ID,
+} from '@aether-forge/system-toy';
 
 /**
  * The system modules this build loads.
@@ -18,9 +28,28 @@ import { checks as toyChecks, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 export interface LoadedSystem {
   readonly systemId: SystemId;
   readonly checks: readonly CheckDefinition[];
+  /**
+   * The two events this system writes either side of a check's roll.
+   *
+   * Named by the module rather than worked out from the system's identifier.
+   * Guessing an event type from a string is how a build ends up writing events
+   * nothing has declared, and the log would take them.
+   */
+  readonly checkEvents: {
+    readonly invoked: ModuleEventType;
+    readonly resolved: ModuleEventType;
+  };
 }
 
 export const LOADED_SYSTEMS: readonly LoadedSystem[] = [
-  { systemId: TOY_SYSTEM_ID, checks: toyChecks },
-  { systemId: STARFORGED_SYSTEM_ID, checks: ironswornChecks },
+  {
+    systemId: TOY_SYSTEM_ID,
+    checks: toyChecks,
+    checkEvents: { invoked: CHECK_INVOKED, resolved: CHECK_RESOLVED },
+  },
+  {
+    systemId: STARFORGED_SYSTEM_ID,
+    checks: ironswornChecks,
+    checkEvents: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
+  },
 ];

@@ -18,6 +18,7 @@ import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
 import { correctEntry, readJournal, recordEntry } from './journal';
 import { readPreferences, writePreferences } from './preferences';
+import { runCheck } from './run-check';
 import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
@@ -73,6 +74,7 @@ function registerIpcHandlers(campaign: OpenCampaign, userDataDir: string): void 
   );
 
   ipcMain.handle(IPC.readChecks, () => ({ ok: true as const, value: describeChecks() }));
+  ipcMain.handle(IPC.runCheck, (_event, request: unknown) => runCheck(campaign, request));
 
   ipcMain.handle(IPC.readPreferences, () => ({
     ok: true as const,

@@ -118,7 +118,16 @@ describe('a check that rolls nothing', () => {
       interpret: () => ({ id: 'done', label: 'Done', summary: 'You looked around.', suggests: [] }),
     };
 
-    const only = describeChecks([{ systemId: 'example', checks: [rollsNothing] }]).checks[0];
+    const only = describeChecks([
+      {
+        systemId: 'example',
+        checks: [rollsNothing],
+        checkEvents: {
+          invoked: 'sys.example.check.invoked',
+          resolved: 'sys.example.check.resolved',
+        },
+      },
+    ]).checks[0];
 
     expect(only).not.toHaveProperty('dice');
     expect(only?.name).toBe('Take stock');
