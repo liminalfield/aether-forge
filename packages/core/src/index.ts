@@ -107,11 +107,20 @@ export {
 export type { EntryCreatedV1, EntryRevisedV1, Journal, JournalEntry } from './journal.js';
 export { ENTRY_CREATED, ENTRY_REVISED, journal, journalEventTypes } from './journal.js';
 
-export type { EntityChangedV1, EntityCreatedV1, EntityFields, FieldValue } from './entity.js';
+export type {
+  Entities,
+  EntityChangedV1,
+  EntityCreatedV1,
+  EntityFields,
+  EntityRecord,
+  FieldValue,
+} from './entity.js';
 export {
+  entities,
   ENTITY_CHANGED,
   ENTITY_CREATED,
   entityEventTypes,
+  nameOf,
   readEntityChanged,
   readEntityCreated,
 } from './entity.js';

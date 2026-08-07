@@ -16,7 +16,9 @@
  * See `design/entities-and-tracks.md`.
  */
 
-import type { EntityId } from './identifiers.js';
+import type { EventEnvelope } from './event.js';
+import type { EntityId, EventId } from './identifiers.js';
+import type { Projection } from './projection.js';
 import type { EventTypeDefinition } from './schema.js';
 
 export const ENTITY_CREATED = 'core.entity.created';
@@ -111,3 +113,140 @@ export const entityEventTypes: readonly EventTypeDefinition[] = [
   { type: ENTITY_CREATED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
   { type: ENTITY_CHANGED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
 ];
+
+/** One entity as of now: what the log says about it so far. */
+export interface EntityRecord {
+  readonly id: EntityId;
+  /** Absent for a free-form entity. */
+  readonly entityType?: string;
+  readonly fields: EntityFields;
+  /** The event that created it. */
+  readonly createdBy: EventId;
+  /** The most recent event that touched it, creation included. */
+  readonly touchedBy: EventId;
+}
+
+export interface Entities {
+  /** In the order they came to exist. */
+  readonly entities: readonly EntityRecord[];
+  /**
+   * Which entity each applied event touched, so a revision of an old event
+   * finds its entity the way a correction of a correction finds its entry.
+   *
+   * A plain object rather than a Map, so the state stays something that can
+   * be written out unchanged when snapshots arrive.
+   */
+  readonly entityOf: Readonly<Record<EventId, EntityId>>;
+}
+
+/**
+ * An entity's name, when it has one worth the word.
+ *
+ * The `name` field when it is a non-empty string, and nothing otherwise. What
+ * to show for a nameless entity is the window's decision; this only refuses
+ * to pretend an empty string is a name.
+ */
+export function nameOf(entity: EntityRecord): string | undefined {
+  const name = entity.fields['name'];
+  return typeof name === 'string' && name !== '' ? name : undefined;
+}
+
+function touch(
+  state: Entities,
+  entityId: EntityId,
+  eventId: EventId,
+  change: (entity: EntityRecord) => EntityRecord,
+): Entities {
+  return {
+    entities: state.entities.map((entity) =>
+      entity.id === entityId ? { ...change(entity), touchedBy: eventId } : entity,
+    ),
+    entityOf: { ...state.entityOf, [eventId]: entityId },
+  };
+}
+
+/**
+ * Every entity in the campaign, with its fields as of now.
+ *
+ * Events apply strictly in log order, and a revision's fields win at the
+ * revision's own position, like any other event. Revising an old change after
+ * a newer change touched the same field therefore moves the field to the
+ * revision's value, which is the same discipline the journal keeps: a
+ * correction is expected to correct the current state of things, and the
+ * window hands it the current version to supersede.
+ *
+ * An event that references an entity this campaign has never seen, or whose
+ * payload names a different entity than the event it revises touched, is not
+ * something to guess about, and leaves the state alone.
+ */
+export const entities: Projection<Entities> = {
+  id: 'core.entities',
+
+  initial: () => ({ entities: [], entityOf: {} }),
+
+  apply: (state, event: EventEnvelope): Entities => {
+    if (event.type === ENTITY_CREATED) {
+      const created = readEntityCreated(event.payload);
+      if (created === undefined) return state;
+
+      const revises = event.revises;
+      if (revises !== undefined) {
+        const entityId = state.entityOf[revises];
+        if (entityId === undefined || entityId !== created.entityId) return state;
+
+        // The creation was written wrongly. The revised payload's type stands
+        // whole, absent meaning free-form; its fields win at this position.
+        return touch(state, entityId, event.id, (entity) => {
+          const retyped: EntityRecord = {
+            id: entity.id,
+            fields: { ...entity.fields, ...created.fields },
+            createdBy: entity.createdBy,
+            touchedBy: entity.touchedBy,
+          };
+          return created.entityType === undefined
+            ? retyped
+            : { ...retyped, entityType: created.entityType };
+        });
+      }
+
+      // A second creation of an entity this campaign already has is a
+      // recording mistake nothing here can repair. Refuse to guess.
+      if (state.entities.some((entity) => entity.id === created.entityId)) return state;
+
+      const record: EntityRecord = {
+        id: created.entityId,
+        fields: created.fields,
+        createdBy: event.id,
+        touchedBy: event.id,
+      };
+
+      return {
+        entities: [
+          ...state.entities,
+          created.entityType === undefined ? record : { ...record, entityType: created.entityType },
+        ],
+        entityOf: { ...state.entityOf, [event.id]: created.entityId },
+      };
+    }
+
+    if (event.type === ENTITY_CHANGED) {
+      const changed = readEntityChanged(event.payload);
+      if (changed === undefined) return state;
+
+      const revises = event.revises;
+      if (revises !== undefined) {
+        const entityId = state.entityOf[revises];
+        if (entityId === undefined || entityId !== changed.entityId) return state;
+      } else if (!state.entities.some((entity) => entity.id === changed.entityId)) {
+        return state;
+      }
+
+      return touch(state, changed.entityId, event.id, (entity) => ({
+        ...entity,
+        fields: { ...entity.fields, ...changed.fields },
+      }));
+    }
+
+    return state;
+  },
+};
