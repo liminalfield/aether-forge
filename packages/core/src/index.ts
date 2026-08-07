@@ -125,6 +125,17 @@ export {
   readEntityCreated,
 } from './entity.js';
 
+export type { TrackAdvancedV1, TrackSetV1, TrackStartedV1 } from './track.js';
+export {
+  readTrackAdvanced,
+  readTrackSet,
+  readTrackStarted,
+  TRACK_ADVANCED,
+  TRACK_SET,
+  TRACK_STARTED,
+  trackEventTypes,
+} from './track.js';
+
 export type {
   DieSource,
   DieSpec,
