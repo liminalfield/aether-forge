@@ -108,9 +108,17 @@ export interface RecordedCheckView {
   readonly name: string;
   readonly outcome: RecordedOutcomeView;
   readonly dice: readonly RolledDieView[];
-  /** What it ran with, as the module named each one. */
-  readonly inputs: Readonly<Record<string, number>>;
+  /** What it ran with, in the order the module declares its inputs. */
+  readonly inputs: readonly RecordedInputView[];
   readonly offers: readonly RecordedOfferView[];
+}
+
+/** One value a check ran with, named so the card can say it in words. */
+export interface RecordedInputView {
+  readonly id: string;
+  /** The module's word for it, or the identifier when the module is gone. */
+  readonly label: string;
+  readonly value: number;
 }
 
 export interface RecordedOutcomeView {
@@ -126,6 +134,8 @@ export interface RecordedOfferView extends OfferView {
   readonly fate: OfferFate;
   /** What the person used instead, when they changed it before taking it. */
   readonly used?: Readonly<Record<string, unknown>>;
+  /** When somebody answered it. Absent while the offer is still waiting. */
+  readonly answeredAt?: string;
 }
 
 /** One of the values an input offers, when it offers a fixed set. */

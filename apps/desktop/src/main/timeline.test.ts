@@ -120,8 +120,11 @@ describe('a check on the timeline', () => {
     expect(check.dice.map((die) => die.label)).toEqual(['action', 'challenge', 'challenge']);
   });
 
-  it('carries what it ran with', () => {
-    expect(checkFrom().inputs).toEqual({ stat: 2, bonus: 0 });
+  it("carries what it ran with, in the module's words and the module's order", () => {
+    expect(checkFrom().inputs).toEqual([
+      { id: 'stat', label: 'Stat', value: 2 },
+      { id: 'bonus', label: 'Bonus', value: 0 },
+    ]);
   });
 
   it('is drawn with a colour and a glyph the module declared', () => {
@@ -168,6 +171,24 @@ describe('an offer on the timeline', () => {
     answerOffer(session.campaign, { offerId: session.offerId, answer: { kind: 'declined' } });
 
     expect(offersFrom(session)[0]?.fate).toBe('declined');
+  });
+
+  it('says when it was answered, which is part of the record', () => {
+    const session = aSession();
+    answerOffer(session.campaign, { offerId: session.offerId, answer: { kind: 'declined' } });
+
+    // The moment of the answering event, not of the offer it answered.
+    const [only] = offersFrom(session);
+    const answer = session
+      .events()
+      .find((event) => event.causationId === session.offerId && event.id !== session.offerId);
+
+    expect(only?.answeredAt).toBe(answer?.at);
+    expect(only?.answeredAt).toBeDefined();
+  });
+
+  it('carries no answering moment while nobody has answered', () => {
+    expect(offersFrom(aSession())[0]?.answeredAt).toBeUndefined();
   });
 
   it('says what was used instead when somebody changed it', () => {

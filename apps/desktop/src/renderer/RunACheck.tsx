@@ -128,26 +128,12 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
           </label>
 
           {/*
-            A choice still ends in a number a person types. The module says what
-            the choices are called; there is nowhere yet to keep what each is
-            worth, so the value is typed at the point of rolling. Every input is
-            editable anyway, permanently, so this changes how often that is used
-            rather than whether it exists.
+            A choice input is drawn as its number alone. There is nowhere yet to
+            keep what each named option is worth, and nothing records which name
+            was picked, so a list of them would be a control that does nothing,
+            which is worse than no control. The names return when a character
+            sheet exists to give them values.
           */}
-          {input.options !== undefined && (
-            <select
-              aria-label={`${input.label}, which one`}
-              data-testid={`choice-${input.id}`}
-              style={FIELD}
-            >
-              {input.options.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          )}
-
           <input
             id={`input-${input.id}`}
             data-testid={`input-${input.id}`}

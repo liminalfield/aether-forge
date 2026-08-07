@@ -1,6 +1,14 @@
 import { useState } from 'react';
 
-import { Chip, ChipRow, ResultCard, slot, tokens, type CardDie } from '@aether-forge/ui';
+import {
+  Chip,
+  ChipRow,
+  ResultCard,
+  slot,
+  TABULAR_NUMERALS,
+  tokens,
+  type CardDie,
+} from '@aether-forge/ui';
 
 import { adjustKeyIntent, cardKeyIntent, isAdjustableDraft, type FocusedControl } from './keyboard';
 import type { OfferAnswer, RecordedCheckView, RecordedOfferView } from '../shared/ipc';
@@ -27,16 +35,22 @@ function inWords(from: string): string {
   return from;
 }
 
+/**
+ * No die is emphasised. The card documents emphasis as the module saying which
+ * dice the result turned on, and the contract gives a module no way to say it
+ * yet. Until it does, the honest rendering marks nothing, rather than guessing
+ * and outlining dice the outcome never turned on.
+ */
 function toCardDice(check: RecordedCheckView): readonly CardDie[] {
   return check.dice.map((die) => {
     const base = { value: die.value, from: inWords(die.from) };
-    return die.label === undefined ? base : { ...base, label: die.label, emphasis: true };
+    return die.label === undefined ? base : { ...base, label: die.label };
   });
 }
 
 /** What it ran with, in the module's own words for each input. */
 function detailOf(check: RecordedCheckView): string | undefined {
-  const parts = Object.entries(check.inputs).map(([input, value]) => `${input} ${String(value)}`);
+  const parts = check.inputs.map((input) => `${input.label} ${String(input.value)}`);
   return parts.length === 0 ? undefined : parts.join('  ');
 }
 
@@ -46,7 +60,17 @@ export interface CheckCardProps {
   readonly busy: boolean;
 }
 
-/** What became of an offer, once somebody has answered it. */
+/** When it was answered, in words a person reads at a glance. */
+function saidWhen(at: string): string {
+  return new Date(at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/**
+ * What became of an offer, once somebody has answered it.
+ *
+ * The answer keeps its moment. A refusal is part of the record, and a record
+ * says when.
+ */
 function Settled({ offer }: { readonly offer: RecordedOfferView }): React.JSX.Element {
   const said = {
     accepted: 'taken',
@@ -68,6 +92,11 @@ function Settled({ offer }: { readonly offer: RecordedOfferView }): React.JSX.El
       }}
     >
       {offer.label}: {said}
+      {offer.answeredAt !== undefined && (
+        <span data-testid="settled-when" style={{ float: 'right', ...TABULAR_NUMERALS }}>
+          {saidWhen(offer.answeredAt)}
+        </span>
+      )}
     </p>
   );
 }
