@@ -183,6 +183,15 @@ export const CALL_IT: CheckDefinition = {
   roll: { dice: [COIN] },
   inputs: [],
 
+  // A coin has no good side, so these are arbitrary. They are picked to use
+  // three different colours, because a canary that exercised one would not tell
+  // us whether the other two work.
+  outcomes: [
+    { id: 'heads', label: 'Heads', tone: 'strong', glyph: '\u25CF' },
+    { id: 'tails', label: 'Tails', tone: 'miss', glyph: '\u25CB' },
+    { id: 'not-a-coin', label: 'Not a coin', tone: 'weak', glyph: '\u25CC' },
+  ],
+
   interpret: (roll) => {
     const fell = roll === null ? undefined : readCoinFlip(roll);
 

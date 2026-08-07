@@ -115,6 +115,7 @@ describe('a check that rolls nothing', () => {
       name: 'Take stock',
       roll: null,
       inputs: [],
+      outcomes: [{ id: 'done', label: 'Done', tone: 'match', glyph: '\u25CB' }],
       interpret: () => ({ id: 'done', label: 'Done', summary: 'You looked around.', suggests: [] }),
     };
 

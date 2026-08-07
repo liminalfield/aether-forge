@@ -8,6 +8,7 @@ import {
   type ChecksView,
   type IpcResult,
   type JournalView,
+  type TimelineView,
   type JournalEntryView,
   type PreferencesView,
 } from '../shared/ipc';
@@ -21,6 +22,8 @@ const api: AetherForgeApi = {
   getAppVersion: () => ipcRenderer.invoke(IPC.getAppVersion) as Promise<string>,
 
   readJournal: () => ipcRenderer.invoke(IPC.readJournal) as Promise<IpcResult<JournalView>>,
+
+  readTimeline: () => ipcRenderer.invoke(IPC.readTimeline) as Promise<IpcResult<TimelineView>>,
 
   recordEntry: (text) =>
     ipcRenderer.invoke(IPC.recordEntry, text) as Promise<IpcResult<JournalEntryView>>,
