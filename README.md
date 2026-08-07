@@ -4,9 +4,11 @@ A local-first desktop companion for **solo tabletop roleplay**, starting with
 [Ironsworn: Starforged](https://www.ironswornrpg.com/) and classic Ironsworn, architected so other
 systems can arrive later as modules without reworking the core.
 
-> **Status: bootstrap.** The repository is a working monorepo, build pipeline and release pipeline.
-> There are no application features yet: the shell opens a window and reports its version. Feature
-> work starts once the pipeline is green (see `01-BOOTSTRAP-PLAN.md`).
+> **Status: early feature work.** The pipeline is green and the first features exist: an
+> event-sourced campaign log in SQLite, a journal you can write in and correct, and a check you can
+> roll from the window, with the module's suggestions recorded whether you take them or not. What
+> does not exist yet: entities and character sheets, tracks and clocks, oracle content, session
+> zero. The design records in `design/` say what is settled; `CLAUDE.md` says how the work is done.
 
 ## What it is meant to be
 

@@ -7,23 +7,28 @@
 > Read `00-PROJECT-BRIEF.md` first. It is the decision record; this file is the task list.
 > Verify current stable versions of all tools at execution time (pin exact versions in the repo;
 > the versions named here are indicative, not gospel).
+>
+> Checked boxes were marked retrospectively on 7 August 2026, after the work had shipped without
+> this file being kept up to date. Two Phase 4 items are still open and are annotated inline.
+> Feature work (Phase 5) has since begun and is tracked through `design/` and GitHub issues, not
+> here; this file is now a record of the bootstrap, not a live task list.
 
 ## Phase 0 — repo creation (manual, by the owner)
 
-- [ ] Pick the real project name (brief uses `ironlog` as placeholder). Check name availability on
+- [x] Pick the real project name (brief uses `ironlog` as placeholder). Check name availability on
       npm (for the MIT packages) and AUR before committing to it.
-- [ ] Create the GitHub repo, default branch `main`, no license file yet (added correctly in
+- [x] Create the GitHub repo, default branch `main`, no license file yet (added correctly in
       Phase 1 because it's per-package).
-- [ ] Branch protection on `main`: require PR + passing checks. Conventional-commit PR titles
+- [x] Branch protection on `main`: require PR + passing checks. Conventional-commit PR titles
       (enforced in CI later).
 
 ## Phase 1 — monorepo skeleton
 
-- [ ] `pnpm` workspace (`pnpm-workspace.yaml`) with the layout from the brief:
+- [x] `pnpm` workspace (`pnpm-workspace.yaml`) with the layout from the brief:
       `apps/desktop`, `packages/{core,ui,system-ironsworn,system-toy,importer-datasworn}`, `tools/`.
       Every package gets a real `package.json` now, even if the source is one placeholder file —
       the dependency-direction rules need the graph to exist.
-- [ ] Root tooling:
+- [x] Root tooling:
   - TypeScript (strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`), project
     references so `tsc -b` builds the graph.
   - ESLint (flat config) + Prettier. Add `eslint-plugin-import` rules banning: renderer →
@@ -32,32 +37,34 @@
   - Vitest at the root, per-package test scripts, one trivial passing test per package.
   - `.editorconfig`, `.nvmrc`/`engines` (current active LTS Node), `packageManager` field pinning
     pnpm (corepack).
-- [ ] Licenses: `LICENSE` (GPL-3.0-or-later) in `apps/desktop` and repo root pointing at the split;
+- [x] Licenses: `LICENSE` (GPL-3.0-or-later) in `apps/desktop` and repo root pointing at the split;
       `LICENSE` (MIT) in each `packages/*`; correct `license` field in every package.json.
-- [ ] `tools/check-licenses`: script (can use `license-checker-rseidelsohn` or similar) with the
+- [x] `tools/check-licenses`: script (can use `license-checker-rseidelsohn` or similar) with the
       allowlist from the brief; wired as `pnpm check:licenses`.
-- [ ] `tools/check-content-leak`: script that fails if files matching imported-content patterns
+- [x] `tools/check-content-leak`: script that fails if files matching imported-content patterns
       (e.g. `**/imported/**`, `*.userpkg.json`, configurable list) are staged/committed. Wire into
       CI; optionally as a pre-commit hook (lefthook or husky — owner's preference, keep it light).
-- [ ] `CLAUDE.md` at root: distilled from `00-PROJECT-BRIEF.md` (the "must never do" list verbatim,
+- [x] `CLAUDE.md` at root: distilled from `00-PROJECT-BRIEF.md` (the "must never do" list verbatim,
       the vocabulary rule, the dependency arrows, the commands).
-- [ ] `README.md`: what it is, license split, build instructions, SignPath disclosure placeholder
+- [x] `README.md`: what it is, license split, build instructions, SignPath disclosure placeholder
       (required if the free OSS signing program is ever used).
 
 Acceptance: `pnpm install && pnpm build && pnpm test && pnpm lint && pnpm depcheck` all green.
 
 ## Phase 2 — Electron shell
 
-- [ ] Scaffold `apps/desktop` with **electron-vite** (main / preload / renderer, React, TS).
-- [ ] Security posture from the first commit: `contextIsolation: true`, `nodeIntegration: false`,
+- [x] Scaffold `apps/desktop` with **electron-vite** (main / preload / renderer, React, TS).
+- [x] Security posture from the first commit: `contextIsolation: true`, `nodeIntegration: false`,
       `sandbox: true` for the renderer; a typed IPC contract module shared between preload and
       renderer (`apps/desktop/src/shared/ipc.ts`) — start with `app:getVersion` as the only channel
       to prove the pattern.
-- [ ] `better-sqlite3` in main only. Prove native-module rebuild works locally
+- [x] `better-sqlite3` in main only. Prove native-module rebuild works locally
       (`electron-builder install-app-deps`). One migration-capable open-database function; store
-      the DB under `app.getPath('userData')/campaigns/`.
-- [ ] Renderer: blank React app rendering the app version fetched over IPC. No feature code.
-- [ ] electron-builder config (`electron-builder.yml`): appId, productName, artifact naming,
+      the DB under `app.getPath('userData')/campaigns/`. **Done, except the rebuild:**
+      `better-sqlite3` v13 ships N-API prebuilds, so no per-Electron rebuild exists to prove. See
+      "Verify, do not remember" in `CLAUDE.md`.
+- [x] Renderer: blank React app rendering the app version fetched over IPC. No feature code.
+- [x] electron-builder config (`electron-builder.yml`): appId, productName, artifact naming,
       targets — Linux: `AppImage`, `deb`; Windows: `nsis`. `publish: github` (for electron-updater
       later). Signing hook file present but no-op without env credentials.
 
@@ -161,8 +168,10 @@ Configure release-please for the monorepo: the app version drives tags (`v*`); p
 follow later when/if the MIT packages publish to npm (not a launch requirement).
 
 - [ ] Renovate config (`renovate.json`): weekly, grouped minor/patch, pinned Datasworn packages
-      excluded from auto-bump (they change the content model — manual only).
-- [ ] `osv-scanner` or `pnpm audit --audit-level=high` step in pr-validate (non-blocking at first).
+      excluded from auto-bump (they change the content model — manual only). **Dropped by
+      decision, 6 August 2026.** Dependency updates are manual; the reasoning is recorded in
+      `CLAUDE.md` under "Current state".
+- [x] `osv-scanner` or `pnpm audit --audit-level=high` step in pr-validate (non-blocking at first).
 
 Acceptance: a PR shows green validate; merging to main produces artifacts on both OSes; pushing a
 `v0.0.1` tag (via release-please PR merge) yields a GitHub Release with AppImage + deb + exe +
@@ -170,16 +179,18 @@ SHA256SUMS + update metadata.
 
 ## Phase 4 — pipeline completions (before feature work starts in earnest)
 
-- [ ] Playwright Electron smoke test: launch packaged app, assert window title + IPC round-trip.
+- [x] Playwright Electron smoke test: launch packaged app, assert window title + IPC round-trip.
       Wire into package.yml (it's the only place packaging bugs are visible).
 - [ ] `electron-updater` wiring in main (GitHub provider), behind a "check for updates" menu item.
-      Test with two consecutive tagged releases.
+      Test with two consecutive tagged releases. **Still open as of 7 August 2026.** The
+      electron-builder config publishes to GitHub and AppImage is the self-updating channel, but
+      nothing in main checks for updates yet.
 - [ ] AUR: create `tools/aur/PKGBUILD.template` (`<name>-bin`, repackaging the released .deb or an
       added tarball target) + a `publish-aur` job on release (SSH key secret; e.g.
       KSXGitHub/github-actions-deploy-aur or manual git push script). Owner registers the AUR
       package name.
-- [ ] GitHub attestation (`actions/attest-build-provenance`) on release artifacts — cheap, do it.
-- [ ] Issue/PR templates, `CONTRIBUTING.md` (mention DCO if adopted, conventional commits,
+- [x] GitHub attestation (`actions/attest-build-provenance`) on release artifacts — cheap, do it.
+- [x] Issue/PR templates, `CONTRIBUTING.md` (mention DCO if adopted, conventional commits,
       dependency/license rules).
 
 ## Phase 5 — first feature milestone (separate plan)
@@ -190,7 +201,9 @@ UI, per `02-MODULE-CONTRACT.md`. Do not start this in the bootstrap PRs.
 ## Known chores & gotchas (so they don't surprise)
 
 - `better-sqlite3` must be rebuilt per Electron version — `electron-builder install-app-deps`
-  handles it; keep Electron and better-sqlite3 bumps in the same PR.
+  handles it; keep Electron and better-sqlite3 bumps in the same PR. **Wrong as of v13**, which
+  ships N-API prebuilds; no rebuild happens and `install-app-deps` is deliberately absent. Keeping
+  the bumps in one PR is still right.
 - electron-builder Linux artifacts need `--no-sandbox` handling on some distros via AppImage;
   accept defaults first, revisit on bug reports.
 - The `deb` target does not auto-update; release notes should say AppImage is the self-updating

@@ -585,14 +585,28 @@ everyone to ignore the rest of it.
 
 ## Current state
 
-The repository is a working monorepo, build pipeline and release pipeline. There is no application
-feature code: the shell opens a window and reports its version over IPC. Feature work begins at
-Phase 5 of `01-BOOTSTRAP-PLAN.md`, which is the core event log, the entity store, the toy module,
-and a minimal journal.
+The repository is a working monorepo, build pipeline and release pipeline, and the first feature
+phases are built. As of 7 August 2026:
+
+- `packages/core` has the event log with versioned payloads and upcast-on-read, projections with
+  purity contract tests, the journal, rolls with per-die provenance, checks, the four
+  `core.suggestion.*` events (already through one real V1 to V2 migration), campaign export and
+  import, and a reusable contract-test kit under `@aether-forge/core/testing`.
+- `apps/desktop` has the SQLite event log passing the same contract suite as the memory log, a typed
+  IPC surface of ten channels, and a renderer where a person can write and correct journal entries,
+  roll a check with typed-in or digital dice, and answer its suggestions. Five Playwright specs run
+  against the packaged app.
+- `packages/ui` has the fifteen-slot theme contract with two built-in themes, tokens, motion, the
+  colour report, and five components. React 19 is a peer dependency. The design intent lives in
+  `design/ux-ui-design-handoff` and `design/themes-and-components.md`.
+- Both system modules declare a check; `system-ironsworn` covers one move (Face Danger) and
+  momentum. There are no entities, sheets, tracks, clocks, flows, or content packages yet, in core
+  or anywhere else. `packages/importer-datasworn` is a stub.
 
 Things that are true now and worth revisiting:
 
-- `packages/ui` is tokens only. No components, no React dependency yet.
+- Stat values in a check are typed in at roll time, because there is no character sheet to read
+  from. The pre-roll `suggest` half of the contract is declared and implemented by nothing.
 - ESLint runs without type-aware rules, to keep the configuration small while the codebase is.
   Enabling `recommendedTypeChecked` means wiring `projectService` and including test files.
 - `better-sqlite3` v13 ships N-API prebuilds and needs no per-Electron rebuild. Do not reintroduce
@@ -608,4 +622,7 @@ Things that are true now and worth revisiting:
   Datasworn bumps need regenerated goldens, almost every update wants a human decision anyway, and a
   bot whose pull requests get closed teaches you to ignore the ones that matter. Revisit when the
   dependency list is large enough to be a chore.
-- No release has been cut. The first will be 0.1.0.
+- v0.1.0 has been released. Releases are cut by merging the release-please pull request, never by
+  tagging by hand.
+- Two Phase 4 items from `01-BOOTSTRAP-PLAN.md` remain outstanding, not deferred by any decision:
+  `electron-updater` wiring and the AUR packaging job.

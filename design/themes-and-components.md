@@ -1,9 +1,21 @@
 # Themes and components
 
-Status: accepted, 5 August 2026. Not yet decomposed.
+Status: accepted, 5 August 2026 (#83). Decomposed and built across #86, #87 and #93 to #99; the "Not
+yet decomposed" that stood here outlived the decomposition. Corrected 7 August 2026.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
+
+> Known divergences between this record and the code, written down 7 August 2026 and not yet
+> reconciled. None of these was a decision; each is drift, and whether the code or the record moves
+> will be decided per item. The outcome glyphs shipped as ◆ ◇ △ in `system-ironsworn` where this
+> record decided ▲ ◐ ▼ ✦, and nothing in `packages/ui` enforces the decided set. The journal window
+> still draws with inline style objects, though every colour crosses as a custom property, so the
+> themeability this record exists for does hold. The spacing and type scales in
+> `packages/ui/src/tokens.ts` cover fewer steps than the handoff uses, so components write the
+> missing sizes as literals, and no guard catches a literal size the way the lint catches a literal
+> colour. The ghost block, named below as a component and not a style, has not been built; offers
+> currently render as a plain chip row.
 
 There is a finished visual design for nine surfaces sitting in `design/ux-ui-design-handoff`, and a
 window that draws a list of paragraphs with inline styles. This record is about closing that gap

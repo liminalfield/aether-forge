@@ -1,6 +1,7 @@
 # Rolling a check in the window
 
-Status: proposed, 6 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted 6 August 2026 (#116) and built. Decomposed and implemented across #127 to #135
+without this line being updated. Corrected 7 August 2026.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.

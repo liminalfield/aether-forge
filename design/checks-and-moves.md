@@ -1,6 +1,7 @@
 # Checks, and what follows from them
 
-Status: proposed, 6 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted and built. Proposed 6 August 2026 (#100); decomposed and implemented across #109 to
+#115 without this line being updated. Corrected 7 August 2026.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
