@@ -12,6 +12,7 @@ import {
   readRoll,
   type CheckDefinition,
   type CheckOutcome,
+  type OutcomeStyle,
   type EffectSuggestion,
   type EventTypeDefinition,
   type ModuleProjection,
@@ -132,6 +133,29 @@ export const STATS = ['edge', 'heart', 'iron', 'shadow', 'wits'] as const;
  * against each challenge die. Beating both is a strong hit, beating one is a
  * weak hit, beating neither is a miss.
  */
+/**
+ * Every result this check can produce, and how each is shown.
+ *
+ * The labels live here rather than in `interpret`, so the word a person sees
+ * while they roll and the word they see reading it back next year cannot drift
+ * apart. `interpret` looks its own entry up.
+ *
+ * `unreadable` is shown the way a failure is. It is not one, and there is no
+ * fifth colour: four is what a person can learn, and inventing one for a state
+ * that only happens when something has gone wrong would spend it badly.
+ */
+const FACE_DANGER_OUTCOMES: readonly OutcomeStyle[] = [
+  { id: 'strong-hit', label: 'Strong hit', tone: 'strong', glyph: '\u25C6' },
+  { id: 'weak-hit', label: 'Weak hit', tone: 'weak', glyph: '\u25C7' },
+  { id: 'miss', label: 'Miss', tone: 'miss', glyph: '\u25B3' },
+  { id: 'unreadable', label: 'Unreadable', tone: 'miss', glyph: '\u003F' },
+];
+
+/** The declared label for a result, so no result is named twice. */
+function labelled(id: string): string {
+  return FACE_DANGER_OUTCOMES.find((style) => style.id === id)?.label ?? id;
+}
+
 export const FACE_DANGER: CheckDefinition = {
   id: 'starforged/moves/adventure/face_danger',
   name: 'Face Danger',
@@ -142,6 +166,8 @@ export const FACE_DANGER: CheckDefinition = {
       { sides: 10, count: 2, label: 'challenge' },
     ],
   },
+
+  outcomes: FACE_DANGER_OUTCOMES,
 
   inputs: [
     {
@@ -171,7 +197,7 @@ function interpretFaceDanger(
   if (action === undefined || challenge.length !== 2) {
     return {
       id: 'unreadable',
-      label: 'Unreadable',
+      label: labelled('unreadable'),
       summary: 'That roll was not an action roll.',
       suggests: [],
     };
@@ -183,7 +209,7 @@ function interpretFaceDanger(
   if (beaten === 2) {
     return {
       id: 'strong-hit',
-      label: 'Strong hit',
+      label: labelled('strong-hit'),
       summary: 'You do it, and you are in control.',
       suggests: [momentumSuggestion(1, 'a clean success')],
     };
@@ -192,7 +218,7 @@ function interpretFaceDanger(
   if (beaten === 1) {
     return {
       id: 'weak-hit',
-      label: 'Weak hit',
+      label: labelled('weak-hit'),
       summary: 'You do it, but at a cost.',
       suggests: [momentumSuggestion(-1, 'a cost paid')],
     };
@@ -200,7 +226,7 @@ function interpretFaceDanger(
 
   return {
     id: 'miss',
-    label: 'Miss',
+    label: labelled('miss'),
     summary: 'It goes badly.',
     suggests: [momentumSuggestion(-2, 'it went badly')],
   };

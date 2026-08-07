@@ -129,9 +129,11 @@ export type {
   CheckOutcome,
   EffectSuggestion,
   InputSource,
+  OutcomeStyle,
+  OutcomeTone,
   ProposalField,
 } from './check.js';
-export { describesEveryField } from './check.js';
+export { declaresStyleFor, describesEveryField } from './check.js';
 
 export type {
   CheckRun,

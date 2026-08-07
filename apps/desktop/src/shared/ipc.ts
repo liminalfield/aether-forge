@@ -19,6 +19,7 @@ export const IPC = {
   readJournal: 'journal:read',
   recordEntry: 'journal:recordEntry',
   correctEntry: 'journal:correctEntry',
+  readTimeline: 'journal:readTimeline',
   readChecks: 'checks:read',
   runCheck: 'checks:run',
   answerOffer: 'checks:answerOffer',
@@ -73,6 +74,58 @@ export interface JournalEntryView {
 export interface JournalView {
   /** In the order they were written, oldest first. */
   readonly entries: readonly JournalEntryView[];
+}
+
+/**
+ * Everything in a campaign, in the order it happened.
+ *
+ * Prose and checks together, because that is what a session is. A journal that
+ * held only the writing would make the rolls a separate history of the same
+ * evening, and a person would have to read both to know what happened.
+ */
+export interface TimelineView {
+  readonly items: readonly TimelineItem[];
+}
+
+export type TimelineItem =
+  | { readonly kind: 'entry'; readonly at: string; readonly entry: JournalEntryView }
+  | { readonly kind: 'check'; readonly at: string; readonly check: RecordedCheckView };
+
+/**
+ * A check as the log holds it, complete enough to draw without asking a module
+ * anything about what happened.
+ *
+ * How it is drawn does come from the module, because presentation is not a fact
+ * and somebody who updates a module should see the new presentation over their
+ * old campaign. What happened was written down and is never worked out again.
+ */
+export interface RecordedCheckView {
+  /** The event that resolved it, which is what identifies it on screen. */
+  readonly id: string;
+  readonly checkId: string;
+  readonly systemId: string;
+  /** The module's name for it, or the identifier when the module is gone. */
+  readonly name: string;
+  readonly outcome: RecordedOutcomeView;
+  readonly dice: readonly RolledDieView[];
+  /** What it ran with, as the module named each one. */
+  readonly inputs: Readonly<Record<string, number>>;
+  readonly offers: readonly RecordedOfferView[];
+}
+
+export interface RecordedOutcomeView {
+  readonly id: string;
+  readonly label: string;
+  readonly summary: string;
+  readonly tone: 'strong' | 'weak' | 'miss' | 'match';
+  readonly glyph: string;
+}
+
+/** An offer, and what became of it. */
+export interface RecordedOfferView extends OfferView {
+  readonly fate: OfferFate;
+  /** What the person used instead, when they changed it before taking it. */
+  readonly used?: Readonly<Record<string, unknown>>;
 }
 
 /** One of the values an input offers, when it offers a fixed set. */
@@ -258,6 +311,14 @@ export interface AetherForgeApi {
 
   /** Every entry in the campaign, oldest first. */
   readJournal(): Promise<IpcResult<JournalView>>;
+
+  /**
+   * Everything in the campaign, prose and checks together, oldest first.
+   *
+   * What the window draws. `readJournal` remains for anything that wants the
+   * writing alone.
+   */
+  readTimeline(): Promise<IpcResult<TimelineView>>;
 
   /**
    * Write a journal entry into the campaign log.

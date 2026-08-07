@@ -119,6 +119,38 @@ export interface CheckOutcome {
 }
 
 /**
+ * The four ways a result can be shown.
+ *
+ * Deliberately the same four the design system names its outcome colours with,
+ * and deliberately declared twice, because `core` and `ui` may not import each
+ * other. Four rather than one per system, so that a person learns what a colour
+ * means once and it keeps meaning that in every game they play.
+ */
+export type OutcomeTone = 'strong' | 'weak' | 'miss' | 'match';
+
+/**
+ * One outcome a check can produce, and how to show it.
+ *
+ * Declared rather than worked out from what `interpret` returned, because a
+ * card drawn from a campaign read back next year has only an outcome's
+ * identifier to go on. The log records which outcome happened; this says what
+ * that outcome is called and how it looks.
+ *
+ * That split is deliberate. What happened is a fact and is written down.
+ * How it is drawn is presentation, and a person who retheres their application,
+ * or updates a module that renames a result, should see the new presentation
+ * over their old campaign rather than a rewritten log.
+ *
+ * `glyph` travels with `tone` so colour never carries the meaning alone.
+ */
+export interface OutcomeStyle {
+  readonly id: string;
+  readonly label: string;
+  readonly tone: OutcomeTone;
+  readonly glyph: string;
+}
+
+/**
  * A check, as a module declares it.
  *
  * `roll` may be absent, for a procedure that has no dice. A system that rolls
@@ -132,6 +164,15 @@ export interface CheckDefinition {
   readonly docRef?: string;
   readonly roll: RollRequest | null;
   readonly inputs: readonly CheckInput[];
+  /**
+   * Every outcome this check can produce.
+   *
+   * Complete, because anything drawing an old result looks it up here and a
+   * missing entry means a card nobody can draw. A module's own tests are where
+   * that completeness is checked, since only the module knows what `interpret`
+   * can return.
+   */
+  readonly outcomes: readonly OutcomeStyle[];
 
   /**
    * What the dice meant.
@@ -153,6 +194,21 @@ export interface CheckDefinition {
  * ship a suggestion that is adjustable in some parts and not others. This is
  * how a module's own tests catch that before anybody plays with it.
  */
+/**
+ * Whether a check can show every outcome it just produced.
+ *
+ * For a module's own tests: run `interpret` over the rolls that matter and pass
+ * what came back. An outcome with no declared style is a card that cannot be
+ * drawn when the campaign is read again, and the module is the only thing that
+ * knows which outcomes exist.
+ */
+export function declaresStyleFor(
+  check: CheckDefinition,
+  outcome: CheckOutcome | Pick<CheckOutcome, 'id'>,
+): boolean {
+  return check.outcomes.some((style) => style.id === outcome.id);
+}
+
 export function describesEveryField(suggestion: EffectSuggestion): boolean {
   const payload = suggestion.proposes.payload;
   if (typeof payload !== 'object' || payload === null) return true;

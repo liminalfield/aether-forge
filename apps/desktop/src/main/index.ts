@@ -8,6 +8,7 @@ import {
   suggestions,
   type OpenCampaign,
   type Projection,
+  type TranslatingLog,
 } from '@aether-forge/core';
 import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
@@ -21,6 +22,7 @@ import { openEventLog } from './event-log';
 import { correctEntry, readJournal, recordEntry } from './journal';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
+import { readTimeline } from './timeline';
 import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
@@ -67,9 +69,25 @@ function createWindow(): BrowserWindow {
   return window;
 }
 
-function registerIpcHandlers(campaign: OpenCampaign, userDataDir: string): void {
+function registerIpcHandlers(
+  campaign: OpenCampaign,
+  log: TranslatingLog,
+  userDataDir: string,
+): void {
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
+
+  ipcMain.handle(IPC.readTimeline, () => {
+    const events = log.read();
+    if (!events.ok) {
+      return {
+        ok: false as const,
+        failure: { kind: events.failure.kind, detail: describeFailure(events.failure) },
+      };
+    }
+
+    return { ok: true as const, value: readTimeline(campaign, events.value) };
+  });
   ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(campaign, text));
   ipcMain.handle(IPC.correctEntry, (_event, entryId: unknown, text: unknown) =>
     correctEntry(campaign, entryId, text),
@@ -141,7 +159,7 @@ void app.whenReady().then(() => {
     throw new Error(`this campaign could not be opened: ${describeFailure(opened.failure)}`);
   }
 
-  registerIpcHandlers(opened.value, app.getPath('userData'));
+  registerIpcHandlers(opened.value, log, app.getPath('userData'));
   createWindow();
 
   app.on('activate', () => {
