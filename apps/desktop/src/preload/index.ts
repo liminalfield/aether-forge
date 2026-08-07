@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import {
   IPC,
   type AetherForgeApi,
+  type CheckRunView,
   type ChecksView,
   type IpcResult,
   type JournalView,
@@ -27,6 +28,9 @@ const api: AetherForgeApi = {
     ipcRenderer.invoke(IPC.correctEntry, entryId, text) as Promise<IpcResult<JournalEntryView>>,
 
   readChecks: () => ipcRenderer.invoke(IPC.readChecks) as Promise<IpcResult<ChecksView>>,
+
+  runCheck: (request) =>
+    ipcRenderer.invoke(IPC.runCheck, request) as Promise<IpcResult<CheckRunView>>,
 
   readPreferences: () =>
     ipcRenderer.invoke(IPC.readPreferences) as Promise<IpcResult<PreferencesView>>,

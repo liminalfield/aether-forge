@@ -32,8 +32,22 @@ export const COMPATIBLE_CORE_CONTRACT_VERSION = CORE_CONTRACT_VERSION;
  */
 export const COIN: DieSpec = { sides: 2, count: 1, label: 'coin' };
 
-/** The one event this module owns. */
+/** The event this module owns for its own sake. */
 export const COIN_FLIPPED = 'sys.toy-coinflip.coin.flipped';
+
+/**
+ * The two events a check writes either side of its roll.
+ *
+ * Every system that runs a check declares these, because the log has to say
+ * what ran and what it came to. That is not in tension with this module's claim
+ * that a coin flip needs no events of its own: the claim is about the flip,
+ * which is a plain core roll, and these are about the check around it.
+ *
+ * A campaign holding a roll and nothing saying which check produced it would be
+ * a campaign nobody could read back.
+ */
+export const CHECK_INVOKED = 'sys.toy-coinflip.check.invoked';
+export const CHECK_RESOLVED = 'sys.toy-coinflip.check.resolved';
 
 export interface CoinFlipped {
   readonly result: 'heads' | 'tails';
@@ -81,6 +95,10 @@ export const coinTally: ModuleProjection<CoinTally> = {
  */
 export const eventTypes: readonly EventTypeDefinition[] = [
   { type: COIN_FLIPPED, currentVersion: 1, translations: [], corrections: 'records-a-change' },
+  // Both say what the check ran with and what it came to, so both can be
+  // restated. Neither records a change to anything.
+  { type: CHECK_INVOKED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
+  { type: CHECK_RESOLVED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
 ];
 
 /**
