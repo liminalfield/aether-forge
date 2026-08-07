@@ -21,6 +21,7 @@ export const IPC = {
   correctEntry: 'journal:correctEntry',
   readChecks: 'checks:read',
   runCheck: 'checks:run',
+  answerOffer: 'checks:answerOffer',
   readPreferences: 'preferences:read',
   setMotionPreference: 'preferences:setMotion',
 } as const;
@@ -206,6 +207,40 @@ export interface RunCheckRequest {
   readonly thrown?: readonly number[];
 }
 
+/** What a person decided about one offer. */
+export type OfferAnswer =
+  | { readonly kind: 'accepted' }
+  | { readonly kind: 'declined' }
+  | { readonly kind: 'adjusted'; readonly used: Readonly<Record<string, unknown>> };
+
+/** What the window says when a person answers an offer. */
+export interface AnswerOfferRequest {
+  /** The event that made the offer, which is what names it. */
+  readonly offerId: string;
+  readonly answer: OfferAnswer;
+}
+
+/**
+ * What became of an offer.
+ *
+ * `offered` means nobody has answered it yet, which is a real state rather than
+ * a missing one and survives closing the application.
+ */
+export type OfferFate = 'offered' | 'accepted' | 'adjusted' | 'declined';
+
+/** An offer as it now stands, after somebody answered it. */
+export interface AnsweredOfferView {
+  readonly offerId: string;
+  readonly fate: OfferFate;
+  /**
+   * The event the answer wrote, when the answer took the proposal.
+   *
+   * Absent for a refusal, and that absence is the whole promise: refusing
+   * writes the refusal and nothing else.
+   */
+  readonly appliedEventId?: string;
+}
+
 /**
  * What a person has chosen about how the application behaves for them.
  *
@@ -262,6 +297,19 @@ export interface AetherForgeApi {
    * person cannot answer a suggestion they have not seen.
    */
   runCheck(request: RunCheckRequest): Promise<IpcResult<CheckRunView>>;
+
+  /**
+   * Say what a person decided about one offer.
+   *
+   * The second of the two acts, and it can happen a second after the first or
+   * in a session next year. An offer nobody has answered stays in the log
+   * waiting, so somebody interrupted mid-decision finds the decision still
+   * there.
+   *
+   * Answering again is allowed. It is not a correction: the first answer
+   * happened and stays in the log, and this is a second decision, later.
+   */
+  answerOffer(request: AnswerOfferRequest): Promise<IpcResult<AnsweredOfferView>>;
 
   /** What this person has chosen. Answers with the defaults when nothing is stored. */
   readPreferences(): Promise<IpcResult<PreferencesView>>;
