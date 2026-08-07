@@ -12,11 +12,12 @@
  * See `design/checks-and-moves.md`.
  */
 
-import type { CheckDefinition, CheckOutcome } from './check.js';
+import type { CheckDefinition, CheckOutcome, ProposalField } from './check.js';
 import type { CoreEventType, ModuleEventType } from './event.js';
 import type { RollPerformedV1 } from './roll.js';
 import { ROLL_PERFORMED } from './roll.js';
 import type { SystemId } from './identifiers.js';
+import type { OfferedProposal } from './suggestion.js';
 import {
   SUGGESTION_ACCEPTED,
   SUGGESTION_ADJUSTED,
@@ -69,6 +70,37 @@ export interface SequencedDraft {
   readonly causedBy?: number;
 }
 
+/**
+ * What accepting a proposal would write, as the offer records it.
+ *
+ * Narrower than the draft the module supplied. A draft can also carry causation
+ * and supersession, and those belong to whatever writes the event rather than
+ * to the module that proposed it.
+ */
+function proposalOf(draft: UnversionedEventDraft): OfferedProposal {
+  const systemId = 'systemId' in draft ? draft.systemId : undefined;
+
+  return systemId === undefined
+    ? { type: draft.type, payload: draft.payload }
+    : { type: draft.type, systemId, payload: draft.payload };
+}
+
+/**
+ * The one input a pre-roll offer is about, described as something changeable.
+ *
+ * An empty list when the check does not declare that input. Nothing here can
+ * refuse the offer over it: a check that suggests a value for an input it never
+ * declared is a module's bug, and the offer is still a real thing that happened.
+ */
+function describeInput(check: CheckDefinition, inputId: string): readonly ProposalField[] {
+  const input = check.inputs.find((each) => each.id === inputId);
+  if (input === undefined) return [];
+
+  const field = { id: input.id, label: input.label, kind: input.kind };
+
+  return [input.options === undefined ? field : { ...field, options: input.options }];
+}
+
 function answerType(answer: OfferedInput['answer'] | SuggestionAnswer): CoreEventType {
   if (answer === 'accepted') return SUGGESTION_ACCEPTED;
   if (answer === 'declined') return SUGGESTION_DECLINED;
@@ -99,7 +131,14 @@ export function sequenceCheck(run: CheckRun): readonly SequencedDraft[] {
         suggestion: `${run.check.id}#${offer.input}`,
         label: offer.label,
         why: offer.why,
-        proposes: { type: run.events.invoked, payload: { [offer.input]: offer.value } },
+        proposes: {
+          type: run.events.invoked,
+          systemId: run.systemId,
+          payload: { [offer.input]: offer.value },
+        },
+        // The one part of this proposal a person can change is the input it is
+        // about, so the input's own shape is what describes it.
+        fields: describeInput(run.check, offer.input),
       },
     });
 
@@ -152,10 +191,10 @@ export function sequenceCheck(run: CheckRun): readonly SequencedDraft[] {
         payload: {
           suggestion: suggestion.id,
           label: suggestion.label,
-          proposes: {
-            type: suggestion.proposes.type,
-            payload: suggestion.proposes.payload,
-          },
+          proposes: proposalOf(suggestion.proposes),
+          // Recorded rather than worked out again later. An offer can be
+          // answered in a much later session, and the log is all there is then.
+          fields: suggestion.fields,
         },
       },
       resolved,

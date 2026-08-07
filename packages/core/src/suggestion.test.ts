@@ -14,6 +14,7 @@ import {
   suggestionEventTypes,
   suggestions,
   type SuggestionOfferedV1,
+  type SuggestionOfferedV2,
 } from './suggestion.js';
 import { describeProjectionIsPredictable } from './testing/projection-contract.js';
 import { describeSchemaTranslations } from './testing/schema-contract.js';
@@ -40,7 +41,34 @@ function openWith(log: TranslatingLog) {
   return opened.value;
 }
 
-const AN_OFFER: SuggestionOfferedV1 = {
+const AN_OFFER: SuggestionOfferedV2 = {
+  suggestion: 'example.dummy/spend-one',
+  label: 'Spend one from the resource',
+  why: 'the approach was costly',
+  proposes: {
+    type: 'sys.example.resource.moved',
+    systemId: 'example',
+    payload: { by: -1, reason: 'a hard landing' },
+  },
+  fields: [
+    { id: 'by', label: 'Amount', kind: 'number' },
+    {
+      id: 'reason',
+      label: 'Why',
+      kind: 'choice',
+      options: [
+        { id: 'landing', label: 'A hard landing', value: 1 },
+        { id: 'weather', label: 'The weather', value: 2 },
+      ],
+    },
+  ],
+};
+
+/**
+ * An offer as version 1 wrote one, kept so the translation has a real input
+ * rather than one built to suit it.
+ */
+const AN_OFFER_AS_VERSION_1: SuggestionOfferedV1 = {
   suggestion: 'example.dummy/spend-one',
   label: 'Spend one from the resource',
   why: 'the approach was costly',
@@ -70,6 +98,7 @@ describe('an offer', () => {
       suggestion: 'example.dummy/spend-one',
       label: 'Spend one from the resource',
       proposes: { type: 'sys.example.resource.moved', payload: { by: -1 } },
+      fields: [],
     };
 
     const read = readOffer(bare);
@@ -83,18 +112,155 @@ describe('an offer', () => {
     expect(read?.proposes.payload).toEqual({ by: -1, reason: 'a hard landing' });
   });
 
+  it('says which module the proposal belongs to', () => {
+    // Without it, an offer read back on its own cannot be turned into an event
+    // at all, because a module event is required to name its system.
+    expect(readOffer(AN_OFFER)?.proposes.systemId).toBe('example');
+  });
+
+  it('leaves the system out for a proposal that belongs to core', () => {
+    const proposingACoreEvent = {
+      suggestion: 'example.dummy/write-it-down',
+      label: 'Write it down',
+      proposes: { type: 'core.entry.created', payload: { text: 'It answered.' } },
+      fields: [],
+    };
+
+    expect(readOffer(proposingACoreEvent)?.proposes).not.toHaveProperty('systemId');
+  });
+
+  it('carries what a person may change, with the choices for each', () => {
+    // The whole reason version 2 exists. An offer can be answered in a much
+    // later session, and at that point the log is all there is.
+    expect(readOffer(AN_OFFER)?.fields).toEqual(AN_OFFER.fields);
+  });
+
+  it('has enough to draw an adjust control without asking the module', () => {
+    const read = readOffer(AN_OFFER);
+    const choice = read?.fields.find((field) => field.kind === 'choice');
+
+    expect(choice?.label).toBe('Why');
+    expect(choice?.options?.map((option) => option.label)).toEqual([
+      'A hard landing',
+      'The weather',
+    ]);
+  });
+
   it.each([
     ['not an object', 7],
-    ['no identifier', { label: 'x', proposes: { type: 'a', payload: {} } }],
-    ['no label', { suggestion: 'a', proposes: { type: 'a', payload: {} } }],
-    ['nothing proposed', { suggestion: 'a', label: 'x' }],
-    ['a proposal with no type', { suggestion: 'a', label: 'x', proposes: { payload: {} } }],
+    ['no identifier', { label: 'x', proposes: { type: 'a', payload: {} }, fields: [] }],
+    ['no label', { suggestion: 'a', proposes: { type: 'a', payload: {} }, fields: [] }],
+    ['nothing proposed', { suggestion: 'a', label: 'x', fields: [] }],
+    [
+      'a proposal with no type',
+      { suggestion: 'a', label: 'x', proposes: { payload: {} }, fields: [] },
+    ],
     [
       'a reason that is not text',
-      { suggestion: 'a', label: 'x', why: 7, proposes: { type: 'a', payload: {} } },
+      { suggestion: 'a', label: 'x', why: 7, proposes: { type: 'a', payload: {} }, fields: [] },
+    ],
+    [
+      'a system that is not text',
+      {
+        suggestion: 'a',
+        label: 'x',
+        proposes: { type: 'a', systemId: 7, payload: {} },
+        fields: [],
+      },
+    ],
+    ['no fields at all', { suggestion: 'a', label: 'x', proposes: { type: 'a', payload: {} } }],
+    [
+      'fields that are not a list',
+      { suggestion: 'a', label: 'x', proposes: { type: 'a', payload: {} }, fields: { by: {} } },
+    ],
+    [
+      'a field of no known kind',
+      {
+        suggestion: 'a',
+        label: 'x',
+        proposes: { type: 'a', payload: {} },
+        fields: [{ id: 'by', label: 'Amount', kind: 'colour' }],
+      },
+    ],
+    [
+      'a field with no label',
+      {
+        suggestion: 'a',
+        label: 'x',
+        proposes: { type: 'a', payload: {} },
+        fields: [{ id: 'by', kind: 'number' }],
+      },
+    ],
+    [
+      'an option with no value',
+      {
+        suggestion: 'a',
+        label: 'x',
+        proposes: { type: 'a', payload: {} },
+        fields: [{ id: 'by', label: 'Amount', kind: 'choice', options: [{ id: 'a', label: 'A' }] }],
+      },
     ],
   ])('says no to %s', (_name, payload) => {
     expect(readOffer(payload)).toBeUndefined();
+  });
+
+  it('refuses the whole offer when one field of several is unreadable', () => {
+    // Not skipped. Showing the readable ones would present a partial set of
+    // controls as though it were the whole set.
+    const partlyUnreadable = {
+      suggestion: 'a',
+      label: 'x',
+      proposes: { type: 'a', payload: {} },
+      fields: [
+        { id: 'by', label: 'Amount', kind: 'number' },
+        { id: 'reason', label: 'Why', kind: 'nonsense' },
+      ],
+    };
+
+    expect(readOffer(partlyUnreadable)).toBeUndefined();
+  });
+});
+
+/**
+ * Runs the translations this build actually declares, rather than importing one
+ * directly. A translation that is written but never declared would pass a test
+ * that called it by name, and do nothing at all when a real log is read.
+ */
+function broughtUpToDate(payload: unknown): unknown {
+  const declared = suggestionEventTypes.find(
+    (definition) => definition.type === SUGGESTION_OFFERED,
+  );
+
+  return (declared?.translations ?? []).reduce<unknown>(
+    (carried, step) => step.translate(carried),
+    payload,
+  );
+}
+
+describe('an offer written before version 2', () => {
+  it('still reads, and says nothing about it can be changed', () => {
+    // Truthful rather than convenient. Version 1 never recorded which parts
+    // were adjustable, so an empty list is what is actually known.
+    const brought = broughtUpToDate(AN_OFFER_AS_VERSION_1);
+
+    expect(readOffer(brought)?.fields).toEqual([]);
+  });
+
+  it('does not guess which module its proposal belonged to', () => {
+    // The type is namespaced sys.<systemId>.* by the module contract, so it
+    // could have been read back out of the string. That is a naming convention
+    // no code enforces, and a guess written into a translation is permanent.
+    const brought = broughtUpToDate(AN_OFFER_AS_VERSION_1);
+
+    expect(readOffer(brought)?.proposes).not.toHaveProperty('systemId');
+  });
+
+  it('keeps everything version 1 did record', () => {
+    const brought = readOffer(broughtUpToDate(AN_OFFER_AS_VERSION_1));
+
+    expect(brought?.label).toBe('Spend one from the resource');
+    expect(brought?.why).toBe('the approach was costly');
+    expect(brought?.proposes.payload).toEqual({ by: -1, reason: 'a hard landing' });
   });
 });
 
@@ -185,7 +351,10 @@ describeSchemaTranslations(
     return schemas;
   },
   [
-    { type: SUGGESTION_OFFERED, payloadsByVersion: { 1: AN_OFFER } },
+    {
+      type: SUGGESTION_OFFERED,
+      payloadsByVersion: { 1: AN_OFFER_AS_VERSION_1, 2: { ...AN_OFFER_AS_VERSION_1, fields: [] } },
+    },
     { type: SUGGESTION_ACCEPTED, payloadsByVersion: { 1: {} } },
     { type: SUGGESTION_ADJUSTED, payloadsByVersion: { 1: { used: { by: -2 } } } },
     { type: SUGGESTION_DECLINED, payloadsByVersion: { 1: {} } },
@@ -299,7 +468,7 @@ describeProjectionIsPredictable(
       seq: 1,
       at: '2026-08-06T09:00:01.000Z',
       type: SUGGESTION_OFFERED,
-      schemaVersion: 1,
+      schemaVersion: 2,
       payload: AN_OFFER,
     },
     {

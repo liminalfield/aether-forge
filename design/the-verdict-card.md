@@ -134,6 +134,20 @@ wanted or in the way.
 
 **The IPC contract gains two channels**, one to run a check and one to answer a suggestion.
 
+**The offer event gains a second version.** Found while decomposing this record, not while writing
+it. Two acts only work if an offer can be answered from the log alone, in a later session, and
+version 1 of `core.suggestion.offered` recorded neither which parts of a proposal a person may
+change nor which module the proposal belongs to. Without the first, somebody pressing adjust is
+guessing at what is in front of them, which is the state the contract requires every proposal to
+describe its fields in order to prevent. Without the second, the offer cannot be turned back into an
+event at all, because a module event has to name its system.
+
+Both could have been worked out again by asking the module when the offer is answered. That was
+rejected. It makes an old offer depend on the module still declaring the same check the same way,
+and recording an answer once rather than asking again later is the whole reason `CheckOutcome` is
+written into the log. An event payload schema is permanent once a campaign has written one, so this
+was worth doing before anything could.
+
 **`packages/ui` gains the components the card is built from**: a chip, a chip row, and the card
 itself. All named without a word from any rulebook.
 

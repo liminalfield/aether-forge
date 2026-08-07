@@ -142,11 +142,13 @@ export type {
 export { sequenceCheck } from './running-a-check.js';
 
 export type {
+  OfferedProposal,
   SuggestionAcceptedV1,
   SuggestionAdjustedV1,
   SuggestionDeclinedV1,
   SuggestionFate,
   SuggestionOfferedV1,
+  SuggestionOfferedV2,
   SuggestionRecord,
   Suggestions,
 } from './suggestion.js';
