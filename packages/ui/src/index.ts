@@ -54,5 +54,8 @@ export { Chip } from './Chip.js';
 export type { ChipRowProps } from './ChipRow.js';
 export { ChipRow } from './ChipRow.js';
 
+export type { CardDie, CardOutcome, CardTotal, ResultCardProps } from './ResultCard.js';
+export { ResultCard } from './ResultCard.js';
+
 export type { WritingSurfaceProps } from './WritingSurface.js';
 export { WritingSurface } from './WritingSurface.js';
