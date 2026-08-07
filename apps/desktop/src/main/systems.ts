@@ -39,6 +39,22 @@ export interface LoadedSystem {
     readonly invoked: ModuleEventType;
     readonly resolved: ModuleEventType;
   };
+  /**
+   * Whether this system is one somebody plays.
+   *
+   * The toy is loaded so that every path consuming the module contract runs
+   * against two systems, which is the only thing keeping the contract honest.
+   * It is not a game, and offering its coin flip in the window beside a real
+   * check would be showing somebody a test fixture.
+   *
+   * Loading and offering are different questions, and this is where they part.
+   */
+  readonly playable: boolean;
+}
+
+/** The systems a person can actually roll a check from. */
+export function playableSystems(): readonly LoadedSystem[] {
+  return LOADED_SYSTEMS.filter((system) => system.playable);
 }
 
 export const LOADED_SYSTEMS: readonly LoadedSystem[] = [
@@ -46,10 +62,12 @@ export const LOADED_SYSTEMS: readonly LoadedSystem[] = [
     systemId: TOY_SYSTEM_ID,
     checks: toyChecks,
     checkEvents: { invoked: CHECK_INVOKED, resolved: CHECK_RESOLVED },
+    playable: false,
   },
   {
     systemId: STARFORGED_SYSTEM_ID,
     checks: ironswornChecks,
     checkEvents: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
+    playable: true,
   },
 ];

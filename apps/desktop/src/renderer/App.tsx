@@ -2,7 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, slot, TABULAR_NUMERALS, tokens, WritingSurface } from '@aether-forge/ui';
 
-import type { JournalEntryView } from '../shared/ipc';
+import type {
+  CheckView,
+  JournalEntryView,
+  OfferAnswer,
+  RunCheckRequest,
+  TimelineItem,
+} from '../shared/ipc';
+import { CheckCard } from './CheckCard';
+import { Entry } from './Entry';
+import { RunACheck } from './RunACheck';
 
 /**
  * The campaign as a document: oldest at the top, newest at the bottom, and the
@@ -25,7 +34,8 @@ const QUIET = {
 
 export function App(): React.JSX.Element {
   const [version, setVersion] = useState<string | null>(null);
-  const [entries, setEntries] = useState<readonly JournalEntryView[] | null>(null);
+  const [items, setItems] = useState<readonly TimelineItem[] | null>(null);
+  const [checks, setChecks] = useState<readonly CheckView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,9 +51,14 @@ export function App(): React.JSX.Element {
       .then(setVersion)
       .catch((cause: unknown) => setProblem(String(cause)));
 
-    void window.aetherForge.readJournal().then((journal) => {
-      if (journal.ok) setEntries(journal.value.entries);
-      else setProblem(journal.failure.detail);
+    void window.aetherForge.readTimeline().then((timeline) => {
+      if (timeline.ok) setItems(timeline.value.items);
+      else setProblem(timeline.failure.detail);
+    });
+
+    void window.aetherForge.readChecks().then((declared) => {
+      if (declared.ok) setChecks(declared.value.checks);
+      else setProblem(declared.failure.detail);
     });
   }, []);
 
@@ -51,7 +66,7 @@ export function App(): React.JSX.Element {
   // you have written, not at the beginning of it.
   useEffect(() => {
     end.current?.scrollIntoView();
-  }, [entries]);
+  }, [items]);
 
   const startCorrecting = useCallback((entry: JournalEntryView) => {
     setCorrecting(entry.id);
@@ -64,6 +79,56 @@ export function App(): React.JSX.Element {
     setCorrection('');
   }, []);
 
+  /**
+   * Ask for the whole campaign again.
+   *
+   * Used after anything that writes more than one event. A check writes four,
+   * and an answer writes two, and reassembling that in the window would be a
+   * second implementation of what the timeline already works out. The campaign
+   * is small enough that reading it is cheaper than keeping two copies in step.
+   */
+  const reread = useCallback(async () => {
+    const timeline = await window.aetherForge.readTimeline();
+    if (timeline.ok) setItems(timeline.value.items);
+    else setProblem(timeline.failure.detail);
+  }, []);
+
+  const runACheck = useCallback(
+    async (request: RunCheckRequest) => {
+      setBusy(true);
+      try {
+        const ran = await window.aetherForge.runCheck(request);
+        if (ran.ok) {
+          await reread();
+          setProblem(null);
+        } else {
+          setProblem(ran.failure.detail);
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [reread],
+  );
+
+  const answerAnOffer = useCallback(
+    async (offerId: string, answer: OfferAnswer) => {
+      setBusy(true);
+      try {
+        const answered = await window.aetherForge.answerOffer({ offerId, answer });
+        if (answered.ok) {
+          await reread();
+          setProblem(null);
+        } else {
+          setProblem(answered.failure.detail);
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [reread],
+  );
+
   const saveCorrection = useCallback(async () => {
     if (correcting === null) return;
 
@@ -71,11 +136,9 @@ export function App(): React.JSX.Element {
     try {
       const corrected = await window.aetherForge.correctEntry(correcting, correction);
       if (corrected.ok) {
-        // Nothing was edited. What came back is the entry as it now stands,
-        // after a correction was appended to the log.
-        setEntries((shown) =>
-          (shown ?? []).map((entry) => (entry.id === corrected.value.id ? corrected.value : entry)),
-        );
+        // Nothing was edited. A correction was appended, so the campaign is
+        // read again rather than patched in place.
+        await reread();
         stopCorrecting();
         setProblem(null);
       } else {
@@ -84,16 +147,14 @@ export function App(): React.JSX.Element {
     } finally {
       setBusy(false);
     }
-  }, [correcting, correction, stopCorrecting]);
+  }, [correcting, correction, reread, stopCorrecting]);
 
   const record = useCallback(async () => {
     setBusy(true);
     try {
       const recorded = await window.aetherForge.recordEntry(text);
       if (recorded.ok) {
-        // The answer carries the entry that was written, so there is no need to
-        // ask for the whole journal again.
-        setEntries((written) => [...(written ?? []), recorded.value]);
+        await reread();
         setText('');
         setProblem(null);
       } else {
@@ -102,7 +163,7 @@ export function App(): React.JSX.Element {
     } finally {
       setBusy(false);
     }
-  }, [text]);
+  }, [reread, text]);
 
   return (
     <div
@@ -151,93 +212,35 @@ export function App(): React.JSX.Element {
         }}
       >
         <section data-testid="journal" style={{ display: 'grid', gap: tokens.space.lg }}>
-          {entries === null && <p style={QUIET}>Reading the campaign…</p>}
+          {items === null && <p style={QUIET}>Reading the campaign…</p>}
 
-          {entries?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
+          {items?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
 
-          {entries?.map((entry) => (
-            <article key={entry.id} data-testid="entry">
-              {correcting === entry.id ? (
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void saveCorrection();
-                  }}
-                  style={{ display: 'grid', gap: tokens.space.sm }}
-                >
-                  <WritingSurface
-                    label="Change what this says"
-                    showLabel={false}
-                    data-testid="correction"
-                    value={correction}
-                    rows={4}
-                    autoFocus
-                    onChange={(event) => setCorrection(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') stopCorrecting();
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: tokens.space.sm }}>
-                    <Button type="submit" disabled={busy}>
-                      Save
-                    </Button>
-                    <Button weight="quiet" onClick={stopCorrecting}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  {/*
-                  A button rather than a paragraph with a click handler, so it
-                  can be reached and used from the keyboard without inventing
-                  anything.
-                */}
-                  <button
-                    type="button"
-                    data-testid="entry-text"
-                    title="Change what this says"
-                    onClick={() => startCorrecting(entry)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      margin: 0,
-                      padding: 0,
-                      background: 'none',
-                      border: 'none',
-                      color: slot('ink', 'primary'),
-                      fontFamily: 'var(--font-prose)',
-                      fontSize: '18px',
-                      fontWeight: 300,
-                      lineHeight: 1.6,
-                      textAlign: 'left',
-                      whiteSpace: 'pre-wrap',
-                      cursor: 'text',
-                    }}
-                  >
-                    {entry.text}
-                  </button>
-                  {entry.corrections > 0 && (
-                    <p
-                      data-testid="edited"
-                      title={`Corrected ${entry.corrections} ${entry.corrections === 1 ? 'time' : 'times'}`}
-                      style={{
-                        margin: `${tokens.space.xs} 0 0`,
-                        color: slot('ink', 'muted'),
-                        fontFamily: 'var(--font-numeric)',
-                        fontSize: '10.5px',
-                        letterSpacing: '.16em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      edited
-                    </p>
-                  )}
-                </>
-              )}
-            </article>
-          ))}
+          {items?.map((item) =>
+            item.kind === 'check' ? (
+              <CheckCard
+                key={item.check.id}
+                check={item.check}
+                onAnswer={(offerId, answer) => void answerAnOffer(offerId, answer)}
+                busy={busy}
+              />
+            ) : (
+              <Entry
+                key={item.entry.id}
+                entry={item.entry}
+                correcting={correcting}
+                correction={correction}
+                busy={busy}
+                onStart={startCorrecting}
+                onStop={stopCorrecting}
+                onChange={setCorrection}
+                onSave={() => void saveCorrection()}
+              />
+            ),
+          )}
         </section>
+
+        <RunACheck checks={checks} busy={busy} onRun={(request) => void runACheck(request)} />
 
         <form
           onSubmit={(event) => {
