@@ -199,6 +199,7 @@ interface CheckDefinition {
   name: string;
   docRef?: string;                   // full text in the reference browser
   roll: RollRequest | null;          // null = no-roll procedure
+  decisive?: string;                 // label of the dice the outcome turns on — presentation, never recorded
   inputs: CheckInput[];              // stat choice, modifiers — all user-editable at execution
   interpret(roll: RollPerformedV1 | null, inputs: Record<string, number>): CheckOutcome;
 }

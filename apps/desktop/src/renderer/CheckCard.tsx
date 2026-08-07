@@ -36,15 +36,15 @@ function inWords(from: string): string {
 }
 
 /**
- * No die is emphasised. The card documents emphasis as the module saying which
- * dice the result turned on, and the contract gives a module no way to say it
- * yet. Until it does, the honest rendering marks nothing, rather than guessing
- * and outlining dice the outcome never turned on.
+ * Emphasis is carried, never decided here. The module says which dice its
+ * outcome turned on, the timeline marks them, and the card draws the mark. A
+ * module that says nothing leaves every die plain.
  */
 function toCardDice(check: RecordedCheckView): readonly CardDie[] {
   return check.dice.map((die) => {
     const base = { value: die.value, from: inWords(die.from) };
-    return die.label === undefined ? base : { ...base, label: die.label };
+    const labelled = die.label === undefined ? base : { ...base, label: die.label };
+    return die.emphasis === true ? { ...labelled, emphasis: true } : labelled;
   });
 }
 

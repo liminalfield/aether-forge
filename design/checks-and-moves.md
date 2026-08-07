@@ -137,6 +137,17 @@ inputs it takes, and it says what a result means. Neither lets a module say no.
 
 The only thing refused is a value that is not a number.
 
+### A check says which dice its outcome turns on
+
+> Added while drawing the card, 7 August 2026 (#142). Not in the record as proposed.
+
+The verdict card outlines the dice the result turned on. Which dice those are is the module's to
+say, so `CheckDefinition` gained `decisive`, an optional label naming them. It is presentation in
+the same sense as a glyph or a tone: read from the module as it stands today, and never recorded. It
+deliberately does not live on the dice of the roll request, because those are written into
+`core.roll.performed` and a presentational flag has no business becoming a permanent fact. The toy
+says nothing and its coin stays plain, which is the omission working.
+
 ### A check may not roll at all
 
 Some procedures have no dice. A check whose roll is absent runs the same path, gathers the same

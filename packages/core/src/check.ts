@@ -163,6 +163,15 @@ export interface CheckDefinition {
   /** Where the full text lives, for a reference browser to link to. */
   readonly docRef?: string;
   readonly roll: RollRequest | null;
+  /**
+   * The label of the dice this check's outcome turns on, when some of its
+   * dice matter more than others. Presentation, not fact: it says which dice
+   * a surface should draw the outcome's weight on, it is read from the module
+   * as it stands today like a glyph or a tone, and it is never recorded. That
+   * is why it lives here and not on the dice of the roll request, which are
+   * written into the log.
+   */
+  readonly decisive?: string;
   readonly inputs: readonly CheckInput[];
   /**
    * Every outcome this check can produce.

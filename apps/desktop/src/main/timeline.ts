@@ -100,7 +100,12 @@ function styleFor(check: CheckDefinition | undefined, resolution: Resolution): R
       };
 }
 
-function toDiceView(roll: RollPerformedV1): readonly RolledDieView[] {
+/**
+ * The dice as the card needs them: labelled as the roll recorded, emphasised
+ * as the module says today. `decisive` names the label the outcome turned on;
+ * it is presentation, so a module that says nothing leaves every die plain.
+ */
+function toDiceView(roll: RollPerformedV1, decisive: string | undefined): readonly RolledDieView[] {
   const labels = roll.request.dice.flatMap((spec) =>
     Array.from({ length: spec.count }, () => spec.label),
   );
@@ -109,9 +114,10 @@ function toDiceView(roll: RollPerformedV1): readonly RolledDieView[] {
     const from = die.source.kind === 'service' ? die.source.service : die.source.kind;
     const label = labels[index];
 
-    return label === undefined
-      ? { sides: die.sides, value: die.value, from }
-      : { sides: die.sides, value: die.value, from, label };
+    if (label === undefined) return { sides: die.sides, value: die.value, from };
+
+    const view = { sides: die.sides, value: die.value, from, label };
+    return decisive !== undefined && label === decisive ? { ...view, emphasis: true } : view;
   });
 }
 
@@ -228,7 +234,7 @@ export function readTimeline(
         systemId: event.systemId,
         name: check?.name ?? resolution.check,
         outcome: styleFor(check, resolution),
-        dice: lastRoll === undefined ? [] : toDiceView(lastRoll),
+        dice: lastRoll === undefined ? [] : toDiceView(lastRoll, check?.decisive),
         inputs: toInputViews(resolution.inputs, check),
         // Every offer this resolution caused, and what became of each. An
         // unanswered one is a decision still waiting, which is why it is here
