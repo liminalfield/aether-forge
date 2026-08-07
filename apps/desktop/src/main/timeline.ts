@@ -3,6 +3,9 @@ import {
   journal,
   readRoll,
   ROLL_PERFORMED,
+  SUGGESTION_ACCEPTED,
+  SUGGESTION_ADJUSTED,
+  SUGGESTION_DECLINED,
   suggestions,
   type CheckDefinition,
   type EventEnvelope,
@@ -13,6 +16,7 @@ import {
 
 import type {
   JournalEntryView,
+  RecordedInputView,
   RecordedOfferView,
   RecordedOutcomeView,
   RolledDieView,
@@ -111,7 +115,46 @@ function toDiceView(roll: RollPerformedV1): readonly RolledDieView[] {
   });
 }
 
-function toOfferView(record: SuggestionRecord): RecordedOfferView {
+/**
+ * What a check ran with, in the module's words.
+ *
+ * The resolution records values by identifier; the words come from the module
+ * as it stands today, like every other piece of presentation here. An input
+ * the module no longer declares keeps its identifier as the label, for the
+ * same reason a missing outcome is still drawn: the campaign is a record, and
+ * a value it ran with does not stop being one because a module moved on.
+ */
+function toInputViews(
+  values: Readonly<Record<string, number>>,
+  check: CheckDefinition | undefined,
+): readonly RecordedInputView[] {
+  const declared = check?.inputs ?? [];
+
+  const named = declared.flatMap((input) => {
+    const value = values[input.id];
+    return value === undefined ? [] : [{ id: input.id, label: input.label, value }];
+  });
+
+  const undeclared = Object.entries(values)
+    .filter(([id]) => !declared.some((input) => input.id === id))
+    .map(([id, value]) => ({ id, label: id, value }));
+
+  return [...named, ...undeclared];
+}
+
+const ANSWERS = [SUGGESTION_ACCEPTED, SUGGESTION_ADJUSTED, SUGGESTION_DECLINED] as const;
+
+/** When an offer was answered: the moment of its answering event. */
+function answeredAt(offerId: string, events: readonly EventEnvelope[]): string | undefined {
+  return events.find(
+    (event) => event.causationId === offerId && (ANSWERS as readonly string[]).includes(event.type),
+  )?.at;
+}
+
+function toOfferView(
+  record: SuggestionRecord,
+  events: readonly EventEnvelope[],
+): RecordedOfferView {
   const view: RecordedOfferView = {
     id: record.id,
     label: record.label,
@@ -119,8 +162,11 @@ function toOfferView(record: SuggestionRecord): RecordedOfferView {
     fate: record.fate,
   };
 
+  const at = record.fate === 'offered' ? undefined : answeredAt(record.id, events);
+
   const withWhy = record.why === undefined ? view : { ...view, why: record.why };
-  return record.used === undefined ? withWhy : { ...withWhy, used: record.used };
+  const withUsed = record.used === undefined ? withWhy : { ...withWhy, used: record.used };
+  return at === undefined ? withUsed : { ...withUsed, answeredAt: at };
 }
 
 /**
@@ -183,11 +229,13 @@ export function readTimeline(
         name: check?.name ?? resolution.check,
         outcome: styleFor(check, resolution),
         dice: lastRoll === undefined ? [] : toDiceView(lastRoll),
-        inputs: resolution.inputs,
+        inputs: toInputViews(resolution.inputs, check),
         // Every offer this resolution caused, and what became of each. An
         // unanswered one is a decision still waiting, which is why it is here
         // at all rather than only in the run that made it.
-        offers: offers.filter((offer) => causedBy(offer, event.id, events)).map(toOfferView),
+        offers: offers
+          .filter((offer) => causedBy(offer, event.id, events))
+          .map((offer) => toOfferView(offer, events)),
       },
     });
 

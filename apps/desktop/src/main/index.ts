@@ -10,6 +10,7 @@ import {
   type Projection,
   type TranslatingLog,
 } from '@aether-forge/core';
+import { glacialDark } from '@aether-forge/ui';
 import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
@@ -41,7 +42,11 @@ function createWindow(): BrowserWindow {
     minWidth: 940,
     minHeight: 600,
     show: false,
-    backgroundColor: '#101216',
+    // The flash a person sees before first paint. It is the theme's own ground,
+    // because a window that opens in a colour no theme has changes colour once
+    // the renderer arrives. Follows the chosen theme when themes become
+    // choosable.
+    backgroundColor: glacialDark.ground.base,
     title: 'Aether Forge',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
