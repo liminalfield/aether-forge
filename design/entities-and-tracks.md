@@ -1,6 +1,6 @@
 # Entities, and the tracks they carry
 
-Status: proposed, 7 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted, 7 August 2026. Not yet decomposed.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.

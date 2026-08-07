@@ -446,6 +446,11 @@ _What would settle it:_ building the first real suggestion and seeing whether it
 
 **Should a correction say which fields it is replacing?**
 
+> Settled by `entities-and-tracks.md`, 7 August 2026, by dissolving it: an entity edit was never a
+> correction. `core.entity.changed` names the fields it sets and carries each one's whole new value,
+> so nothing is lost and nothing is repeated. Corrections stay whole, and `revises` keeps meaning
+> only "this event was written wrongly".
+
 Under the decision above, a correction carries the whole new value. For a journal entry that is
 obviously right. For an entity with twenty fields, replacing all twenty to fix one loses the
 information that only one was meant to change, even though the result is identical.
