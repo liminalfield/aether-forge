@@ -9,10 +9,13 @@ import {
 import { COIN, COIN_FLIPPED, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 
 import {
+  answerSuggestion,
   ENTRY_CREATED,
   ORACLE_CONSULTED,
+  readOffer,
   ROLL_PERFORMED,
   sequenceCheck,
+  SUGGESTION_OFFERED,
   type RollPerformedV1,
 } from '@aether-forge/core';
 
@@ -90,6 +93,11 @@ const consulted = (from: number, to: number, text: string): UnversionedEventDraf
  * drift out of the order core actually produces. Causation is dropped here:
  * the fixture appends drafts one at a time and has no identifiers to point at
  * until they are written, which is a real gap and is noted in the test.
+ *
+ * Both acts, joined the way the application will join them. The refusal is
+ * decided from the offer as it was written down, not from the outcome still
+ * sitting in memory, because that is the only route a person actually has: by
+ * the time they answer, the offer has been in the log for a while.
  */
 function aCheckWhoseEffectWasRefused(): readonly UnversionedEventDraft[] {
   const roll: RollPerformedV1 = {
@@ -108,11 +116,10 @@ function aCheckWhoseEffectWasRefused(): readonly UnversionedEventDraft[] {
 
   const inputs = { stat: 2, bonus: 0 };
   const outcome = FACE_DANGER.interpret(roll, inputs);
-  const proposed = outcome.suggests[0];
-  if (proposed === undefined)
+  if (outcome.suggests.length === 0)
     throw new Error('the fixture expects this outcome to propose one thing');
 
-  return sequenceCheck({
+  const ran = sequenceCheck({
     check: FACE_DANGER,
     systemId: STARFORGED_SYSTEM_ID,
     offered: [
@@ -127,11 +134,23 @@ function aCheckWhoseEffectWasRefused(): readonly UnversionedEventDraft[] {
     inputs,
     roll,
     outcome,
-    // Refused. The campaign keeps the momentum it had, and the log says the
-    // player was asked.
-    answers: { [proposed.id]: { kind: 'declined' } },
     events: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
-  }).map((sequenced) => sequenced.draft);
+  });
+
+  const lastOffer = [...ran].reverse().find((each) => each.draft.type === SUGGESTION_OFFERED);
+  const offer = readOffer(lastOffer?.draft.payload);
+  if (offer === undefined) throw new Error('the fixture could not read back what it offered');
+
+  // Refused. The campaign keeps the momentum it had, and the log says the
+  // player was asked.
+  const answered = answerSuggestion(offer, { kind: 'declined' });
+  if (!answered.ok) throw new Error(`the fixture could not refuse: ${answered.failure.kind}`);
+
+  return [
+    ...ran.map((sequenced) => sequenced.draft),
+    answered.value.answer,
+    ...(answered.value.applied === undefined ? [] : [answered.value.applied]),
+  ];
 }
 
 export const RECORDED_SESSION: readonly UnversionedEventDraft[] = [

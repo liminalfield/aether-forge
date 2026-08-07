@@ -108,6 +108,31 @@ export type EventEnvelope<Payload = unknown> = CoreEvent<Payload> | ModuleEvent<
 /** The prefix that marks an event type as belonging to a system module. */
 const MODULE_TYPE_PREFIX = 'sys.';
 
+/** The prefix that marks an event type as belonging to core. */
+const CORE_TYPE_PREFIX = 'core.';
+
+/**
+ * Whether a type names a module event, given only the type.
+ *
+ * For the cases that have a type and no event yet: something read off a payload,
+ * or a draft being built. Same prefix as `isModuleEvent`, from the same constant,
+ * so the two can never drift apart.
+ */
+export function isModuleEventType(type: string): type is ModuleEventType {
+  return type.startsWith(MODULE_TYPE_PREFIX);
+}
+
+/**
+ * Whether a type names a core event, given only the type.
+ *
+ * Not the opposite of `isModuleEventType`. A string read off a payload can be
+ * neither, and code building an event out of one has to be able to tell that
+ * apart from a type it recognises.
+ */
+export function isCoreEventType(type: string): type is CoreEventType {
+  return type.startsWith(CORE_TYPE_PREFIX);
+}
+
 /**
  * Whether this event belongs to a system module.
  *
