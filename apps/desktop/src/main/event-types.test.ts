@@ -75,6 +75,16 @@ describeSchemaTranslations('this build', declareEventTypes, [
         why: 'the approach was costly',
         proposes: { type: 'sys.example.resource.moved', payload: { by: -1 } },
       },
+      // Version 1 recorded neither which parts could be changed nor which
+      // module the proposal belonged to, so an offer written then arrives here
+      // with an empty list and no system. Both are what is actually known.
+      2: {
+        suggestion: 'example.dummy/spend-one',
+        label: 'Spend one from the resource',
+        why: 'the approach was costly',
+        proposes: { type: 'sys.example.resource.moved', payload: { by: -1 } },
+        fields: [],
+      },
     },
   },
   { type: SUGGESTION_ACCEPTED, payloadsByVersion: { 1: {} } },

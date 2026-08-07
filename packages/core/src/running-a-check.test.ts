@@ -4,10 +4,12 @@ import type { CheckDefinition } from './check.js';
 import { ROLL_PERFORMED, type RollPerformedV1 } from './roll.js';
 import { sequenceCheck, type CheckRun } from './running-a-check.js';
 import {
+  readOffer,
   SUGGESTION_ACCEPTED,
   SUGGESTION_ADJUSTED,
   SUGGESTION_DECLINED,
   SUGGESTION_OFFERED,
+  type SuggestionOfferedV2,
 } from './suggestion.js';
 
 const INVOKED = 'sys.example.check.invoked';
@@ -259,6 +261,101 @@ describe('the whole chain from the design record', () => {
         }),
       ),
     ).toHaveLength(8);
+  });
+});
+
+describe('what an offer records for later', () => {
+  const outcome = {
+    id: 'weak-hit',
+    label: 'Weak hit',
+    summary: 'At a cost.',
+    suggests: [A_PROPOSAL],
+  };
+
+  /** The offer as the log would hold it, having been nowhere near the module. */
+  function offerFromTheLog(run: CheckRun): SuggestionOfferedV2 {
+    const drafts = sequenceCheck(run);
+    const offered = drafts.find((each) => each.draft.type === SUGGESTION_OFFERED);
+
+    // Through a serialisation and back, which is the only honest way to test a
+    // claim about what survives being written down and read in another session.
+    const read = readOffer(JSON.parse(JSON.stringify(offered?.draft.payload)));
+    if (read === undefined) throw new Error('the offer did not read back');
+    return read;
+  }
+
+  it('records the fields the module said could be changed', () => {
+    const offer = offerFromTheLog(
+      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
+    );
+
+    expect(offer.fields).toEqual([{ id: 'by', label: 'Amount', kind: 'number' }]);
+  });
+
+  it('records which module the proposal belongs to', () => {
+    // A module event is required to name its system, so an offer read back on
+    // its own could not be turned into one without this.
+    const offer = offerFromTheLog(
+      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
+    );
+
+    expect(offer.proposes.systemId).toBe('example');
+  });
+
+  it('is enough on its own to rebuild what accepting would write', () => {
+    const offer = offerFromTheLog(
+      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
+    );
+
+    expect({
+      type: offer.proposes.type,
+      systemId: offer.proposes.systemId,
+      payload: offer.proposes.payload,
+    }).toEqual(A_PROPOSAL.proposes);
+  });
+
+  it('describes the input a pre-roll offer is about, with its choices', () => {
+    // The one part of that proposal a person can change is the input itself, so
+    // the input's own shape is what describes it.
+    const offer = offerFromTheLog(
+      aRun({
+        offered: [
+          {
+            input: 'approach',
+            label: 'Go quickly',
+            value: 3,
+            why: 'the vehicle is built for it',
+            answer: 'accepted',
+          },
+        ],
+      }),
+    );
+
+    expect(offer.fields).toEqual([
+      {
+        id: 'approach',
+        label: 'Approach',
+        kind: 'choice',
+        options: [
+          { id: 'careful', label: 'Careful', value: 1 },
+          { id: 'quick', label: 'Quick', value: 3 },
+        ],
+      },
+    ]);
+  });
+
+  it('says nothing is changeable about an input the check never declared', () => {
+    // A module's bug, not a reason to refuse. The offer is still a real thing
+    // that happened and the log says so.
+    const offer = offerFromTheLog(
+      aRun({
+        offered: [
+          { input: 'not-an-input', label: 'Try it', value: 1, why: 'why not', answer: 'accepted' },
+        ],
+      }),
+    );
+
+    expect(offer.fields).toEqual([]);
   });
 });
 
