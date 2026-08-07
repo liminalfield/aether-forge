@@ -48,5 +48,11 @@ export { family, TABULAR_NUMERALS, tokens, typeProperties } from './tokens.js';
 export type { ButtonProps, ButtonWeight } from './Button.js';
 export { Button } from './Button.js';
 
+export type { ChipProps, ChipWeight } from './Chip.js';
+export { Chip } from './Chip.js';
+
+export type { ChipRowProps } from './ChipRow.js';
+export { ChipRow } from './ChipRow.js';
+
 export type { WritingSurfaceProps } from './WritingSurface.js';
 export { WritingSurface } from './WritingSurface.js';
