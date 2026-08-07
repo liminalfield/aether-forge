@@ -107,6 +107,15 @@ export {
 export type { EntryCreatedV1, EntryRevisedV1, Journal, JournalEntry } from './journal.js';
 export { ENTRY_CREATED, ENTRY_REVISED, journal, journalEventTypes } from './journal.js';
 
+export type { EntityChangedV1, EntityCreatedV1, EntityFields, FieldValue } from './entity.js';
+export {
+  ENTITY_CHANGED,
+  ENTITY_CREATED,
+  entityEventTypes,
+  readEntityChanged,
+  readEntityCreated,
+} from './entity.js';
+
 export type {
   DieSource,
   DieSpec,
