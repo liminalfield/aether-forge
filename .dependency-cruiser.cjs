@@ -5,7 +5,7 @@
  *   ui                   imports nothing internal
  *   system-* / importer-* import core only
  *   apps/desktop         imports everything; nothing imports it
- *   renderer             never imports Node built-ins or Electron
+ *   renderer             never imports Node built-ins, Electron, or a system module
  *
  * ESLint enforces the same arrows on import specifiers for fast feedback.
  * This file enforces them on the *resolved* module graph, which is what
@@ -104,6 +104,15 @@ module.exports = {
       to: {
         path: ['^(electron|electron-updater|better-sqlite3)$', '^apps/desktop/src/(main|preload)/'],
       },
+    },
+
+    {
+      name: 'renderer-never-imports-a-system-module',
+      severity: 'error',
+      comment:
+        'The window is told what to draw and never knows which game it is drawing. A renderer that can reach a module can name a stat, and the promise that a second system arrives without touching the window would be enforced by nothing. Everything a module knows crosses as a described view over the IPC contract.',
+      from: { path: '^apps/desktop/src/renderer/' },
+      to: { path: '^packages/(system-|importer-)' },
     },
 
     {
