@@ -81,6 +81,11 @@ const RENDERER_FORBIDDEN = {
       group: ['electron/*', '**/main/**', '**/preload/**'],
       message: 'The renderer must not reach into main- or preload-side modules.',
     },
+    {
+      group: ['@aether-forge/system-*', '@aether-forge/importer-*'],
+      message:
+        'The window is told what to draw and never knows which game it is drawing. Describe what you need as a view on the IPC contract in src/shared/ipc.ts, so a second system can arrive without touching the window.',
+    },
   ],
 };
 

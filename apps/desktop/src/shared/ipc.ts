@@ -19,6 +19,7 @@ export const IPC = {
   readJournal: 'journal:read',
   recordEntry: 'journal:recordEntry',
   correctEntry: 'journal:correctEntry',
+  readChecks: 'checks:read',
   readPreferences: 'preferences:read',
   setMotionPreference: 'preferences:setMotion',
 } as const;
@@ -72,6 +73,59 @@ export interface JournalView {
   readonly entries: readonly JournalEntryView[];
 }
 
+/** One of the values an input offers, when it offers a fixed set. */
+export interface CheckOptionView {
+  readonly id: string;
+  readonly label: string;
+  readonly value: number;
+}
+
+/**
+ * One thing a check needs a number for, described well enough to draw.
+ *
+ * The window cannot know what any of these are called. It is told what to put
+ * on screen, and it draws that, which is the only arrangement under which a
+ * second game system can arrive without the window changing.
+ */
+export interface CheckInputView {
+  readonly id: string;
+  readonly label: string;
+  readonly kind: 'choice' | 'number';
+  /** Present when the kind is `choice`. */
+  readonly options?: readonly CheckOptionView[];
+}
+
+/** Dice a check asks for, before any of them have been rolled or thrown. */
+export interface CheckDiceView {
+  readonly sides: number;
+  readonly count: number;
+  /** What the module calls them. Dice sharing a label belong together. */
+  readonly label?: string;
+}
+
+/**
+ * A check, as the window needs it.
+ *
+ * Deliberately not the shape a module declares. That one carries `interpret`,
+ * which is a function and cannot cross a process boundary, and `suggest`, which
+ * is another. What crosses is data the window can draw.
+ */
+export interface CheckView {
+  readonly id: string;
+  readonly systemId: string;
+  readonly name: string;
+  /** Where the full text lives, for anything that wants to link to it. */
+  readonly docRef?: string;
+  /** Absent for a check with no dice at all. */
+  readonly dice?: readonly CheckDiceView[];
+  readonly inputs: readonly CheckInputView[];
+}
+
+export interface ChecksView {
+  /** Every check every loaded system declares, grouped by system in load order. */
+  readonly checks: readonly CheckView[];
+}
+
 /**
  * What a person has chosen about how the application behaves for them.
  *
@@ -109,6 +163,15 @@ export interface AetherForgeApi {
    * is gets worked out where the state actually lives.
    */
   correctEntry(entryId: string, text: string): Promise<IpcResult<JournalEntryView>>;
+
+  /**
+   * Every check the loaded systems declare, described well enough to draw.
+   *
+   * Listing what is declared, which is not the same as a browser for choosing
+   * among many. The window needs this to draw one check without knowing which
+   * game it belongs to.
+   */
+  readChecks(): Promise<IpcResult<ChecksView>>;
 
   /** What this person has chosen. Answers with the defaults when nothing is stored. */
   readPreferences(): Promise<IpcResult<PreferencesView>>;

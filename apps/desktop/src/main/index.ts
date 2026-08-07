@@ -12,6 +12,7 @@ import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
+import { describeChecks } from './checks';
 import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
@@ -70,6 +71,8 @@ function registerIpcHandlers(campaign: OpenCampaign, userDataDir: string): void 
   ipcMain.handle(IPC.correctEntry, (_event, entryId: unknown, text: unknown) =>
     correctEntry(campaign, entryId, text),
   );
+
+  ipcMain.handle(IPC.readChecks, () => ({ ok: true as const, value: describeChecks() }));
 
   ipcMain.handle(IPC.readPreferences, () => ({
     ok: true as const,
