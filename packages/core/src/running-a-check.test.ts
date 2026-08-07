@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { CheckDefinition } from './check.js';
 import { ROLL_PERFORMED, type RollPerformedV1 } from './roll.js';
-import { sequenceCheck, type CheckRun } from './running-a-check.js';
+import {
+  answerSuggestion,
+  sequenceCheck,
+  type CheckRun,
+  type SuggestionAnswer,
+} from './running-a-check.js';
 import {
   readOffer,
   SUGGESTION_ACCEPTED,
@@ -55,7 +60,6 @@ function aRun(overrides: Partial<CheckRun> = {}): CheckRun {
     inputs: { approach: 3 },
     roll: A_ROLL,
     outcome: A_CHECK.interpret(A_ROLL, { approach: 3 }),
-    answers: {},
     events: { invoked: INVOKED, resolved: RESOLVED },
     ...overrides,
   };
@@ -148,82 +152,231 @@ describe('what the module proposed afterwards', () => {
     suggests: [A_PROPOSAL],
   };
 
-  it('writes the proposal only when it was accepted', () => {
-    expect(typesOf(aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }))).toEqual([
+  it('offers it, and stops there', () => {
+    // The first act ends with the suggestion on the table. Nobody has seen it
+    // yet, so there is nothing they could have said about it.
+    expect(typesOf(aRun({ outcome }))).toEqual([
       INVOKED,
       ROLL_PERFORMED,
       RESOLVED,
       SUGGESTION_OFFERED,
-      SUGGESTION_ACCEPTED,
-      SPENT,
     ]);
   });
 
-  it('writes nothing beyond the refusal when it was declined', () => {
+  it('joins the offer to the resolution that produced it', () => {
+    const drafts = sequenceCheck(aRun({ outcome }));
+    expect(drafts[3]?.causedBy).toBe(2);
+  });
+
+  it('offers every suggestion the outcome made', () => {
+    const two = {
+      ...outcome,
+      suggests: [A_PROPOSAL, { ...A_PROPOSAL, id: 'example.dummy/other' }],
+    };
+
+    expect(typesOf(aRun({ outcome: two }))).toEqual([
+      INVOKED,
+      ROLL_PERFORMED,
+      RESOLVED,
+      SUGGESTION_OFFERED,
+      SUGGESTION_OFFERED,
+    ]);
+  });
+
+  it('writes nothing at all for an outcome that proposes nothing', () => {
+    expect(typesOf(aRun())).toEqual([INVOKED, ROLL_PERFORMED, RESOLVED]);
+  });
+});
+
+describe('answering an offer, whenever that happens', () => {
+  const outcome = {
+    id: 'weak-hit',
+    label: 'Weak hit',
+    summary: 'At a cost.',
+    suggests: [A_PROPOSAL],
+  };
+
+  /**
+   * The offer as a later session would find it: written down, serialised, and
+   * read back with no module anywhere near it.
+   */
+  function anOfferFromTheLog(run: CheckRun = aRun({ outcome })): SuggestionOfferedV2 {
+    const offered = sequenceCheck(run).find((each) => each.draft.type === SUGGESTION_OFFERED);
+    const read = readOffer(JSON.parse(JSON.stringify(offered?.draft.payload)));
+    if (read === undefined) throw new Error('the offer did not read back');
+    return read;
+  }
+
+  function answered(answer: SuggestionAnswer, offer = anOfferFromTheLog()) {
+    const result = answerSuggestion(offer, answer);
+    if (!result.ok) throw new Error(`could not answer: ${result.failure.kind}`);
+    return result.value;
+  }
+
+  it('writes the acceptance and what it took', () => {
+    const { answer, applied } = answered({ kind: 'accepted' });
+
+    expect(answer.type).toBe(SUGGESTION_ACCEPTED);
+    expect(applied?.type).toBe(SPENT);
+  });
+
+  it('writes the refusal and nothing else', () => {
     // The whole promise, in one assertion. There is no path through this that
     // appends a proposal without an answer that took it.
-    expect(typesOf(aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'declined' } } }))).toEqual([
-      INVOKED,
-      ROLL_PERFORMED,
-      RESOLVED,
-      SUGGESTION_OFFERED,
-      SUGGESTION_DECLINED,
-    ]);
-  });
+    const { answer, applied } = answered({ kind: 'declined' });
 
-  it('writes what the player used when they adjusted it', () => {
-    const drafts = sequenceCheck(
-      aRun({
-        outcome,
-        answers: { [A_PROPOSAL.id]: { kind: 'adjusted', used: { by: -2 } } },
-      }),
-    );
-
-    const written = drafts[drafts.length - 1];
-    expect(written?.draft.type).toBe(SPENT);
-    expect(written?.draft.payload).toEqual({ by: -2 });
+    expect(answer.type).toBe(SUGGESTION_DECLINED);
+    expect(applied).toBeUndefined();
   });
 
   it('leaves the proposal alone when it was accepted unchanged', () => {
-    const drafts = sequenceCheck(
-      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
-    );
-
-    expect(drafts[drafts.length - 1]?.draft.payload).toEqual({ by: -1 });
+    expect(answered({ kind: 'accepted' }).applied?.payload).toEqual({ by: -1 });
   });
 
-  it('says nothing about a suggestion nobody answered', () => {
-    // A suggestion can sit unanswered. Nothing is written until it is.
-    expect(typesOf(aRun({ outcome, answers: {} }))).toEqual([INVOKED, ROLL_PERFORMED, RESOLVED]);
+  it('writes what the player used when they adjusted it', () => {
+    const { answer, applied } = answered({ kind: 'adjusted', used: { by: -2 } });
+
+    expect(answer.type).toBe(SUGGESTION_ADJUSTED);
+    expect(answer.payload).toEqual({ used: { by: -2 } });
+    expect(applied?.payload).toEqual({ by: -2 });
+  });
+
+  it('keeps the parts of the proposal the player did not change', () => {
+    const offer = anOfferFromTheLog(
+      aRun({
+        outcome: {
+          ...outcome,
+          suggests: [
+            {
+              ...A_PROPOSAL,
+              proposes: { type: SPENT, systemId: 'example', payload: { by: -1, why: 'a cost' } },
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(answered({ kind: 'adjusted', used: { by: -2 } }, offer).applied?.payload).toEqual({
+      by: -2,
+      why: 'a cost',
+    });
+  });
+
+  it('carries the system through, so the event can be written at all', () => {
+    const { applied } = answered({ kind: 'accepted' });
+    expect(applied).toHaveProperty('systemId', 'example');
+  });
+
+  it('refuses to accept an offer that does not say which module proposed it', () => {
+    // What a version 1 offer of a module event reads back as. Guessing the
+    // system out of the type would put an event in the log under a module that
+    // never proposed it.
+    const fromVersion1: SuggestionOfferedV2 = {
+      suggestion: 'example.dummy/spend-one',
+      label: 'Spend one from the resource',
+      proposes: { type: SPENT, payload: { by: -1 } },
+      fields: [],
+    };
+
+    const result = answerSuggestion(fromVersion1, { kind: 'accepted' });
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.failure.kind).toBe('proposal-has-no-system');
+  });
+
+  it('still lets that offer be refused', () => {
+    // A refusal needs nothing rebuilt. Somebody should always be able to say no.
+    const fromVersion1: SuggestionOfferedV2 = {
+      suggestion: 'example.dummy/spend-one',
+      label: 'Spend one from the resource',
+      proposes: { type: SPENT, payload: { by: -1 } },
+      fields: [],
+    };
+
+    const result = answerSuggestion(fromVersion1, { kind: 'declined' });
+
+    expect(result.ok && result.value.answer.type).toBe(SUGGESTION_DECLINED);
+    expect(result.ok && result.value.applied).toBeUndefined();
+  });
+
+  it('answers an offer proposing an event that belongs to core', () => {
+    const proposingACoreEvent: SuggestionOfferedV2 = {
+      suggestion: 'example.dummy/write-it-down',
+      label: 'Write it down',
+      proposes: { type: 'core.entry.created', payload: { text: 'It answered.' } },
+      fields: [],
+    };
+
+    const result = answerSuggestion(proposingACoreEvent, { kind: 'accepted' });
+
+    expect(result.ok && result.value.applied?.type).toBe('core.entry.created');
+    expect(result.ok && result.value.applied).not.toHaveProperty('systemId');
+  });
+
+  it('says so when the recorded type belongs to no namespace at all', () => {
+    // Nothing this codebase writes produces one, so reaching it means the log
+    // has been edited or damaged.
+    const damaged: SuggestionOfferedV2 = {
+      suggestion: 'a',
+      label: 'x',
+      proposes: { type: 'nonsense.happened', payload: {} },
+      fields: [],
+    };
+
+    const result = answerSuggestion(damaged, { kind: 'accepted' });
+
+    expect(!result.ok && result.failure.kind).toBe('proposal-is-not-an-event-type');
   });
 });
 
 describe('the whole chain from the design record', () => {
-  it('comes out in the order the record sets out', () => {
-    const outcome = {
-      id: 'weak-hit',
-      label: 'Weak hit',
-      summary: 'At a cost.',
-      suggests: [A_PROPOSAL],
-    };
+  const outcome = {
+    id: 'weak-hit',
+    label: 'Weak hit',
+    summary: 'At a cost.',
+    suggests: [A_PROPOSAL],
+  };
 
-    expect(
-      typesOf(
-        aRun({
-          offered: [
-            {
-              input: 'approach',
-              label: 'Go quickly',
-              value: 3,
-              why: 'the vehicle is built for it',
-              answer: 'accepted',
-            },
-          ],
-          outcome,
-          answers: { [A_PROPOSAL.id]: { kind: 'adjusted', used: { by: -2 } } },
-        }),
-      ),
-    ).toEqual([
+  const A_WHOLE_RUN = aRun({
+    offered: [
+      {
+        input: 'approach',
+        label: 'Go quickly',
+        value: 3,
+        why: 'the vehicle is built for it',
+        answer: 'accepted',
+      },
+    ],
+    outcome,
+  });
+
+  /**
+   * Both acts, joined the way the application will join them: run the check,
+   * write it down, and come back later to answer what it offered.
+   *
+   * The offer goes through a serialisation on the way, because the point of the
+   * split is that the second act works from the log rather than from anything
+   * left in memory when the first one finished.
+   */
+  function bothActs(answer: SuggestionAnswer): readonly string[] {
+    const first = sequenceCheck(A_WHOLE_RUN);
+
+    const lastOffer = [...first].reverse().find((each) => each.draft.type === SUGGESTION_OFFERED);
+    const offer = readOffer(JSON.parse(JSON.stringify(lastOffer?.draft.payload)));
+    if (offer === undefined) throw new Error('the offer did not read back');
+
+    const second = answerSuggestion(offer, answer);
+    if (!second.ok) throw new Error(`could not answer: ${second.failure.kind}`);
+
+    return [
+      ...first.map((each) => each.draft.type),
+      second.value.answer.type,
+      ...(second.value.applied === undefined ? [] : [second.value.applied.type]),
+    ];
+  }
+
+  it('comes out in the order the record sets out', () => {
+    expect(bothActs({ kind: 'adjusted', used: { by: -2 } })).toEqual([
       SUGGESTION_OFFERED,
       SUGGESTION_ACCEPTED,
       INVOKED,
@@ -237,30 +390,37 @@ describe('the whole chain from the design record', () => {
 
   it('is eight events', () => {
     // The number the record puts at the top, so that the cost is visible.
-    const outcome = {
-      id: 'weak-hit',
-      label: 'Weak hit',
-      summary: 'At a cost.',
-      suggests: [A_PROPOSAL],
-    };
+    // Splitting the run in two did not change it.
+    expect(bothActs({ kind: 'adjusted', used: { by: -2 } })).toHaveLength(8);
+  });
 
-    expect(
-      sequenceCheck(
-        aRun({
-          offered: [
-            {
-              input: 'approach',
-              label: 'Go quickly',
-              value: 3,
-              why: 'the vehicle is built for it',
-              answer: 'accepted',
-            },
-          ],
-          outcome,
-          answers: { [A_PROPOSAL.id]: { kind: 'adjusted', used: { by: -2 } } },
-        }),
-      ),
-    ).toHaveLength(8);
+  it('is the same chain whether it is answered now or in a later session', () => {
+    // The gate. Nothing about the second act depends on the first still being
+    // in memory, so a decision left overnight arrives at the same log.
+    const first = sequenceCheck(A_WHOLE_RUN);
+    const lastOffer = [...first].reverse().find((each) => each.draft.type === SUGGESTION_OFFERED);
+
+    const inMemory = readOffer(lastOffer?.draft.payload);
+    const fromDisk = readOffer(JSON.parse(JSON.stringify(lastOffer?.draft.payload)));
+    if (inMemory === undefined || fromDisk === undefined) {
+      throw new Error('the offer did not read back');
+    }
+
+    const adjustment: SuggestionAnswer = { kind: 'adjusted', used: { by: -2 } };
+
+    expect(answerSuggestion(fromDisk, adjustment)).toEqual(answerSuggestion(inMemory, adjustment));
+  });
+
+  it('is seven events when the effect is refused, and none of them is the effect', () => {
+    expect(bothActs({ kind: 'declined' })).toEqual([
+      SUGGESTION_OFFERED,
+      SUGGESTION_ACCEPTED,
+      INVOKED,
+      ROLL_PERFORMED,
+      RESOLVED,
+      SUGGESTION_OFFERED,
+      SUGGESTION_DECLINED,
+    ]);
   });
 });
 
@@ -285,9 +445,7 @@ describe('what an offer records for later', () => {
   }
 
   it('records the fields the module said could be changed', () => {
-    const offer = offerFromTheLog(
-      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
-    );
+    const offer = offerFromTheLog(aRun({ outcome }));
 
     expect(offer.fields).toEqual([{ id: 'by', label: 'Amount', kind: 'number' }]);
   });
@@ -295,17 +453,13 @@ describe('what an offer records for later', () => {
   it('records which module the proposal belongs to', () => {
     // A module event is required to name its system, so an offer read back on
     // its own could not be turned into one without this.
-    const offer = offerFromTheLog(
-      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
-    );
+    const offer = offerFromTheLog(aRun({ outcome }));
 
     expect(offer.proposes.systemId).toBe('example');
   });
 
   it('is enough on its own to rebuild what accepting would write', () => {
-    const offer = offerFromTheLog(
-      aRun({ outcome, answers: { [A_PROPOSAL.id]: { kind: 'accepted' } } }),
-    );
+    const offer = offerFromTheLog(aRun({ outcome }));
 
     expect({
       type: offer.proposes.type,

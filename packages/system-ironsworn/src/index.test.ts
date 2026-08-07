@@ -1,6 +1,9 @@
 import {
+  answerSuggestion,
   describesEveryField,
+  readOffer,
   sequenceCheck,
+  SUGGESTION_OFFERED,
   type EventEnvelope,
   type RollPerformedV1,
 } from '@aether-forge/core';
@@ -212,6 +215,7 @@ describe('what Face Danger proposes', () => {
 });
 
 describe('running Face Danger through core', () => {
+  /** Both acts, joined the way the application will join them. */
   function run(answer: 'accepted' | 'declined') {
     const roll: RollPerformedV1 = {
       request: {
@@ -229,7 +233,7 @@ describe('running Face Danger through core', () => {
     const inputs = { stat: 2, bonus: 0 };
     const outcome = FACE_DANGER.interpret(roll, inputs);
 
-    return sequenceCheck({
+    const ran = sequenceCheck({
       check: FACE_DANGER,
       systemId: STARFORGED_SYSTEM_ID,
       offered: [
@@ -244,32 +248,48 @@ describe('running Face Danger through core', () => {
       inputs,
       roll,
       outcome,
-      answers: { [outcome.suggests[0]!.id]: { kind: answer } },
       events: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
     });
+
+    // Read back out of what was written, with nothing kept from the run above.
+    const lastOffer = [...ran].reverse().find((each) => each.draft.type === SUGGESTION_OFFERED);
+    const offer = readOffer(JSON.parse(JSON.stringify(lastOffer?.draft.payload)));
+    if (offer === undefined) throw new Error('the offer did not read back');
+
+    const answered = answerSuggestion(offer, { kind: answer });
+    if (!answered.ok) throw new Error(`could not answer: ${answered.failure.kind}`);
+
+    return {
+      ran,
+      types: [
+        ...ran.map((each) => each.draft.type),
+        answered.value.answer.type,
+        ...(answered.value.applied === undefined ? [] : [answered.value.applied.type]),
+      ],
+    };
   }
 
   it('produces the eight-event chain when the effect is accepted', () => {
-    expect(run('accepted').map((each) => each.draft.type)).toEqual([
-      'core.suggestion.offered',
+    expect(run('accepted').types).toEqual([
+      SUGGESTION_OFFERED,
       'core.suggestion.accepted',
       MOVE_INVOKED,
       'core.roll.performed',
       MOVE_RESOLVED,
-      'core.suggestion.offered',
+      SUGGESTION_OFFERED,
       'core.suggestion.accepted',
       MOMENTUM_CHANGED,
     ]);
   });
 
   it('writes nothing to momentum when the effect is refused', () => {
-    const types = run('declined').map((each) => each.draft.type);
+    const types = run('declined').types;
     expect(types).not.toContain(MOMENTUM_CHANGED);
     expect(types[types.length - 1]).toBe('core.suggestion.declined');
   });
 
   it('says which stat was suggested and that it was taken', () => {
-    const [offered, answered] = run('accepted');
+    const [offered, answered] = run('accepted').ran;
     expect((offered?.draft.payload as { why: string }).why).toBe('your vehicle is built for this');
     expect(answered?.draft.type).toBe('core.suggestion.accepted');
   });

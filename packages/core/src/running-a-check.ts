@@ -5,19 +5,30 @@
  * and does not say what the dice meant. It is handed each of those and puts the
  * result in order.
  *
+ * Running a check is two acts, and this file has one function for each.
+ * `sequenceCheck` runs the check and leaves its suggestions on the table.
+ * `answerSuggestion` takes one of them and what a person decided about it.
+ *
+ * They are separate because a person cannot answer a suggestion they have not
+ * seen. One function taking the answers up front would mean deciding for them,
+ * and between the two acts the log holds an offer nobody has answered, which is
+ * a real state that outlives the session it was made in.
+ *
  * Nothing a suggestion proposed is written unless the suggestion was accepted.
  * That is not a rule anybody has to follow: there is no path through this file
  * that appends a proposal without an answer that took it.
  *
- * See `design/checks-and-moves.md`.
+ * See `design/checks-and-moves.md` and `design/the-verdict-card.md`.
  */
 
 import type { CheckDefinition, CheckOutcome, ProposalField } from './check.js';
 import type { CoreEventType, ModuleEventType } from './event.js';
+import { isCoreEventType, isModuleEventType } from './event.js';
 import type { RollPerformedV1 } from './roll.js';
 import { ROLL_PERFORMED } from './roll.js';
 import type { SystemId } from './identifiers.js';
-import type { OfferedProposal } from './suggestion.js';
+import { failed, ok, type Result } from './result.js';
+import type { OfferedProposal, SuggestionOfferedV2 } from './suggestion.js';
 import {
   SUGGESTION_ACCEPTED,
   SUGGESTION_ADJUSTED,
@@ -52,11 +63,41 @@ export interface CheckRun {
   /** Absent for a check with no dice. */
   readonly roll: RollPerformedV1 | null;
   readonly outcome: CheckOutcome;
-  /** What the person did about each of the outcome's suggestions, by suggestion id. */
-  readonly answers: Readonly<Record<string, SuggestionAnswer>>;
   /** The event types the module uses either side of the roll. */
   readonly events: { readonly invoked: ModuleEventType; readonly resolved: ModuleEventType };
 }
+
+/**
+ * What answering one offer writes.
+ *
+ * Two drafts rather than a list, because they are not interchangeable. The
+ * answer is caused by the offer it answers, which is already in the log and is
+ * not the caller's to guess at. What the answer took is caused by the answer.
+ *
+ * `applied` is absent when the answer refused, and that absence is the only
+ * thing keeping a refusal from having an effect.
+ */
+export interface AnsweredSuggestion {
+  readonly answer: UnversionedEventDraft;
+  readonly applied?: UnversionedEventDraft;
+}
+
+/**
+ * An offer that cannot be turned back into an event.
+ *
+ * `proposal-has-no-system` is reachable for an offer written at version 1,
+ * which did not record which module its proposal belonged to. A module event
+ * has to name its system, and inventing one here would put an event in the log
+ * under a module that never proposed it.
+ *
+ * `proposal-is-not-an-event-type` means the recorded type is in neither
+ * namespace. Nothing this codebase writes produces one, so reaching it means
+ * the log has been edited or damaged. Saying so beats writing an event whose
+ * type nothing will ever recognise.
+ */
+export type ProposalCannotBeWritten =
+  | { readonly kind: 'proposal-has-no-system'; readonly type: string }
+  | { readonly kind: 'proposal-is-not-an-event-type'; readonly type: string };
 
 /**
  * One draft, and which earlier draft in the same run caused it.
@@ -111,7 +152,11 @@ function answerType(answer: OfferedInput['answer'] | SuggestionAnswer): CoreEven
 }
 
 /**
- * Every event one check produces, in the order it produces them.
+ * The first act: every event running a check produces, in order.
+ *
+ * It ends with the outcome's suggestions offered and unanswered, because at
+ * this point nobody has seen them. Answering one is `answerSuggestion`, and it
+ * can happen a second later or in a session next year.
  *
  * Returned rather than written. Core works out the order; the application, which
  * is the only thing that can reach a log, does the writing.
@@ -180,12 +225,10 @@ export function sequenceCheck(run: CheckRun): readonly SequencedDraft[] {
     rolled ?? invoked,
   );
 
-  // What the module proposed doing about it, and what the person said.
+  // What the module proposed doing about it. Offered and left there: the person
+  // has not seen any of this yet, so there is nothing they could have said.
   for (const suggestion of run.outcome.suggests) {
-    const answer = run.answers[suggestion.id];
-    if (answer === undefined) continue;
-
-    const offered = push(
+    push(
       {
         type: SUGGESTION_OFFERED,
         payload: {
@@ -199,25 +242,85 @@ export function sequenceCheck(run: CheckRun): readonly SequencedDraft[] {
       },
       resolved,
     );
-
-    const answered = push(
-      {
-        type: answerType(answer),
-        payload: answer.kind === 'adjusted' ? { used: answer.used } : {},
-      },
-      offered,
-    );
-
-    // The only path that writes a proposal, and it needs an answer that took it.
-    if (answer.kind === 'declined') continue;
-
-    const payload =
-      answer.kind === 'adjusted'
-        ? { ...(suggestion.proposes.payload as Record<string, unknown>), ...answer.used }
-        : suggestion.proposes.payload;
-
-    push({ ...suggestion.proposes, payload } as UnversionedEventDraft, answered);
   }
 
   return drafts;
+}
+
+/**
+ * What accepting an offer would write, rebuilt from the offer alone.
+ *
+ * The offer is the only thing available. It may have been read back out of a
+ * log written months ago by a build that is no longer installed, so nothing
+ * here asks the module anything.
+ */
+function draftFrom(
+  proposal: OfferedProposal,
+  payload: unknown,
+): Result<UnversionedEventDraft, ProposalCannotBeWritten> {
+  if (isModuleEventType(proposal.type)) {
+    const systemId = proposal.systemId;
+
+    // A module event without a system cannot be written at all. This is what a
+    // version 1 offer of one reads back as, and guessing the system out of the
+    // type would put an event in the log under a module that never proposed it.
+    return systemId === undefined
+      ? failed({ kind: 'proposal-has-no-system', type: proposal.type })
+      : ok({ type: proposal.type, systemId, payload });
+  }
+
+  // A core event may not carry a system, so one recorded against a core type is
+  // dropped rather than refused. The offer is still perfectly answerable.
+  if (isCoreEventType(proposal.type)) return ok({ type: proposal.type, payload });
+
+  return failed({ kind: 'proposal-is-not-an-event-type', type: proposal.type });
+}
+
+/**
+ * Merge what a person used into what was proposed, field by field.
+ *
+ * A payload that is not an object describes no fields, so a module cannot have
+ * offered anything about it to adjust. What the person asked for is used, rather
+ * than silently keeping the proposal they were changing.
+ */
+function withAdjustments(proposed: unknown, used: Readonly<Record<string, unknown>>): unknown {
+  return typeof proposed === 'object' && proposed !== null && !Array.isArray(proposed)
+    ? { ...proposed, ...used }
+    : used;
+}
+
+/**
+ * The second act: one offer, and what a person decided about it.
+ *
+ * Takes the offer as the log holds it rather than the suggestion the module
+ * made, because by now the module may not be the one that made it. Everything
+ * needed is recorded in the offer, which is why it records it.
+ *
+ * The answer is caused by the offer. What the answer took is caused by the
+ * answer. Neither is written here: core works out what follows and the
+ * application does the writing.
+ *
+ * A refusal produces an answer and nothing else, and that is the only place in
+ * the codebase where a proposal could have been written without one.
+ */
+export function answerSuggestion(
+  offer: SuggestionOfferedV2,
+  answer: SuggestionAnswer,
+): Result<AnsweredSuggestion, ProposalCannotBeWritten> {
+  const answered: UnversionedEventDraft = {
+    type: answerType(answer),
+    payload: answer.kind === 'adjusted' ? { used: answer.used } : {},
+  };
+
+  if (answer.kind === 'declined') return ok({ answer: answered });
+
+  const payload =
+    answer.kind === 'adjusted'
+      ? withAdjustments(offer.proposes.payload, answer.used)
+      : offer.proposes.payload;
+
+  const applied = draftFrom(offer.proposes, payload);
+  if (!applied.ok) return applied;
+
+  return ok({ answer: answered, applied: applied.value });
 }

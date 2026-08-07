@@ -41,7 +41,7 @@ export type {
   ModuleEventType,
 } from './event.js';
 
-export { isCoreEvent, isModuleEvent } from './event.js';
+export { isCoreEvent, isCoreEventType, isModuleEvent, isModuleEventType } from './event.js';
 
 // --- returning failures rather than throwing --------------------------------
 
@@ -135,11 +135,13 @@ export { describesEveryField } from './check.js';
 
 export type {
   CheckRun,
+  AnsweredSuggestion,
   OfferedInput,
+  ProposalCannotBeWritten,
   SequencedDraft,
   SuggestionAnswer,
 } from './running-a-check.js';
-export { sequenceCheck } from './running-a-check.js';
+export { answerSuggestion, sequenceCheck } from './running-a-check.js';
 
 export type {
   OfferedProposal,

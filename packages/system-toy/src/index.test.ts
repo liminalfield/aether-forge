@@ -254,7 +254,6 @@ describe('running the toy check through core', () => {
       inputs: {},
       roll,
       outcome: CALL_IT.interpret(roll, {}),
-      answers: {},
       events: {
         invoked: 'sys.toy-coinflip.check.invoked',
         resolved: 'sys.toy-coinflip.check.resolved',
