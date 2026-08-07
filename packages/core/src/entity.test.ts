@@ -280,6 +280,228 @@ describe('what an entity is called', () => {
   });
 });
 
+describe('the tracks an entity carries', () => {
+  const started = anEvent({
+    id: 'event-2',
+    seq: 2,
+    type: 'core.track.started',
+    payload: { entityId: 'vess', trackId: 'health', segments: 5, filled: 5 },
+  });
+
+  it('starts a track with its shape and its fill', () => {
+    const state = replay(entities, [CREATED_VESS, started]);
+
+    expect(onlyEntity(state).tracks).toEqual([
+      { id: 'health', segments: 5, filled: 5, startedBy: 'event-2' },
+    ]);
+    expect(onlyEntity(state).touchedBy).toBe('event-2');
+  });
+
+  it('moves by what each advance says, in order', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: -2 },
+      }),
+      anEvent({
+        id: 'event-4',
+        seq: 4,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: 1 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(4);
+  });
+
+  it('reports a fill past full and below empty without comment', () => {
+    // Sovereignty. Whether twelve of ten means something is the module's
+    // business at presentation time.
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: 9 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(14);
+  });
+
+  it('sets a fill outright when told where the track now stands', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.set',
+        payload: { entityId: 'vess', trackId: 'health', filled: 1 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(1);
+  });
+
+  it('refuses to move a track nobody started', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      anEvent({
+        id: 'event-2',
+        seq: 2,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: 2 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks).toEqual([]);
+  });
+
+  it('refuses a second start of a track the entity already carries', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.started',
+        payload: { entityId: 'vess', trackId: 'health', segments: 10, filled: 0 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.segments).toBe(5);
+  });
+
+  it('corrects an advance by the difference, keeping every advance made since', () => {
+    // The +2 was written wrongly and meant +3. The later -1 stands. The fill
+    // lands where it would have, had the log been written right.
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: 2 },
+      }),
+      anEvent({
+        id: 'event-4',
+        seq: 4,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: -1 },
+      }),
+      anEvent({
+        id: 'event-5',
+        seq: 5,
+        type: 'core.track.advanced',
+        revises: 'event-3',
+        payload: { entityId: 'vess', trackId: 'health', by: 3 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(7);
+  });
+
+  it('corrects a start by replacing the shape whole and moving the fill by the difference', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: -2 },
+      }),
+      anEvent({
+        id: 'event-4',
+        seq: 4,
+        type: 'core.track.started',
+        revises: 'event-2',
+        payload: { entityId: 'vess', trackId: 'health', segments: 4, filled: 4 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.segments).toBe(4);
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(2);
+  });
+
+  it('corrects a set by stating the fill outright', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.set',
+        payload: { entityId: 'vess', trackId: 'health', filled: 2 },
+      }),
+      anEvent({
+        id: 'event-4',
+        seq: 4,
+        type: 'core.track.set',
+        revises: 'event-3',
+        payload: { entityId: 'vess', trackId: 'health', filled: 3 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(3);
+  });
+
+  it('refuses a revision that changes what kind of event it revises', () => {
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.set',
+        revises: 'event-2',
+        payload: { entityId: 'vess', trackId: 'health', filled: 0 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(5);
+  });
+
+  it('refuses to revise the same event twice', () => {
+    // The correction of a correction revises the correction, as everywhere
+    // else. Revising the retired original again is not something to guess at.
+    const state = replay(entities, [
+      CREATED_VESS,
+      started,
+      anEvent({
+        id: 'event-3',
+        seq: 3,
+        type: 'core.track.advanced',
+        payload: { entityId: 'vess', trackId: 'health', by: 2 },
+      }),
+      anEvent({
+        id: 'event-4',
+        seq: 4,
+        type: 'core.track.advanced',
+        revises: 'event-3',
+        payload: { entityId: 'vess', trackId: 'health', by: 3 },
+      }),
+      anEvent({
+        id: 'event-5',
+        seq: 5,
+        type: 'core.track.advanced',
+        revises: 'event-3',
+        payload: { entityId: 'vess', trackId: 'health', by: 9 },
+      }),
+    ]);
+
+    expect(onlyEntity(state).tracks[0]?.filled).toBe(8);
+  });
+});
+
 describeProjectionIsPredictable(
   'the entities as of now',
   () => entities,
@@ -297,6 +519,25 @@ describeProjectionIsPredictable(
       type: ENTITY_CHANGED,
       revises: 'event-2',
       payload: { entityId: 'vess', fields: { iron: 3 } },
+    }),
+    anEvent({
+      id: 'event-4',
+      seq: 4,
+      type: 'core.track.started',
+      payload: { entityId: 'vess', trackId: 'health', segments: 5, filled: 5 },
+    }),
+    anEvent({
+      id: 'event-5',
+      seq: 5,
+      type: 'core.track.advanced',
+      payload: { entityId: 'vess', trackId: 'health', by: -2 },
+    }),
+    anEvent({
+      id: 'event-6',
+      seq: 6,
+      type: 'core.track.advanced',
+      revises: 'event-5',
+      payload: { entityId: 'vess', trackId: 'health', by: -1 },
     }),
   ],
 );

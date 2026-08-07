@@ -20,6 +20,14 @@ import type { EventEnvelope } from './event.js';
 import type { EntityId, EventId } from './identifiers.js';
 import type { Projection } from './projection.js';
 import type { EventTypeDefinition } from './schema.js';
+import {
+  readTrackAdvanced,
+  readTrackSet,
+  readTrackStarted,
+  TRACK_ADVANCED,
+  TRACK_SET,
+  TRACK_STARTED,
+} from './track.js';
 
 export const ENTITY_CREATED = 'core.entity.created';
 export const ENTITY_CHANGED = 'core.entity.changed';
@@ -114,16 +122,37 @@ export const entityEventTypes: readonly EventTypeDefinition[] = [
   { type: ENTITY_CHANGED, currentVersion: 1, translations: [], corrections: 'replaces-a-value' },
 ];
 
+/** One track as of now: its shape, and how full the log says it is. */
+export interface TrackState {
+  readonly id: string;
+  readonly segments: number;
+  /** May stand past full or below empty. Reported, never judged. */
+  readonly filled: number;
+  /** The event that started it. */
+  readonly startedBy: EventId;
+}
+
 /** One entity as of now: what the log says about it so far. */
 export interface EntityRecord {
   readonly id: EntityId;
   /** Absent for a free-form entity. */
   readonly entityType?: string;
   readonly fields: EntityFields;
+  /** In the order they were started. */
+  readonly tracks: readonly TrackState[];
   /** The event that created it. */
   readonly createdBy: EventId;
-  /** The most recent event that touched it, creation included. */
+  /** The most recent event that touched it, tracks included. */
   readonly touchedBy: EventId;
+}
+
+/** What one applied track event did, kept so a revision can undo its share. */
+export interface TrackContribution {
+  readonly entityId: EntityId;
+  readonly trackId: string;
+  readonly kind: 'started' | 'advanced' | 'set';
+  /** The started fill, the advanced amount, or the stated fill. */
+  readonly amount: number;
 }
 
 export interface Entities {
@@ -137,6 +166,13 @@ export interface Entities {
    * be written out unchanged when snapshots arrive.
    */
   readonly entityOf: Readonly<Record<EventId, EntityId>>;
+  /**
+   * What each applied track event contributed. A revision needs the original
+   * amount to replace, and an entry is removed once revised, so revising the
+   * same event twice is refused rather than applied twice; the correction of
+   * a correction revises the correction, as everywhere else.
+   */
+  readonly trackEventOf: Readonly<Record<EventId, TrackContribution>>;
 }
 
 /**
@@ -158,6 +194,7 @@ function touch(
   change: (entity: EntityRecord) => EntityRecord,
 ): Entities {
   return {
+    ...state,
     entities: state.entities.map((entity) =>
       entity.id === entityId ? { ...change(entity), touchedBy: eventId } : entity,
     ),
@@ -182,7 +219,7 @@ function touch(
 export const entities: Projection<Entities> = {
   id: 'core.entities',
 
-  initial: () => ({ entities: [], entityOf: {} }),
+  initial: () => ({ entities: [], entityOf: {}, trackEventOf: {} }),
 
   apply: (state, event: EventEnvelope): Entities => {
     if (event.type === ENTITY_CREATED) {
@@ -200,6 +237,7 @@ export const entities: Projection<Entities> = {
           const retyped: EntityRecord = {
             id: entity.id,
             fields: { ...entity.fields, ...created.fields },
+            tracks: entity.tracks,
             createdBy: entity.createdBy,
             touchedBy: entity.touchedBy,
           };
@@ -216,11 +254,13 @@ export const entities: Projection<Entities> = {
       const record: EntityRecord = {
         id: created.entityId,
         fields: created.fields,
+        tracks: [],
         createdBy: event.id,
         touchedBy: event.id,
       };
 
       return {
+        ...state,
         entities: [
           ...state.entities,
           created.entityType === undefined ? record : { ...record, entityType: created.entityType },
@@ -247,6 +287,193 @@ export const entities: Projection<Entities> = {
       }));
     }
 
+    if (event.type === TRACK_STARTED) {
+      const started = readTrackStarted(event.payload);
+      if (started === undefined) return state;
+
+      const revises = event.revises;
+      if (revises !== undefined) {
+        const original = state.trackEventOf[revises];
+        if (original === undefined || original.kind !== 'started') return state;
+        if (original.entityId !== started.entityId || original.trackId !== started.trackId) {
+          return state;
+        }
+
+        // The start was written wrongly. The shape is absolute and stands
+        // whole; the starting fill is a contribution, so the fill moves by
+        // the difference, keeping every advance made since.
+        return contribute(
+          state,
+          event.id,
+          revises,
+          {
+            entityId: started.entityId,
+            trackId: started.trackId,
+            kind: 'started',
+            amount: started.filled,
+          },
+          (track) => ({
+            ...track,
+            segments: started.segments,
+            filled: track.filled + started.filled - original.amount,
+          }),
+        );
+      }
+
+      const entity = state.entities.find((each) => each.id === started.entityId);
+      if (entity === undefined) return state;
+
+      // A second start of a track the entity already carries is a recording
+      // mistake nothing here can repair. Refuse to guess.
+      if (entity.tracks.some((track) => track.id === started.trackId)) return state;
+
+      const withTrack = touch(state, started.entityId, event.id, (each) => ({
+        ...each,
+        tracks: [
+          ...each.tracks,
+          {
+            id: started.trackId,
+            segments: started.segments,
+            filled: started.filled,
+            startedBy: event.id,
+          },
+        ],
+      }));
+
+      return {
+        ...withTrack,
+        trackEventOf: {
+          ...withTrack.trackEventOf,
+          [event.id]: {
+            entityId: started.entityId,
+            trackId: started.trackId,
+            kind: 'started',
+            amount: started.filled,
+          },
+        },
+      };
+    }
+
+    if (event.type === TRACK_ADVANCED) {
+      const advanced = readTrackAdvanced(event.payload);
+      if (advanced === undefined) return state;
+
+      const revises = event.revises;
+      if (revises !== undefined) {
+        const original = state.trackEventOf[revises];
+        if (original === undefined || original.kind !== 'advanced') return state;
+        if (original.entityId !== advanced.entityId || original.trackId !== advanced.trackId) {
+          return state;
+        }
+
+        // An advance is relative, so its correction is too: the fill moves by
+        // the difference between what was meant and what was written.
+        return contribute(
+          state,
+          event.id,
+          revises,
+          {
+            entityId: advanced.entityId,
+            trackId: advanced.trackId,
+            kind: 'advanced',
+            amount: advanced.by,
+          },
+          (track) => ({ ...track, filled: track.filled + advanced.by - original.amount }),
+        );
+      }
+
+      if (!hasTrack(state, advanced.entityId, advanced.trackId)) return state;
+
+      return contribute(
+        state,
+        event.id,
+        undefined,
+        {
+          entityId: advanced.entityId,
+          trackId: advanced.trackId,
+          kind: 'advanced',
+          amount: advanced.by,
+        },
+        (track) => ({ ...track, filled: track.filled + advanced.by }),
+      );
+    }
+
+    if (event.type === TRACK_SET) {
+      const set = readTrackSet(event.payload);
+      if (set === undefined) return state;
+
+      const revises = event.revises;
+      if (revises !== undefined) {
+        const original = state.trackEventOf[revises];
+        if (original === undefined || original.kind !== 'set') return state;
+        if (original.entityId !== set.entityId || original.trackId !== set.trackId) return state;
+
+        // A set is absolute, so its correction states the fill outright.
+        return contribute(
+          state,
+          event.id,
+          revises,
+          {
+            entityId: set.entityId,
+            trackId: set.trackId,
+            kind: 'set',
+            amount: set.filled,
+          },
+          (track) => ({ ...track, filled: set.filled }),
+        );
+      }
+
+      if (!hasTrack(state, set.entityId, set.trackId)) return state;
+
+      return contribute(
+        state,
+        event.id,
+        undefined,
+        {
+          entityId: set.entityId,
+          trackId: set.trackId,
+          kind: 'set',
+          amount: set.filled,
+        },
+        (track) => ({ ...track, filled: set.filled }),
+      );
+    }
+
     return state;
   },
 };
+
+function hasTrack(state: Entities, entityId: EntityId, trackId: string): boolean {
+  return (
+    state.entities
+      .find((entity) => entity.id === entityId)
+      ?.tracks.some((track) => track.id === trackId) ?? false
+  );
+}
+
+/**
+ * Applies one track event: records what it contributed, retires the entry of
+ * the event it revises (if any), and moves the named track.
+ */
+function contribute(
+  state: Entities,
+  eventId: EventId,
+  revises: EventId | undefined,
+  contribution: TrackContribution,
+  change: (track: TrackState) => TrackState,
+): Entities {
+  const touched = touch(state, contribution.entityId, eventId, (entity) => ({
+    ...entity,
+    tracks: entity.tracks.map((track) =>
+      track.id === contribution.trackId ? change(track) : track,
+    ),
+  }));
+
+  const trackEventOf: Record<EventId, TrackContribution> = {
+    ...touched.trackEventOf,
+    [eventId]: contribution,
+  };
+  if (revises !== undefined) delete trackEventOf[revises];
+
+  return { ...touched, trackEventOf };
+}

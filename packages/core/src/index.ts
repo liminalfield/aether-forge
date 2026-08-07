@@ -114,6 +114,8 @@ export type {
   EntityFields,
   EntityRecord,
   FieldValue,
+  TrackContribution,
+  TrackState,
 } from './entity.js';
 export {
   entities,
