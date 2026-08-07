@@ -167,6 +167,10 @@ export const FACE_DANGER: CheckDefinition = {
     ],
   },
 
+  // The challenge dice are what the result turned on: the action side is what
+  // you brought, the challenge dice are what the world answered with.
+  decisive: 'challenge',
+
   outcomes: FACE_DANGER_OUTCOMES,
 
   inputs: [

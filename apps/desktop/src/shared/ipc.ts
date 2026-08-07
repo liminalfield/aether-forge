@@ -198,6 +198,11 @@ export interface RolledDieView {
   /** What the module called it, when it called it anything. */
   readonly label?: string;
   /**
+   * Whether the outcome turned on this die, which the module says and the
+   * card draws. Absent when the module does not say.
+   */
+  readonly emphasis?: boolean;
+  /**
    * Where the number came from: `digital`, `manual`, or the name of the service
    * that supplied it.
    *

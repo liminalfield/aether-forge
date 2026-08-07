@@ -136,6 +136,11 @@ describe('a check on the timeline', () => {
     expect(check.outcome.tone).toBe('weak');
     expect(check.outcome.glyph).not.toBe('');
   });
+
+  it('emphasises the dice the module says the outcome turned on, and only those', () => {
+    // The module says which; the card draws the mark and decides nothing.
+    expect(checkFrom().dice.map((die) => die.emphasis === true)).toEqual([false, true, true]);
+  });
 });
 
 describe('an offer on the timeline', () => {
@@ -230,6 +235,10 @@ describe('the toy, which is the canary', () => {
     expect(item.check.outcome.tone).toBe('strong');
     expect(item.check.dice).toHaveLength(1);
     expect(item.check.offers).toEqual([]);
+
+    // The toy says nothing about decisive dice, and saying nothing must render
+    // sensibly: its one coin stays plain.
+    expect(item.check.dice[0]?.emphasis).toBeUndefined();
   });
 });
 
