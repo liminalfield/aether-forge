@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import {
   customPropertiesFor,
+  GHOST_KEYFRAMES,
   glacialDark,
   isMotionPreference,
   motionProperties,
@@ -27,6 +28,19 @@ function apply(properties: Readonly<Record<string, string>>): void {
 }
 
 apply({ ...customPropertiesFor(glacialDark), ...typeProperties() });
+
+/**
+ * Keyframes, which a style attribute cannot hold.
+ *
+ * Everything else a component needs travels as a custom property, and a
+ * property can carry which animation runs and for how long. It cannot carry
+ * the animation itself, so the one component with an animation ships its
+ * keyframes as text and the application puts them where the page can see
+ * them, once.
+ */
+const keyframes = document.createElement('style');
+keyframes.textContent = GHOST_KEYFRAMES;
+document.head.append(keyframes);
 
 /**
  * How much the application moves.

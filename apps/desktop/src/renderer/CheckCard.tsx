@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   Chip,
   ChipRow,
+  GhostBlock,
   Label,
   ResultCard,
   slot,
@@ -112,7 +113,7 @@ function Offer({
   const [changingTo, setChangingTo] = useState('');
 
   return (
-    <div style={{ display: 'grid', gap: tokens.space[8] }}>
+    <GhostBlock style={{ display: 'grid', gap: tokens.space[8] }} data-testid="ghost-block">
       {offer.why !== undefined && (
         <p style={{ margin: 0, color: slot('ink', 'muted'), fontSize: tokens.type.base }}>
           {offer.why}
@@ -209,7 +210,7 @@ function Offer({
           Just write
         </Chip>
       </ChipRow>
-    </div>
+    </GhostBlock>
   );
 }
 

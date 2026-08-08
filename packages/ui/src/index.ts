@@ -54,6 +54,9 @@ export { Chip } from './Chip.js';
 export type { ChipRowProps } from './ChipRow.js';
 export { ChipRow } from './ChipRow.js';
 
+export type { GhostBlockProps } from './GhostBlock.js';
+export { GHOST_KEYFRAMES, GhostBlock } from './GhostBlock.js';
+
 export type { LabelProps, LabelSize } from './Label.js';
 export { Label, labelStyle } from './Label.js';
 

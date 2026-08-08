@@ -90,9 +90,14 @@ describe('reaching a colour', () => {
 });
 
 describe('turning a theme into properties', () => {
-  it('produces one property per slot', () => {
+  it('produces one property per slot, plus the two it mixes from the accent', () => {
+    // Fifteen authored values, and two the ghost block needs that nobody
+    // authors: a theme changing its accent changes both with it.
     const properties = customPropertiesFor(glacialDark);
-    expect(Object.keys(properties)).toHaveLength(15);
+    const authored = Object.keys(properties).filter((name) => !name.startsWith('--ghost-'));
+
+    expect(authored).toHaveLength(15);
+    expect(Object.keys(properties)).toHaveLength(17);
   });
 
   it('names them the way the accessor asks for them', () => {
@@ -163,6 +168,10 @@ describe('a theme is a palette and never new component design', () => {
       '--accent-accent',
       '--accent-pressure',
       '--outcome-miss',
+      // Mixed from the accent, so they move when it does. Not a thirteenth
+      // and fourteenth authored value.
+      '--ghost-border',
+      '--ghost-wash',
     ]);
   });
 
@@ -186,7 +195,10 @@ describe('the themes that ship', () => {
 
   it('gives every one of them all fifteen slots', () => {
     for (const theme of builtInThemes) {
-      expect(Object.keys(customPropertiesFor(theme)), theme.name).toHaveLength(15);
+      const authored = Object.keys(customPropertiesFor(theme)).filter(
+        (name) => !name.startsWith('--ghost-'),
+      );
+      expect(authored, theme.name).toHaveLength(15);
     }
   });
 
@@ -201,6 +213,9 @@ describe('the themes that ship', () => {
 
 describe('how much the application moves', () => {
   it('offers three durations and one curve', () => {
+    // Three, and the ambient ghost pulse is deliberately not a fourth: these
+    // say how long a change takes, and that says how slowly something already
+    // on screen breathes.
     expect(Object.keys(MOTION)).toEqual(['enter', 'settle', 'ceremony']);
     expect(EASING).toBe('cubic-bezier(.2,.8,.2,1)');
   });
@@ -231,6 +246,9 @@ describe('how much the application moves', () => {
       '--duration-settle': '0ms',
       '--duration-ceremony': '0ms',
       '--easing': EASING,
+      // The one thing that stops rather than shortening. A pulse in zero
+      // milliseconds is a flash, which is worse than the movement it replaces.
+      '--pulse-ghost': 'none',
     });
   });
 
