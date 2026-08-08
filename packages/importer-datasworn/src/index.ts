@@ -133,12 +133,35 @@ export async function importDatasworn(
     };
   });
 
+  for (const unread of ruleset.unreadMoves) {
+    problems.push({ at: unread, detail: 'this move has a shape the importer has not met' });
+  }
+
+  const documents = ruleset.moves.map((move) => ({
+    id: move.id,
+    title: move.name,
+    text: move.text,
+  }));
+
   const attribution =
     ruleset.authors.length === 0
       ? `${ruleset.title}, used under ${asSpdx(ruleset.licenseUrl)}.`
       : `${ruleset.title} is by ${ruleset.authors.join(', ')}, used under ${asSpdx(ruleset.licenseUrl)}.`;
 
-  const content = { tables, documents: [], entityTemplates: [] };
+  // The module's compartment: structured facts about the moves, in this
+  // importer's own output vocabulary, for the owning module to join to its
+  // interpreters. Core carries this unread.
+  const raw = {
+    formatVersion: IMPORTER_OUTPUT_VERSION,
+    moves: ruleset.moves.map((move) => ({
+      id: move.id,
+      name: move.name,
+      kind: move.kind,
+      stats: move.stats,
+    })),
+  };
+
+  const content = { tables, documents, entityTemplates: [], raw };
 
   // Which module consumes a ruleset is knowledge, not derivation. A ruleset
   // this map does not know still imports; it is compatible with a system of

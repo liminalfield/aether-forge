@@ -25,6 +25,20 @@ export interface DataswornRollable {
   readonly rowsWithoutRanges: number;
 }
 
+/** The kinds of move this importer's output vocabulary distinguishes. */
+export type MoveKind = 'action' | 'progress' | 'none' | 'special';
+
+export interface DataswornMove {
+  /** "starforged/adventure/face_danger", the prefix already stripped. */
+  readonly id: string;
+  readonly name: string;
+  readonly kind: MoveKind;
+  /** The stats its trigger offers, in source order, deduplicated. */
+  readonly stats: readonly string[];
+  /** The move's text with its outcomes appended, written to be read. */
+  readonly text: string;
+}
+
 export interface DataswornRuleset {
   /** "starforged" */
   readonly rulesetId: string;
@@ -34,8 +48,9 @@ export interface DataswornRuleset {
   readonly authors: readonly string[];
   readonly dataswornVersion: string;
   readonly rollables: readonly DataswornRollable[];
-  /** Raw subtrees this importer does not consume yet, kept for later stages. */
-  readonly moves: unknown;
+  readonly moves: readonly DataswornMove[];
+  /** Move shapes this reader could not carry, by scoped id or name. */
+  readonly unreadMoves: readonly string[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -111,6 +126,79 @@ function walkCollections(value: unknown, into: DataswornRollable[]): void {
   }
 }
 
+const MOVE_KINDS: Readonly<Record<string, MoveKind>> = {
+  action_roll: 'action',
+  progress_roll: 'progress',
+  no_roll: 'none',
+  special_track: 'special',
+};
+
+function readMove(value: unknown): DataswornMove | undefined {
+  if (!isRecord(value) || value['type'] !== 'move') return undefined;
+
+  const id = readScopedId(value['_id']);
+  const name = value['name'];
+  const kind = MOVE_KINDS[String(value['roll_type'])];
+  if (id === undefined || typeof name !== 'string' || kind === undefined) return undefined;
+
+  const text = value['text'];
+  if (typeof text !== 'string') return undefined;
+
+  const stats: string[] = [];
+  const trigger = value['trigger'];
+  if (isRecord(trigger) && Array.isArray(trigger['conditions'])) {
+    for (const condition of trigger['conditions']) {
+      if (!isRecord(condition) || !Array.isArray(condition['roll_options'])) continue;
+      for (const option of condition['roll_options']) {
+        if (!isRecord(option) || option['using'] !== 'stat') continue;
+        const stat = option['stat'];
+        if (typeof stat === 'string' && stat !== '' && !stats.includes(stat)) stats.push(stat);
+      }
+    }
+  }
+
+  // The outcomes are part of what was written to be read. Kept with the
+  // move's own text so the document is the whole move, not its first half.
+  const parts = [text];
+  const outcomes = value['outcomes'];
+  if (isRecord(outcomes)) {
+    const SAID: readonly [string, string][] = [
+      ['strong_hit', 'On a strong hit'],
+      ['weak_hit', 'On a weak hit'],
+      ['miss', 'On a miss'],
+    ];
+    for (const [key, heading] of SAID) {
+      const outcome = outcomes[key];
+      if (isRecord(outcome) && typeof outcome['text'] === 'string') {
+        parts.push(`**${heading}:** ${outcome['text']}`);
+      }
+    }
+  }
+
+  return { id, name, kind, stats, text: parts.join('\n\n') };
+}
+
+function walkMoves(value: unknown, into: DataswornMove[], unread: string[]): void {
+  if (!isRecord(value)) return;
+
+  const contents = value['contents'];
+  if (isRecord(contents)) {
+    for (const each of Object.values(contents)) {
+      const move = readMove(each);
+      if (move !== undefined) {
+        into.push(move);
+      } else if (isRecord(each) && each['type'] === 'move') {
+        unread.push(readScopedId(each['_id']) ?? String(each['name'] ?? 'an unnamed move'));
+      }
+    }
+  }
+
+  const collections = value['collections'];
+  if (isRecord(collections)) {
+    for (const each of Object.values(collections)) walkMoves(each, into, unread);
+  }
+}
+
 export function readRuleset(value: unknown): DataswornRuleset | undefined {
   if (!isRecord(value) || value['type'] !== 'ruleset') return undefined;
 
@@ -135,6 +223,13 @@ export function readRuleset(value: unknown): DataswornRuleset | undefined {
     for (const collection of Object.values(oracles)) walkCollections(collection, rollables);
   }
 
+  const moves: DataswornMove[] = [];
+  const unreadMoves: string[] = [];
+  const rawMoves = value['moves'];
+  if (isRecord(rawMoves)) {
+    for (const category of Object.values(rawMoves)) walkMoves(category, moves, unreadMoves);
+  }
+
   return {
     rulesetId,
     title,
@@ -142,6 +237,7 @@ export function readRuleset(value: unknown): DataswornRuleset | undefined {
     authors,
     dataswornVersion,
     rollables,
-    moves: value['moves'],
+    moves,
+    unreadMoves,
   };
 }
