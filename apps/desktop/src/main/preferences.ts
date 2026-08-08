@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { isMotionPreference, type MotionPreference } from '@aether-forge/ui';
+import { builtInThemes, isMotionPreference, type MotionPreference } from '@aether-forge/ui';
 
 /**
  * What a person has chosen about how the application behaves for them.
@@ -22,9 +22,19 @@ import { isMotionPreference, type MotionPreference } from '@aether-forge/ui';
  */
 export interface Preferences {
   readonly motion: MotionPreference;
+  /** Which built-in theme, by name. */
+  readonly theme: string;
 }
 
-export const DEFAULT_PREFERENCES: Preferences = { motion: 'follow-the-system' };
+export const DEFAULT_PREFERENCES: Preferences = {
+  motion: 'follow-the-system',
+  theme: 'Glacial dark',
+};
+
+/** Whether a stored name is a theme this build actually has. */
+export function isKnownTheme(value: unknown): value is string {
+  return typeof value === 'string' && builtInThemes.some((theme) => theme.name === value);
+}
 
 const FILE = 'preferences.json';
 
@@ -54,8 +64,14 @@ export function readPreferences(userDataDir: string): Preferences {
 
   if (typeof parsed !== 'object' || parsed === null) return DEFAULT_PREFERENCES;
 
-  const motion = (parsed as { motion?: unknown }).motion;
-  return { motion: isMotionPreference(motion) ? motion : DEFAULT_PREFERENCES.motion };
+  const { motion, theme } = parsed as { motion?: unknown; theme?: unknown };
+  return {
+    motion: isMotionPreference(motion) ? motion : DEFAULT_PREFERENCES.motion,
+    // A theme this build does not have falls back rather than failing. A
+    // person who used a theme that has since gone should get the default
+    // and their application, not an error and no window.
+    theme: isKnownTheme(theme) ? theme : DEFAULT_PREFERENCES.theme,
+  };
 }
 
 /** Store a preference. Throws if it cannot, so the caller answers honestly. */

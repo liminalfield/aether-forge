@@ -129,6 +129,25 @@ export interface CheckOutcome {
 export type OutcomeTone = 'strong' | 'weak' | 'miss' | 'match';
 
 /**
+ * The shape each tone is shown as, decided once for every system.
+ *
+ * Colour never carries meaning alone here: a person with no colour vision, or
+ * a theme whose accent is hard to pick out, reads the shape instead. That only
+ * works if a shape means the same thing in every game somebody plays, so the
+ * shapes are decided here rather than argued per module.
+ *
+ * The design record chose these four. A module that wants a different shape
+ * for an outcome that is not really its tone (a result that could not be read
+ * at all, say) may say so, and its own tests are where that is justified.
+ */
+export const GLYPH_FOR_TONE: Readonly<Record<OutcomeTone, string>> = {
+  strong: '▲',
+  weak: '◐',
+  miss: '▼',
+  match: '✦',
+};
+
+/**
  * One outcome a check can produce, and how to show it.
  *
  * Declared rather than worked out from what `interpret` returned, because a

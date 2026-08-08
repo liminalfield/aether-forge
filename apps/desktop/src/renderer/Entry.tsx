@@ -38,7 +38,7 @@ export function Entry({
             event.preventDefault();
             onSave();
           }}
-          style={{ display: 'grid', gap: tokens.space.sm }}
+          style={{ display: 'grid', gap: tokens.space[8] }}
         >
           <WritingSurface
             label="Change what this says"
@@ -52,7 +52,7 @@ export function Entry({
               if (event.key === 'Escape') onStop();
             }}
           />
-          <div style={{ display: 'flex', gap: tokens.space.sm }}>
+          <div style={{ display: 'flex', gap: tokens.space[8] }}>
             <Button type="submit" disabled={busy}>
               Save
             </Button>
@@ -85,9 +85,9 @@ export function Entry({
           border: 'none',
           color: slot('ink', 'primary'),
           fontFamily: 'var(--font-prose)',
-          fontSize: '18px',
+          fontSize: tokens.type.prose,
           fontWeight: 300,
-          lineHeight: 1.6,
+          lineHeight: tokens.lineHeight.prose,
           textAlign: 'left',
           whiteSpace: 'pre-wrap',
           cursor: 'text',
@@ -101,11 +101,11 @@ export function Entry({
           data-testid="edited"
           title={`Corrected ${entry.corrections} ${entry.corrections === 1 ? 'time' : 'times'}`}
           style={{
-            margin: `${tokens.space.xs} 0 0`,
+            margin: `${tokens.space[4]} 0 0`,
             color: slot('ink', 'muted'),
             fontFamily: 'var(--font-numeric)',
-            fontSize: '10.5px',
-            letterSpacing: '.16em',
+            fontSize: tokens.type.micro,
+            letterSpacing: tokens.tracking.capsWide,
             textTransform: 'uppercase',
           }}
         >

@@ -54,6 +54,18 @@ export { Chip } from './Chip.js';
 export type { ChipRowProps } from './ChipRow.js';
 export { ChipRow } from './ChipRow.js';
 
+export type { GhostBlockProps } from './GhostBlock.js';
+export { GHOST_KEYFRAMES, GhostBlock } from './GhostBlock.js';
+
+export type { MeterProps, MeterShape } from './Meter.js';
+export { Meter } from './Meter.js';
+
+export type { LabelProps, LabelSize } from './Label.js';
+export { Label, labelStyle } from './Label.js';
+
+export type { KeyHintProps } from './KeyHint.js';
+export { KeyHint } from './KeyHint.js';
+
 export type { CardDie, CardOutcome, CardTotal, ResultCardProps } from './ResultCard.js';
 export { ResultCard } from './ResultCard.js';
 

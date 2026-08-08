@@ -136,9 +136,9 @@ export const CHARACTER_TEMPLATE: EntityTemplate = {
     ...STATS.map((stat): FieldSpec => ({ id: stat, label: stat, kind: 'number', initial: 1 })),
   ],
   tracks: [
-    { id: 'health', label: 'Health', segments: 5, startsFilled: 5 },
-    { id: 'spirit', label: 'Spirit', segments: 5, startsFilled: 5 },
-    { id: 'supply', label: 'Supply', segments: 5, startsFilled: 5 },
+    { id: 'health', label: 'Health', segments: 5, startsFilled: 5, draws: 'spent' },
+    { id: 'spirit', label: 'Spirit', segments: 5, startsFilled: 5, draws: 'spent' },
+    { id: 'supply', label: 'Supply', segments: 5, startsFilled: 5, draws: 'spent' },
   ],
 };
 
@@ -152,7 +152,7 @@ export const VOW_TEMPLATE: EntityTemplate = {
     // sworn without saying a rank still has one on its sheet to argue with.
     { id: 'rank', label: 'Rank', kind: 'text', initial: 'troublesome' },
   ],
-  tracks: [{ id: 'progress', label: 'Progress', segments: 10, startsFilled: 0 }],
+  tracks: [{ id: 'progress', label: 'Progress', segments: 10, startsFilled: 0, draws: 'earned' }],
 };
 
 export const templates: readonly EntityTemplate[] = [CHARACTER_TEMPLATE, VOW_TEMPLATE];

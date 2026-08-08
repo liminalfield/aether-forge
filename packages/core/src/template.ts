@@ -32,6 +32,18 @@ export interface TrackSpec {
   readonly segments: number;
   /** How full a new one begins. A meter starts full, a row of progress empty. */
   readonly startsFilled: number;
+  /**
+   * How a surface should draw it, when the module has an opinion.
+   *
+   * `spent` is something going down, like a supply or a condition. `earned`
+   * is something going up, like progress towards a thing a person set out to
+   * do. The difference is meaning, not decoration: it is how one is told from
+   * the other without reading a label.
+   *
+   * Presentation, like a check's `decisive`, so it is read from the module as
+   * it stands today and never recorded.
+   */
+  readonly draws?: 'spent' | 'earned';
 }
 
 export interface EntityTemplate {

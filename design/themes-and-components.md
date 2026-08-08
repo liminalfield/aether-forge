@@ -6,6 +6,14 @@ yet decomposed" that stood here outlived the decomposition. Corrected 7 August 2
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
 
+> The ghost block was built on 8 August 2026 (#172), with two things this record did not anticipate.
+> It needs the accent at two strengths, and neither became a sixteenth slot: a theme still authors
+> fifteen values and the two are mixed from the accent it authored, so changing the accent changes
+> both. Its slow breathing glow is also not a fourth duration. The three durations here say how long
+> a change takes; this says how slowly something already on screen breathes, and when a person asks
+> for less movement it stops rather than arriving instantly, because a pulse played in zero
+> milliseconds is a flash. The border and the wash stay, so the meaning survives the movement going.
+
 > Known divergences between this record and the code, written down 7 August 2026 and not yet
 > reconciled. None of these was a decision; each is drift, and whether the code or the record moves
 > will be decided per item. The outcome glyphs shipped as ◆ ◇ △ in `system-ironsworn` where this

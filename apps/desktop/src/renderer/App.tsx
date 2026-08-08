@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button, slot, TABULAR_NUMERALS, tokens, WritingSurface } from '@aether-forge/ui';
+import {
+  Button,
+  labelStyle,
+  slot,
+  TABULAR_NUMERALS,
+  tokens,
+  WritingSurface,
+} from '@aether-forge/ui';
 
 import type {
   ChecksView,
   CheckView,
   EntitiesView,
   InstalledPackageView,
+  PreferencesView,
   EntityTypeView,
   EntityView,
   FieldValueView,
@@ -18,6 +26,8 @@ import type {
   TimelineView,
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
+import { applyMotion, wearTheme } from './appearance';
+import { PreferencesRow } from './Preferences';
 import { EntitiesRail } from './EntitiesRail';
 import { Entry } from './Entry';
 import { RunACheck } from './RunACheck';
@@ -37,7 +47,7 @@ const TABULAR = { ...TABULAR_NUMERALS } as const;
 const QUIET = {
   color: slot('ink', 'muted'),
   fontFamily: 'var(--font-ui)',
-  fontSize: tokens.fontSize.sm,
+  fontSize: tokens.type.base,
   margin: 0,
 } as const;
 
@@ -47,6 +57,7 @@ export function App(): React.JSX.Element {
   const [checks, setChecks] = useState<readonly CheckView[]>([]);
   const [held, setHeld] = useState<readonly EntityView[]>([]);
   const [credits, setCredits] = useState<readonly InstalledPackageView[]>([]);
+  const [preferences, setPreferences] = useState<PreferencesView | null>(null);
   const [entityTypes, setEntityTypes] = useState<readonly EntityTypeView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -86,6 +97,11 @@ export function App(): React.JSX.Element {
     void window.aetherForge.listPackages().then((held) => {
       if (held.ok) setCredits(held.value.packages);
       else setProblem(held.failure.detail);
+    });
+
+    void window.aetherForge.readPreferences().then((stored) => {
+      if (stored.ok) setPreferences(stored.value);
+      else setProblem(stored.failure.detail);
     });
   }, []);
 
@@ -191,13 +207,60 @@ export function App(): React.JSX.Element {
     [entitiesArrived, rereadShape],
   );
 
+  /**
+   * A preference, chosen and applied at once.
+   *
+   * The theme is applied here rather than on the next launch, because a person
+   * choosing a palette is choosing what they are looking at now. Nothing that
+   * has already rendered is told: it named properties, and the properties now
+   * hold other colours.
+   */
+  const chooseTheme = useCallback(async (theme: string) => {
+    setBusy(true);
+    try {
+      const chosen = await window.aetherForge.setThemePreference(theme);
+      if (chosen.ok) {
+        setPreferences(chosen.value);
+        wearTheme(chosen.value.theme);
+        setProblem(null);
+      } else {
+        setProblem(chosen.failure.detail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const chooseMotion = useCallback(async (motion: string) => {
+    setBusy(true);
+    try {
+      const chosen = await window.aetherForge.setMotionPreference(motion);
+      if (chosen.ok) {
+        setPreferences(chosen.value);
+        applyMotion(chosen.value.motion);
+        setProblem(null);
+      } else {
+        setProblem(chosen.failure.detail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
   const importContent = useCallback(async () => {
     setBusy(true);
     try {
       const asked = await window.aetherForge.importPackage();
       if (asked.ok) {
         setCredits(asked.value.listing.packages);
-        setProblem(null);
+        // What arrived may have brought moves with it, and a person who has
+        // just installed a ruleset should be able to roll from it without
+        // restarting.
+        const declared = await window.aetherForge.readChecks();
+        if (declared.ok) setChecks(declared.value.checks);
+
+        // An import that changed nothing must not look like one that worked.
+        setProblem(asked.value.notes.length === 0 ? null : asked.value.notes.join('. '));
       } else {
         setProblem(asked.failure.detail);
       }
@@ -287,7 +350,7 @@ export function App(): React.JSX.Element {
       style={{
         minHeight: '100vh',
         display: 'grid',
-        gridTemplateRows: '38px 1fr',
+        gridTemplateRows: `${tokens.layout.titleBar} 1fr`,
         background: slot('ground', 'base'),
         color: slot('ink', 'primary'),
       }}
@@ -301,14 +364,10 @@ export function App(): React.JSX.Element {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: `0 ${tokens.space.lg}`,
+          padding: `0 ${tokens.space[24]}`,
           borderBottom: `1px solid ${slot('ink', 'hairline')}`,
           background: slot('ground', 'sunken'),
-          fontFamily: 'var(--font-numeric)',
-          fontSize: '10.5px',
-          letterSpacing: '.16em',
-          textTransform: 'uppercase',
-          color: slot('ink', 'muted'),
+          ...labelStyle(),
         }}
       >
         <span>Aether Forge</span>
@@ -332,14 +391,14 @@ export function App(): React.JSX.Element {
             margin: '0 auto',
             width: '100%',
             maxWidth: '60ch',
-            padding: `34px ${tokens.space.xl} 46px`,
+            padding: `34px ${tokens.layout.pageSide} 46px`,
             display: 'flex',
             flexDirection: 'column',
-            gap: tokens.space.xl,
+            gap: tokens.layout.pageSide,
             overflowY: 'auto',
           }}
         >
-          <section data-testid="journal" style={{ display: 'grid', gap: tokens.space.lg }}>
+          <section data-testid="journal" style={{ display: 'grid', gap: tokens.space[24] }}>
             {items === null && <p style={QUIET}>Reading the campaign…</p>}
 
             {items?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
@@ -375,7 +434,7 @@ export function App(): React.JSX.Element {
               event.preventDefault();
               void record();
             }}
-            style={{ display: 'grid', gap: tokens.space.sm }}
+            style={{ display: 'grid', gap: tokens.space[8] }}
           >
             <WritingSurface
               id="entry"
@@ -394,7 +453,7 @@ export function App(): React.JSX.Element {
           quietly, where the content actually is. Not behind a menu: a
           condition on using someone's work is not a settings page.
         */}
-          <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space.xs }}>
+          <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space[4] }}>
             {credits.map((credit) => (
               <p key={credit.id} style={QUIET}>
                 {credit.attribution ?? `${credit.title} ${credit.version}, ${credit.license}.`}
@@ -409,6 +468,13 @@ export function App(): React.JSX.Element {
             >
               Import content…
             </Button>
+
+            <PreferencesRow
+              preferences={preferences}
+              busy={busy}
+              onChooseTheme={(theme) => void chooseTheme(theme)}
+              onChooseMotion={(motion) => void chooseMotion(motion)}
+            />
           </footer>
 
           {problem !== null && (

@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
+import { labelStyle } from './Label.js';
 import { slot, type SlotName } from './theme.js';
 import { TABULAR_NUMERALS, tokens } from './tokens.js';
 
@@ -103,11 +104,7 @@ function provenanceOf(dice: readonly CardDie[]): readonly string[] {
 }
 
 const QUIET_LABEL = {
-  fontFamily: 'var(--font-numeric)',
-  fontSize: '11px',
-  letterSpacing: '.14em',
-  textTransform: 'uppercase',
-  color: slot('ink', 'muted'),
+  ...labelStyle('line'),
 } as const;
 
 /**
@@ -155,16 +152,24 @@ export function ResultCard({
       }}
       {...rest}
     >
-      <div style={{ display: 'grid', gap: '14px', padding: '16px 18px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gap: tokens.box.cardGap,
+          padding: `${tokens.box.cardPadY} ${tokens.box.cardPadX}`,
+        }}
+      >
         <header
           style={{
             display: 'flex',
             alignItems: 'baseline',
-            gap: tokens.space.md,
+            gap: tokens.space[16],
             flexWrap: 'wrap',
           }}
         >
-          <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600 }}>
+          <span
+            style={{ fontFamily: 'var(--font-ui)', fontSize: tokens.type.base, fontWeight: 600 }}
+          >
             {name}
           </span>
           {detail !== undefined && <span style={QUIET_LABEL}>{detail}</span>}
@@ -184,17 +189,17 @@ export function ResultCard({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: tokens.space.sm,
+            gap: tokens.space[8],
             flexWrap: 'wrap',
             fontFamily: 'var(--font-numeric)',
-            fontSize: '15px',
+            fontSize: tokens.type.reading,
             ...TABULAR_NUMERALS,
           }}
         >
           {groups.map((group, index) => (
             <div
               key={group[0]?.label ?? index}
-              style={{ display: 'flex', alignItems: 'center', gap: tokens.space.sm }}
+              style={{ display: 'flex', alignItems: 'center', gap: tokens.space[8] }}
             >
               {group.map((die, position) => (
                 <span
@@ -203,8 +208,8 @@ export function ResultCard({
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: '30px',
-                    height: '30px',
+                    minWidth: tokens.box.die,
+                    height: tokens.box.die,
                     background: slot('ground', 'overlay'),
                     border: `1px solid ${
                       die.emphasis === true ? slot('outcome', outcome.tone) : 'transparent'
@@ -220,7 +225,7 @@ export function ResultCard({
           ))}
 
           {total !== undefined && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: tokens.space.sm }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: tokens.space[8] }}>
               <span style={{ color: slot('ink', 'muted') }}>=</span>
               <span style={{ fontWeight: 600 }}>{total.value}</span>
               <span style={QUIET_LABEL}>{total.label}</span>
@@ -240,7 +245,7 @@ export function ResultCard({
           textTransform: 'none',
           letterSpacing: 'normal',
           display: 'flex',
-          gap: tokens.space.md,
+          gap: tokens.space[16],
           flexWrap: 'wrap',
         }}
       >

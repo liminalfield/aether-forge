@@ -3,6 +3,8 @@ import { useState } from 'react';
 import {
   Chip,
   ChipRow,
+  GhostBlock,
+  Label,
   ResultCard,
   slot,
   TABULAR_NUMERALS,
@@ -80,24 +82,14 @@ function Settled({ offer }: { readonly offer: RecordedOfferView }): React.JSX.El
   }[offer.fate];
 
   return (
-    <p
-      data-testid="settled-offer"
-      style={{
-        margin: 0,
-        color: slot('ink', 'muted'),
-        fontFamily: 'var(--font-numeric)',
-        fontSize: '11px',
-        letterSpacing: '.14em',
-        textTransform: 'uppercase',
-      }}
-    >
+    <Label as="p" size="line" data-testid="settled-offer">
       {offer.label}: {said}
       {offer.answeredAt !== undefined && (
         <span data-testid="settled-when" style={{ float: 'right', ...TABULAR_NUMERALS }}>
           {saidWhen(offer.answeredAt)}
         </span>
       )}
-    </p>
+    </Label>
   );
 }
 
@@ -121,9 +113,9 @@ function Offer({
   const [changingTo, setChangingTo] = useState('');
 
   return (
-    <div style={{ display: 'grid', gap: tokens.space.sm }}>
+    <GhostBlock style={{ display: 'grid', gap: tokens.space[8] }} data-testid="ghost-block">
       {offer.why !== undefined && (
-        <p style={{ margin: 0, color: slot('ink', 'muted'), fontSize: tokens.fontSize.sm }}>
+        <p style={{ margin: 0, color: slot('ink', 'muted'), fontSize: tokens.type.base }}>
           {offer.why}
         </p>
       )}
@@ -181,9 +173,9 @@ function Offer({
                 color: slot('ink', 'primary'),
                 border: `1px solid ${slot('ink', 'hairline')}`,
                 borderRadius: tokens.radius.sm,
-                padding: '4px 6px',
+                padding: `${tokens.space[4]} ${tokens.radius.md}`,
                 fontFamily: 'var(--font-numeric)',
-                fontSize: '12px',
+                fontSize: tokens.type.small,
               }}
             />
             <Chip
@@ -218,7 +210,7 @@ function Offer({
           Just write
         </Chip>
       </ChipRow>
-    </div>
+    </GhostBlock>
   );
 }
 
@@ -268,7 +260,12 @@ export function CheckCard({ check, onAnswer, busy }: CheckCardProps): React.JSX.
       >
         <p
           data-testid="outcome-summary"
-          style={{ margin: 0, fontFamily: 'var(--font-prose)', fontSize: '15px', lineHeight: 1.5 }}
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-prose)',
+            fontSize: tokens.type.reading,
+            lineHeight: tokens.lineHeight.normal,
+          }}
         >
           {check.outcome.summary}
         </p>

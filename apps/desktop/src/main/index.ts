@@ -12,10 +12,10 @@ import {
   type TranslatingLog,
 } from '@aether-forge/core';
 import { glacialDark } from '@aether-forge/ui';
-import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
+import { builtInThemes, isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
-import { IPC } from '../shared/ipc';
+import { IPC, type PreferencesView } from '../shared/ipc';
 import { answerOffer } from './answer-offer';
 import { describeChecks } from './checks';
 import { changeEntity, createEntity, describeEntityTypes, readEntities } from './entities';
@@ -30,7 +30,7 @@ import {
 } from './import-package';
 import { listPackages, openRegistry } from './packages';
 import { loadSystems } from './systems';
-import { readPreferences, writePreferences } from './preferences';
+import { isKnownTheme, readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
 import { advanceTrack, setTrack, startTrack } from './tracks';
@@ -141,10 +141,13 @@ function registerIpcHandlers(
   ipcMain.handle(IPC.advanceTrack, (_event, request: unknown) => advanceTrack(campaign, request));
   ipcMain.handle(IPC.setTrack, (_event, request: unknown) => setTrack(campaign, request));
 
-  ipcMain.handle(IPC.readPreferences, () => ({
-    ok: true as const,
-    value: readPreferences(userDataDir),
-  }));
+  /** What is stored, plus what this build could offer instead. */
+  const preferencesView = (): PreferencesView => ({
+    ...readPreferences(userDataDir),
+    themes: builtInThemes.map((theme) => theme.name),
+  });
+
+  ipcMain.handle(IPC.readPreferences, () => ({ ok: true as const, value: preferencesView() }));
 
   ipcMain.handle(IPC.setMotionPreference, (_event, motion: unknown) => {
     // Refused because it is not a value this build knows, which is a different
@@ -161,7 +164,7 @@ function registerIpcHandlers(
     }
 
     try {
-      writePreferences(userDataDir, { motion });
+      writePreferences(userDataDir, { ...readPreferences(userDataDir), motion });
     } catch (cause) {
       return {
         ok: false as const,
@@ -169,7 +172,32 @@ function registerIpcHandlers(
       };
     }
 
-    return { ok: true as const, value: readPreferences(userDataDir) };
+    return { ok: true as const, value: preferencesView() };
+  });
+
+  ipcMain.handle(IPC.setThemePreference, (_event, theme: unknown) => {
+    // Refused for the same reason a motion preference is: not a value this
+    // build has, rather than a choice anybody disapproves of.
+    if (!isKnownTheme(theme)) {
+      return {
+        ok: false as const,
+        failure: {
+          kind: 'unknown-theme',
+          detail: `${String(theme)} is not one of ${builtInThemes.map((each) => each.name).join(', ')}`,
+        },
+      };
+    }
+
+    try {
+      writePreferences(userDataDir, { ...readPreferences(userDataDir), theme });
+    } catch (cause) {
+      return {
+        ok: false as const,
+        failure: { kind: 'storage-failed', detail: String(cause) },
+      };
+    }
+
+    return { ok: true as const, value: preferencesView() };
   });
 }
 

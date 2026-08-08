@@ -78,6 +78,17 @@ export function customPropertiesFor(theme: ThemeColours): Readonly<Record<string
     }
   }
 
+  // Two colours nothing authors, mixed from the accent a theme did author.
+  //
+  // The ghost block needs the accent at two strengths, and neither is a
+  // sixteenth slot: a theme still supplies fifteen values, and these are
+  // worked out from one of them. A theme author who changes the accent gets
+  // both of these changing with it, which is the point.
+  properties['--ghost-border'] =
+    `color-mix(in srgb, ${properties['--accent-accent'] ?? 'transparent'} 40%, transparent)`;
+  properties['--ghost-wash'] =
+    `color-mix(in srgb, ${properties['--accent-accent'] ?? 'transparent'} 6%, transparent)`;
+
   return properties;
 }
 

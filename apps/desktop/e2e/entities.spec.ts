@@ -52,17 +52,24 @@ test('notes a free-form entity and swears a vow from its template', async () => 
   await expect(page.getByTestId('entity')).toHaveCount(2);
 
   await page.getByTestId('entity').filter({ hasText: 'Carry the message home' }).click();
-  await expect(page.getByTestId('track-progress')).toHaveText('0/10');
+  await expect(page.getByTestId('track-progress')).toContainText('0/10');
+
+  // Drawn, not spelled out: progress is something earned, so it is boxes, and
+  // anything reading the screen aloud gets the number rather than the shape.
+  await expect(page.getByTestId('track-progress')).toHaveAttribute(
+    'aria-label',
+    'Progress, 0 of 10',
+  );
 });
 
 test('advances the vow by one, through a button and not a text box', async () => {
   const page = await open();
 
   await page.getByTestId('entity').filter({ hasText: 'Carry the message home' }).click();
-  await expect(page.getByTestId('track-progress')).toHaveText('0/10');
+  await expect(page.getByTestId('track-progress')).toContainText('0/10');
 
   await page.getByTestId('advance-progress').click();
-  await expect(page.getByTestId('track-progress')).toHaveText('1/10');
+  await expect(page.getByTestId('track-progress')).toContainText('1/10');
 });
 
 test('still holds the note, the vow and its progress after the application reopens', async () => {
@@ -73,7 +80,7 @@ test('still holds the note, the vow and its progress after the application reope
   await expect(page.getByTestId('entities-rail')).toContainText('The indenture');
 
   await page.getByTestId('entity').filter({ hasText: 'Carry the message home' }).click();
-  await expect(page.getByTestId('track-progress')).toHaveText('1/10');
+  await expect(page.getByTestId('track-progress')).toContainText('1/10');
 });
 
 test('changes a field, and the change survives too', async () => {

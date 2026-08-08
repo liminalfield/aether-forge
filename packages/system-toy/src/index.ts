@@ -9,6 +9,7 @@
 
 import {
   CORE_CONTRACT_VERSION,
+  GLYPH_FOR_TONE,
   readRoll,
   ROLL_PERFORMED,
   type CheckDefinition,
@@ -188,9 +189,9 @@ export const CALL_IT: CheckDefinition = {
   // three different colours, because a canary that exercised one would not tell
   // us whether the other two work.
   outcomes: [
-    { id: 'heads', label: 'Heads', tone: 'strong', glyph: '\u25CF' },
-    { id: 'tails', label: 'Tails', tone: 'miss', glyph: '\u25CB' },
-    { id: 'not-a-coin', label: 'Not a coin', tone: 'weak', glyph: '\u25CC' },
+    { id: 'heads', label: 'Heads', tone: 'strong', glyph: GLYPH_FOR_TONE.strong },
+    { id: 'tails', label: 'Tails', tone: 'miss', glyph: GLYPH_FOR_TONE.miss },
+    { id: 'not-a-coin', label: 'Not a coin', tone: 'weak', glyph: GLYPH_FOR_TONE.weak },
   ],
 
   interpret: (roll) => {

@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 import { duration } from './motion.js';
+import { KeyHint } from './KeyHint.js';
 import { slot } from './theme.js';
 import { tokens } from './tokens.js';
 
@@ -55,12 +56,12 @@ export function Chip({
   const shared = {
     display: 'inline-flex',
     alignItems: 'baseline',
-    gap: tokens.space.sm,
+    gap: tokens.space[8],
     padding: '5px 10px',
     borderRadius: tokens.radius.pill,
     background: 'none',
     fontFamily: 'var(--font-numeric)',
-    fontSize: '12px',
+    fontSize: tokens.type.small,
     cursor: 'pointer',
     transitionProperty: 'background-color, border-color, color',
     transitionDuration: duration('enter'),
@@ -90,11 +91,7 @@ export function Chip({
   return (
     <button type={type} style={{ ...shared, ...look, ...style }} {...rest}>
       {children}
-      {hint !== undefined && (
-        <span aria-hidden="true" style={{ color: slot('ink', 'muted') }}>
-          {hint}
-        </span>
-      )}
+      {hint !== undefined && <KeyHint>{hint}</KeyHint>}
     </button>
   );
 }

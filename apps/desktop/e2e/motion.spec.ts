@@ -62,7 +62,7 @@ test('turning it off survives a restart', async () => {
   try {
     const page = await first.firstWindow();
     const answer = await page.evaluate(() => window.aetherForge.setMotionPreference('off'));
-    expect(answer).toEqual({ ok: true, value: { motion: 'off' } });
+    expect(answer.ok && answer.value.motion).toBe('off');
   } finally {
     await first.close();
   }
@@ -102,7 +102,7 @@ test('a value nobody declared is refused, and changes nothing', async () => {
     expect(refused.ok).toBe(false);
 
     const stored = await page.evaluate(() => window.aetherForge.readPreferences());
-    expect(stored).toEqual({ ok: true, value: { motion: 'follow-the-system' } });
+    expect(stored.ok && stored.value.motion).toBe('follow-the-system');
   } finally {
     await app.close();
   }

@@ -69,11 +69,20 @@ test('rolls a check from dice a person threw, and refuses what it proposes', asy
   // Where each number came from, said out loud and never behind an expander.
   await expect(card).toContainText('3 thrown');
 
+  // The product's whole position, drawn: anything the application suggests
+  // sits in a dashed block, so it cannot be mistaken for something decided.
+  const ghost = page.getByTestId('ghost-block');
+  await expect(ghost).toBeVisible();
+  await expect(ghost).toHaveCSS('border-style', 'dashed');
+
   // The way out is always there, and it says so.
   await expect(page.getByTestId('just-write')).toBeVisible();
   await page.getByTestId('just-write').click();
 
   await expect(page.getByTestId('settled-offer')).toContainText('refused');
+
+  // Answered, so it is no longer a suggestion, and the block goes with it.
+  await expect(page.getByTestId('ghost-block')).toHaveCount(0);
 });
 
 test('still has the card, and the refusal, after the application is opened again', async () => {

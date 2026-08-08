@@ -1,5 +1,6 @@
 import type { ReactNode, TextareaHTMLAttributes } from 'react';
 
+import { labelStyle } from './Label.js';
 import { slot } from './theme.js';
 import { tokens } from './tokens.js';
 
@@ -32,21 +33,17 @@ export function WritingSurface({
   ...rest
 }: WritingSurfaceProps): ReactNode {
   return (
-    <div style={{ display: 'grid', gap: tokens.space.sm }}>
+    <div style={{ display: 'grid', gap: tokens.space[8] }}>
       <label
         htmlFor={id}
         style={{
-          fontFamily: 'var(--font-numeric)',
-          fontSize: '10.5px',
-          letterSpacing: '.16em',
-          textTransform: 'uppercase',
-          color: slot('ink', 'muted'),
+          ...labelStyle(),
           ...(showLabel
             ? {}
             : {
                 position: 'absolute',
-                width: '1px',
-                height: '1px',
+                width: tokens.border.hair,
+                height: tokens.border.hair,
                 overflow: 'hidden',
                 clip: 'rect(0 0 0 0)',
                 whiteSpace: 'nowrap',
@@ -64,11 +61,11 @@ export function WritingSurface({
           color: slot('ink', 'primary'),
           border: `1px solid ${slot('ink', 'hairline')}`,
           borderRadius: tokens.radius.md,
-          padding: `${tokens.space.md} ${tokens.space.md}`,
+          padding: `${tokens.space[16]} ${tokens.space[16]}`,
           fontFamily: 'var(--font-prose)',
-          fontSize: '18px',
+          fontSize: tokens.type.prose,
           fontWeight: 300,
-          lineHeight: 1.6,
+          lineHeight: tokens.lineHeight.prose,
           resize: 'vertical',
           outlineColor: slot('accent', 'accent'),
         }}

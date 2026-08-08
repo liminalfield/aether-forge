@@ -74,6 +74,9 @@ const api: AetherForgeApi = {
 
   setMotionPreference: (motion) =>
     ipcRenderer.invoke(IPC.setMotionPreference, motion) as Promise<IpcResult<PreferencesView>>,
+
+  setThemePreference: (theme) =>
+    ipcRenderer.invoke(IPC.setThemePreference, theme) as Promise<IpcResult<PreferencesView>>,
 };
 
 contextBridge.exposeInMainWorld('aetherForge', api);

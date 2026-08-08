@@ -31,7 +31,7 @@ export function ChipRow({ label, style, children, ...rest }: ChipRowProps): Reac
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        gap: tokens.space.sm,
+        gap: tokens.space[8],
         ...style,
       }}
       {...rest}

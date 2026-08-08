@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Button, slot, tokens } from '@aether-forge/ui';
+import { Button, labelStyle, Meter, slot, tokens } from '@aether-forge/ui';
 
 import type { EntityTypeView, EntityView, FieldValueView } from '../shared/ipc';
 
@@ -18,22 +18,14 @@ import type { EntityTypeView, EntityView, FieldValueView } from '../shared/ipc';
  * a name.
  */
 
-const LABEL = {
-  fontFamily: 'var(--font-numeric)',
-  fontSize: '10.5px',
-  letterSpacing: '.16em',
-  textTransform: 'uppercase',
-  color: slot('ink', 'muted'),
-} as const;
-
 const FIELD = {
   background: slot('ground', 'raised'),
   color: slot('ink', 'primary'),
   border: `1px solid ${slot('ink', 'hairline')}`,
   borderRadius: tokens.radius.sm,
-  padding: '4px 6px',
+  padding: `${tokens.space[4]} ${tokens.radius.md}`,
   fontFamily: 'var(--font-numeric)',
-  fontSize: '12px',
+  fontSize: tokens.type.small,
 } as const;
 
 /** A typed-in value, read the way the field currently holds it. */
@@ -86,16 +78,16 @@ function Expanded({
     <div
       style={{
         display: 'grid',
-        gap: tokens.space.xs,
-        padding: `${tokens.space.xs} 0 ${tokens.space.sm} ${tokens.space.sm}`,
+        gap: tokens.space[4],
+        padding: `${tokens.space[4]} 0 ${tokens.space[8]} ${tokens.space[8]}`,
       }}
     >
       {Object.entries(entity.fields).map(([fieldId, value]) => (
         <label
           key={fieldId}
-          style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: tokens.space.xs }}
+          style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: tokens.space[4] }}
         >
-          <span style={LABEL}>{fieldId}</span>
+          <span style={labelStyle()}>{fieldId}</span>
           <input
             data-testid={`field-${fieldId}`}
             value={drafts[fieldId] ?? String(value)}
@@ -120,18 +112,19 @@ function Expanded({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: tokens.space.xs,
+            gap: tokens.space[4],
             justifyContent: 'space-between',
           }}
         >
-          <span style={LABEL}>{track.label ?? track.id}</span>
-          <span
+          <span style={labelStyle()}>{track.label ?? track.id}</span>
+          <Meter
             data-testid={`track-${track.id}`}
-            style={{ fontFamily: 'var(--font-numeric)', fontSize: '12px' }}
-          >
-            {track.filled}/{track.segments}
-          </span>
-          <span style={{ display: 'flex', gap: '2px' }}>
+            label={track.label ?? track.id}
+            segments={track.segments}
+            filled={track.filled}
+            shape={track.draws === 'earned' ? 'boxes' : 'bar'}
+          />
+          <span style={{ display: 'flex', gap: tokens.space[2] }}>
             <Button
               weight="quiet"
               data-testid={`retreat-${track.id}`}
@@ -181,18 +174,18 @@ export function EntitiesRail({
       data-testid="entities-rail"
       aria-label="Entities"
       style={{
-        width: '210px',
-        padding: tokens.space.md,
+        width: tokens.layout.rail,
+        padding: tokens.space[16],
         borderRight: `1px solid ${slot('ink', 'hairline')}`,
         display: 'flex',
         flexDirection: 'column',
-        gap: tokens.space.md,
+        gap: tokens.space[16],
         overflowY: 'auto',
       }}
     >
       {groupsOf(entities).map((group) => (
-        <section key={group.title} style={{ display: 'grid', gap: tokens.space.xs }}>
-          <h2 style={{ ...LABEL, margin: 0, fontWeight: 500 }}>{group.title}</h2>
+        <section key={group.title} style={{ display: 'grid', gap: tokens.space[4] }}>
+          <h2 style={{ fontWeight: 500 }}>{group.title}</h2>
           {group.members.map((entity) => (
             <div key={entity.id}>
               <button
@@ -207,7 +200,7 @@ export function EntitiesRail({
                   width: '100%',
                   color: slot('ink', 'primary'),
                   fontFamily: 'var(--font-ui)',
-                  fontSize: '13px',
+                  fontSize: tokens.type.compact,
                   cursor: 'pointer',
                 }}
               >
@@ -227,13 +220,13 @@ export function EntitiesRail({
       ))}
 
       <form
-        style={{ display: 'grid', gap: tokens.space.xs, marginTop: 'auto' }}
+        style={{ display: 'grid', gap: tokens.space[4], marginTop: 'auto' }}
         onSubmit={(event) => {
           event.preventDefault();
           note();
         }}
       >
-        <label style={LABEL} htmlFor="new-entity-name">
+        <label style={labelStyle()} htmlFor="new-entity-name">
           Note someone or something
         </label>
         {types.length > 0 && (

@@ -71,6 +71,12 @@ export function motionProperties(animate: boolean): Readonly<Record<string, stri
     '--duration-settle': animate ? MOTION.settle : still,
     '--duration-ceremony': animate ? MOTION.ceremony : still,
     '--easing': EASING,
+    // Not a fourth duration, and deliberately not in MOTION. The three above
+    // are how long a change takes; this is how slowly something already on
+    // screen breathes. The ghost block is the only thing that uses it, and
+    // when motion is off it does not run at all rather than running instantly,
+    // because a pulse that arrives at once is a flash.
+    '--pulse-ghost': animate ? 'ghost-pulse 3400ms ease-in-out infinite' : 'none',
   };
 }
 

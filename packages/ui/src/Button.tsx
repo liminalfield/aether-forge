@@ -35,9 +35,9 @@ export function Button({
 }: ButtonProps): ReactNode {
   const shared = {
     borderRadius: tokens.radius.md,
-    padding: `${tokens.space.sm} ${tokens.space.md}`,
+    padding: `${tokens.space[8]} ${tokens.space[16]}`,
     fontFamily: 'var(--font-ui)',
-    fontSize: tokens.fontSize.sm,
+    fontSize: tokens.type.base,
     cursor: 'pointer',
     transitionProperty: 'background-color, border-color, color',
     transitionDuration: duration('enter'),
