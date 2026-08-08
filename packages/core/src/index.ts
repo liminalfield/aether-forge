@@ -185,7 +185,7 @@ export type {
   OutcomeTone,
   ProposalField,
 } from './check.js';
-export { declaresStyleFor, describesEveryField } from './check.js';
+export { declaresStyleFor, describesEveryField, GLYPH_FOR_TONE } from './check.js';
 
 export type {
   CheckRun,

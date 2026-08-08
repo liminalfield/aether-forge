@@ -1,4 +1,4 @@
-import type { CheckDefinition } from '@aether-forge/core';
+import { GLYPH_FOR_TONE, type CheckDefinition } from '@aether-forge/core';
 import { STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
 import { CALL_IT, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 import { describe, expect, it } from 'vitest';
@@ -189,5 +189,45 @@ describe('the window is told, never asked to know', () => {
         }
       }
     }
+  });
+});
+
+describe('the shapes an outcome is shown as', () => {
+  /**
+   * Outcomes that keep a shape of their own, and why.
+   *
+   * The list lives here rather than in a module, so adding to it is visible
+   * in review. An outcome earns a place by not really being its tone.
+   */
+  const EXCEPTIONS: Readonly<Record<string, string>> = {
+    unreadable:
+      'shown the way a failure is, because there is no fifth colour, but it is not a miss and drawing it as one would say it was',
+  };
+
+  it('draws every outcome as the shape its tone decided, in every loaded system', () => {
+    // Colour never carries meaning alone here. That only works if a shape
+    // means the same thing in every game somebody plays, which is why this
+    // runs against both modules and not only the one a person sees.
+    for (const system of loadedSystems()) {
+      for (const check of system.checks) {
+        for (const outcome of check.outcomes) {
+          if (outcome.id in EXCEPTIONS) continue;
+
+          expect(outcome.glyph, `${system.systemId} ${check.id} ${outcome.id}`).toBe(
+            GLYPH_FOR_TONE[outcome.tone],
+          );
+        }
+      }
+    }
+  });
+
+  it('has an exception for every outcome that keeps its own shape, and no more', () => {
+    const kept = loadedSystems()
+      .flatMap((system) => system.checks)
+      .flatMap((check) => check.outcomes)
+      .filter((outcome) => outcome.glyph !== GLYPH_FOR_TONE[outcome.tone])
+      .map((outcome) => outcome.id);
+
+    expect([...new Set(kept)].sort()).toEqual(Object.keys(EXCEPTIONS).sort());
   });
 });

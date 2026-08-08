@@ -1,4 +1,5 @@
 import {
+  GLYPH_FOR_TONE,
   readRoll,
   type CheckOutcome,
   type EffectSuggestion,
@@ -29,16 +30,20 @@ export type SuggestsFor = (outcomeId: string) => readonly EffectSuggestion[];
 const NOTHING: SuggestsFor = () => [];
 
 export const ACTION_ROLL_OUTCOMES: readonly OutcomeStyle[] = [
-  { id: 'strong-hit', label: 'Strong hit', tone: 'strong', glyph: '◆' },
-  { id: 'weak-hit', label: 'Weak hit', tone: 'weak', glyph: '◇' },
-  { id: 'miss', label: 'Miss', tone: 'miss', glyph: '△' },
+  { id: 'strong-hit', label: 'Strong hit', tone: 'strong', glyph: GLYPH_FOR_TONE.strong },
+  { id: 'weak-hit', label: 'Weak hit', tone: 'weak', glyph: GLYPH_FOR_TONE.weak },
+  { id: 'miss', label: 'Miss', tone: 'miss', glyph: GLYPH_FOR_TONE.miss },
+  // The one outcome that keeps a shape of its own. It is shown the way a
+  // failure is shown because there is no fifth colour and inventing one for a
+  // state that only happens when something has gone wrong would spend it
+  // badly. It is not a miss, though, and drawing it as one would say it was.
   { id: 'unreadable', label: 'Unreadable', tone: 'miss', glyph: '?' },
 ];
 
 export const PROGRESS_ROLL_OUTCOMES: readonly OutcomeStyle[] = ACTION_ROLL_OUTCOMES;
 
 export const NO_ROLL_OUTCOMES: readonly OutcomeStyle[] = [
-  { id: 'resolved', label: 'As written', tone: 'match', glyph: '○' },
+  { id: 'resolved', label: 'As written', tone: 'match', glyph: GLYPH_FOR_TONE.match },
 ];
 
 function labelled(styles: readonly OutcomeStyle[], id: string): string {
