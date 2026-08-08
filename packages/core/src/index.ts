@@ -219,6 +219,9 @@ export {
   suggestions,
 } from './suggestion.js';
 
+export type { Consultation } from './consulting-an-oracle.js';
+export { sequenceConsultation } from './consulting-an-oracle.js';
+
 export type { OracleConsultedV1, OracleRow, PackageStamp } from './oracle.js';
 export { ORACLE_CONSULTED, oracleEventTypes, readOracleConsultation } from './oracle.js';
 
