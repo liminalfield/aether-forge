@@ -19,6 +19,7 @@ import {
   TOY_SYSTEM_ID,
   type CoinTally,
   templates,
+  oracleProviders,
 } from './index.js';
 
 function aFlip(seq: number, result: 'heads' | 'tails'): EventEnvelope {
@@ -286,5 +287,14 @@ describe('the entities the toy declines to describe', () => {
     // implementation, and every entity surface has to render a campaign
     // whose modules say nothing.
     expect(templates).toEqual([]);
+  });
+});
+
+describe('the oracles the toy declines to offer', () => {
+  it('contributes no provider, which must be a module that works', () => {
+    // A coin has nothing to consult. Saying nothing is the trivial
+    // implementation the contract owes the canary, and every oracle surface
+    // has to cope with a system that offers none.
+    expect(oracleProviders).toEqual([]);
   });
 });
