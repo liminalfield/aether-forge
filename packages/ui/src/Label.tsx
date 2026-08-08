@@ -27,6 +27,8 @@ export interface LabelProps extends Omit<HTMLAttributes<HTMLElement>, 'className
   readonly as?: 'span' | 'label' | 'h2' | 'p';
   /** Set the label's own colour, for the rare line that is not muted. */
   readonly tone?: 'muted' | 'primary';
+  /** Which field this labels, when it is a label. */
+  readonly htmlFor?: string;
   readonly children: ReactNode;
 }
 

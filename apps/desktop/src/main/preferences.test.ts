@@ -4,7 +4,12 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { DEFAULT_PREFERENCES, readPreferences, writePreferences } from './preferences';
+import {
+  DEFAULT_PREFERENCES,
+  isKnownTheme,
+  readPreferences,
+  writePreferences,
+} from './preferences';
 
 let dir: string;
 
@@ -18,19 +23,19 @@ afterEach(() => {
 
 describe('what a person has chosen', () => {
   it('follows the system until somebody says otherwise', () => {
-    expect(readPreferences(dir)).toEqual({ motion: 'follow-the-system' });
+    expect(readPreferences(dir)).toEqual({ ...DEFAULT_PREFERENCES, motion: 'follow-the-system' });
     expect(DEFAULT_PREFERENCES.motion).toBe('follow-the-system');
   });
 
   it('survives being written and read back', () => {
-    writePreferences(dir, { motion: 'off' });
-    expect(readPreferences(dir)).toEqual({ motion: 'off' });
+    writePreferences(dir, { ...DEFAULT_PREFERENCES, motion: 'off' });
+    expect(readPreferences(dir)).toEqual({ ...DEFAULT_PREFERENCES, motion: 'off' });
   });
 
   it('replaces what was there rather than accumulating', () => {
-    writePreferences(dir, { motion: 'off' });
-    writePreferences(dir, { motion: 'on' });
-    expect(readPreferences(dir)).toEqual({ motion: 'on' });
+    writePreferences(dir, { ...DEFAULT_PREFERENCES, motion: 'off' });
+    writePreferences(dir, { ...DEFAULT_PREFERENCES, motion: 'on' });
+    expect(readPreferences(dir)).toEqual({ ...DEFAULT_PREFERENCES, motion: 'on' });
   });
 });
 
@@ -51,5 +56,38 @@ describe('a preferences file that cannot be trusted', () => {
 
   it('falls back when the directory does not exist', () => {
     expect(readPreferences(join(dir, 'nowhere'))).toEqual(DEFAULT_PREFERENCES);
+  });
+});
+
+describe('which theme a person chose', () => {
+  it('opens with the reference theme until somebody says otherwise', () => {
+    expect(readPreferences(dir).theme).toBe('Glacial dark');
+  });
+
+  it('survives being written and read back', () => {
+    writePreferences(dir, { ...DEFAULT_PREFERENCES, theme: 'Ember dark' });
+
+    expect(readPreferences(dir).theme).toBe('Ember dark');
+  });
+
+  it('falls back to the reference theme when the stored one has gone', () => {
+    // Somebody who used a theme this build no longer has should get the
+    // default and their application, not an error and no window.
+    writeFileSync(join(dir, 'preferences.json'), JSON.stringify({ theme: 'Paper' }));
+
+    expect(readPreferences(dir).theme).toBe('Glacial dark');
+  });
+
+  it('keeps the other preference when only one of them changes', () => {
+    writePreferences(dir, { motion: 'off', theme: 'Ember dark' });
+
+    expect(readPreferences(dir)).toEqual({ motion: 'off', theme: 'Ember dark' });
+  });
+
+  it('recognises the themes this build has, and only those', () => {
+    expect(isKnownTheme('Glacial dark')).toBe(true);
+    expect(isKnownTheme('Ember dark')).toBe(true);
+    expect(isKnownTheme('Paper')).toBe(false);
+    expect(isKnownTheme(42)).toBe(false);
   });
 });

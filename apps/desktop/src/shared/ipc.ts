@@ -25,6 +25,7 @@ export const IPC = {
   answerOffer: 'checks:answerOffer',
   readPreferences: 'preferences:read',
   setMotionPreference: 'preferences:setMotion',
+  setThemePreference: 'preferences:setTheme',
   readEntities: 'entities:read',
   createEntity: 'entities:create',
   changeEntity: 'entities:change',
@@ -451,6 +452,10 @@ export interface AnsweredOfferView {
 export interface PreferencesView {
   /** `follow-the-system`, `on` or `off`. Kept as text, so an unknown value can cross and be refused. */
   readonly motion: string;
+  /** The chosen theme's name. Kept as text for the same reason. */
+  readonly theme: string;
+  /** Every theme this build has, so a surface can offer them. */
+  readonly themes: readonly string[];
 }
 
 /** Shape exposed on `window.aetherForge` by the preload script. */
@@ -578,6 +583,15 @@ export interface AetherForgeApi {
    * to ask again, and so it learns immediately if the value was refused.
    */
   setMotionPreference(motion: string): Promise<IpcResult<PreferencesView>>;
+
+  /**
+   * Choose which theme the application wears.
+   *
+   * Answers with the preferences as they now stand, so the window can apply
+   * the change without asking again, and learns at once if the name was
+   * refused.
+   */
+  setThemePreference(theme: string): Promise<IpcResult<PreferencesView>>;
 }
 
 declare global {

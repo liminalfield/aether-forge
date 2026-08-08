@@ -14,6 +14,7 @@ import type {
   CheckView,
   EntitiesView,
   InstalledPackageView,
+  PreferencesView,
   EntityTypeView,
   EntityView,
   FieldValueView,
@@ -25,6 +26,8 @@ import type {
   TimelineView,
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
+import { applyMotion, wearTheme } from './appearance';
+import { PreferencesRow } from './Preferences';
 import { EntitiesRail } from './EntitiesRail';
 import { Entry } from './Entry';
 import { RunACheck } from './RunACheck';
@@ -54,6 +57,7 @@ export function App(): React.JSX.Element {
   const [checks, setChecks] = useState<readonly CheckView[]>([]);
   const [held, setHeld] = useState<readonly EntityView[]>([]);
   const [credits, setCredits] = useState<readonly InstalledPackageView[]>([]);
+  const [preferences, setPreferences] = useState<PreferencesView | null>(null);
   const [entityTypes, setEntityTypes] = useState<readonly EntityTypeView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -93,6 +97,11 @@ export function App(): React.JSX.Element {
     void window.aetherForge.listPackages().then((held) => {
       if (held.ok) setCredits(held.value.packages);
       else setProblem(held.failure.detail);
+    });
+
+    void window.aetherForge.readPreferences().then((stored) => {
+      if (stored.ok) setPreferences(stored.value);
+      else setProblem(stored.failure.detail);
     });
   }, []);
 
@@ -197,6 +206,46 @@ export function App(): React.JSX.Element {
     },
     [entitiesArrived, rereadShape],
   );
+
+  /**
+   * A preference, chosen and applied at once.
+   *
+   * The theme is applied here rather than on the next launch, because a person
+   * choosing a palette is choosing what they are looking at now. Nothing that
+   * has already rendered is told: it named properties, and the properties now
+   * hold other colours.
+   */
+  const chooseTheme = useCallback(async (theme: string) => {
+    setBusy(true);
+    try {
+      const chosen = await window.aetherForge.setThemePreference(theme);
+      if (chosen.ok) {
+        setPreferences(chosen.value);
+        wearTheme(chosen.value.theme);
+        setProblem(null);
+      } else {
+        setProblem(chosen.failure.detail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const chooseMotion = useCallback(async (motion: string) => {
+    setBusy(true);
+    try {
+      const chosen = await window.aetherForge.setMotionPreference(motion);
+      if (chosen.ok) {
+        setPreferences(chosen.value);
+        applyMotion(chosen.value.motion);
+        setProblem(null);
+      } else {
+        setProblem(chosen.failure.detail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
   const importContent = useCallback(async () => {
     setBusy(true);
@@ -412,6 +461,13 @@ export function App(): React.JSX.Element {
             >
               Import content…
             </Button>
+
+            <PreferencesRow
+              preferences={preferences}
+              busy={busy}
+              onChooseTheme={(theme) => void chooseTheme(theme)}
+              onChooseMotion={(motion) => void chooseMotion(motion)}
+            />
           </footer>
 
           {problem !== null && (
