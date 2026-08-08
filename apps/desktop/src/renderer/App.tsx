@@ -26,6 +26,7 @@ import type {
   TimelineView,
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
+import { ConsultationCard } from './ConsultationCard';
 import { applyMotion, wearTheme } from './appearance';
 import { PreferencesRow } from './Preferences';
 import { EntitiesRail } from './EntitiesRail';
@@ -404,7 +405,9 @@ export function App(): React.JSX.Element {
             {items?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
 
             {items?.map((item) =>
-              item.kind === 'check' ? (
+              item.kind === 'consultation' ? (
+                <ConsultationCard key={item.consultation.id} consultation={item.consultation} />
+              ) : item.kind === 'check' ? (
                 <CheckCard
                   key={item.check.id}
                   check={item.check}

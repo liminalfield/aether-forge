@@ -101,7 +101,32 @@ export interface TimelineView {
 
 export type TimelineItem =
   | { readonly kind: 'entry'; readonly at: string; readonly entry: JournalEntryView }
-  | { readonly kind: 'check'; readonly at: string; readonly check: RecordedCheckView };
+  | { readonly kind: 'check'; readonly at: string; readonly check: RecordedCheckView }
+  | {
+      readonly kind: 'consultation';
+      readonly at: string;
+      readonly consultation: RecordedConsultationView;
+    };
+
+/**
+ * A consultation as the log holds it.
+ *
+ * What was asked and what came back are facts and were written down. The
+ * table's name is presentation and comes from what is installed today, so a
+ * package removed since leaves the identifier standing rather than a blank.
+ */
+export interface RecordedConsultationView {
+  /** The event that recorded it, which is what identifies it on screen. */
+  readonly id: string;
+  readonly tableId: string;
+  /** The table's name today, or its identifier when nothing holds it any more. */
+  readonly name: string;
+  readonly group: string;
+  readonly answer: string;
+  readonly row: { readonly from: number; readonly to: number };
+  readonly package: { readonly id: string; readonly version: string };
+  readonly dice: readonly RolledDieView[];
+}
 
 /**
  * A check as the log holds it, complete enough to draw without asking a module

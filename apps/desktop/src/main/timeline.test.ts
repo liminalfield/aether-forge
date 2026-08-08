@@ -322,3 +322,72 @@ describe('every outcome a check can produce', () => {
     }
   });
 });
+
+describe('a consultation on the timeline', () => {
+  const A_TABLE = 'example/derelict/what-the-silence-holds';
+
+  const nameIt = (tableId: string) =>
+    tableId === A_TABLE ? { name: 'What The Silence Holds', group: 'derelict' } : undefined;
+
+  function aConsultation(name = nameIt) {
+    const { campaign, events } = openOver(aStoredLog());
+
+    campaign.append({
+      type: 'core.roll.performed',
+      payload: {
+        request: { dice: [{ sides: 100, count: 1 }] },
+        dice: [{ sides: 100, value: 47, source: { kind: 'manual' } }],
+      },
+    });
+    const written = events();
+    const roll = written[written.length - 1];
+    if (roll === undefined) throw new Error('the fixture wrote no roll');
+
+    campaign.append({
+      type: 'core.oracle.consulted',
+      causationId: roll.id,
+      payload: {
+        table: A_TABLE,
+        package: { id: 'example.dummy-tables', version: '0.4.1' },
+        row: { from: 41, to: 60, text: 'Someone has been here recently.' },
+      },
+    });
+
+    const item = readTimeline(campaign, events(), name).items.find(
+      (each) => each.kind === 'consultation',
+    );
+    if (item?.kind !== 'consultation') throw new Error('the timeline held no consultation');
+    return item.consultation;
+  }
+
+  it('is on the timeline, beside the prose and the checks', () => {
+    expect(aConsultation().answer).toBe('Someone has been here recently.');
+  });
+
+  it('carries the die that decided it, and where it came from', () => {
+    expect(aConsultation().dice).toEqual([{ sides: 100, value: 47, from: 'manual' }]);
+  });
+
+  it('keeps the range the number landed in, so a reader can tell whether a table moved', () => {
+    expect(aConsultation().row).toEqual({ from: 41, to: 60 });
+  });
+
+  it('says which package answered, and which version of it', () => {
+    expect(aConsultation().package).toEqual({ id: 'example.dummy-tables', version: '0.4.1' });
+  });
+
+  it('is named from what is installed today, because a name is presentation', () => {
+    expect(aConsultation().name).toBe('What The Silence Holds');
+    expect(aConsultation().group).toBe('derelict');
+  });
+
+  it('leaves its identifier standing when nothing holds the table any more', () => {
+    // The consultation happened. Losing a line of the record to a package
+    // somebody uninstalled would be worse than showing it plainly.
+    const nameless = aConsultation(() => undefined);
+
+    expect(nameless.name).toBe(A_TABLE);
+    expect(nameless.group).toBe('');
+    expect(nameless.answer).toBe('Someone has been here recently.');
+  });
+});
