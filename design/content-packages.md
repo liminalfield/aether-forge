@@ -88,8 +88,14 @@ repeats it because the goldens are the importer's real specification.
 
 The source packages are `@datasworn-community/*`, the live lineage, pinned exact: `starforged` at
 0.2.4 and `core` at 0.2.9 as of this record, both verified against the registry today rather than
-remembered. Classic Ironsworn (`ironsworn-classic` 0.2.2) follows once Starforged works; the
-maintainer plays Starforged, and one real system end to end beats two half-imported ones.
+remembered.
+
+> Corrected while building it, 8 August 2026 (#160): only `starforged` was added. The `core` package
+> exports runtime helpers this importer does not need, and its types are broader than the narrow
+> readers house style wants at an unknown boundary; an unused dependency is a liability, so it
+> arrives when the migration tooling it carries is actually wanted. Classic Ironsworn
+> (`ironsworn-classic` 0.2.2) follows once Starforged works; the maintainer plays Starforged, and
+> one real system end to end beats two half-imported ones.
 
 ### Installing a package is not a campaign event
 

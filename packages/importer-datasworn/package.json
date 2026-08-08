@@ -28,12 +28,15 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc -b --clean",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:goldens": "pnpm build && node scripts/generate-goldens.mjs"
   },
   "dependencies": {
-    "@aether-forge/core": "workspace:*"
+    "@aether-forge/core": "workspace:*",
+    "@datasworn-community/starforged": "0.2.4"
   },
   "devDependencies": {
+    "@types/node": "22.20.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
