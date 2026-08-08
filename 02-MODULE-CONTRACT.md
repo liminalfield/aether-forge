@@ -50,13 +50,18 @@ Core-owned event families (payloads defined in core, stable, versioned):
 
 - `core.campaign.*` (created, renamed, exported)
 - `core.entry.*` (prose entries: created, revised, promoted-to-story)
-- `core.entity.*` (created, fieldsChanged, relationAdded, relationRemoved, archived)
-- `core.track.*` (created, advanced, reduced, resolved) — generic segmented track
+- `core.entity.*` (created, changed) — implemented; see design/entities-and-tracks.md
+- `core.track.*` (started, advanced, set) — implemented; see design/entities-and-tracks.md
 - `core.roll.*` (see §5)
 - `core.oracle.*` (consulted — result + table ref + package version)
-- `core.package.*` (installed, removed, updated)
 - `core.flow.*` (stepEntered, stepCompleted, flowCompleted, stepRevisited)
 - `core.suggestion.*` (offered, accepted, adjusted, declined) — the sovereignty audit trail
+
+There is no `core.package.*` family, and the sketch that listed one was wrong. Which packages are
+installed is a fact about a machine, not a campaign: recording installs into the log would write
+machine state into game history, and an exported campaign would either drag it about or strip it.
+The audit a campaign needs is the `PackageStamp` each `core.oracle.consulted` carries. Removed
+8 August 2026, per design/content-packages.md.
 
 Module-owned event types are namespaced `sys.<systemId>.*`; core stores/exports them and asks the
 module to render and upcast them.
@@ -96,6 +101,12 @@ interface ContentPackage {
   raw?: unknown;                     // module-specific extras (e.g. asset definitions), opaque to core
 }
 ```
+
+> Implemented 8 August 2026, per design/content-packages.md (#158). The shapes above are the code
+> (`packages/core/src/content.ts`), with two corrections found while implementing: `raw` is the
+> module's compartment and core's readers pass it through unread, and `OracleOutcome` carries the
+> whole row (range and text) plus a `PackageStamp`, because `core.oracle.consulted` records the
+> row it landed on and the outcome should be transcription, not assembly.
 
 Rules: runtime never sees Datasworn types — `importer-datasworn` produces `ContentPackage`s at
 build time (bundled) and at runtime (user imports), same implementation. Imported packages are
