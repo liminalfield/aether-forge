@@ -61,7 +61,7 @@ function toTrackView(record: EntityRecord, template: EntityTemplate | undefined)
   });
 }
 
-function toView(record: EntityRecord): EntityView {
+export function entityView(record: EntityRecord): EntityView {
   const template = templateFor(record.entityType);
   const name = nameOf(record);
 
@@ -78,7 +78,7 @@ function toView(record: EntityRecord): EntityView {
 
 /** Every entity in the campaign, in the order they came to exist. */
 export function readEntities(campaign: OpenCampaign): IpcResult<EntitiesView> {
-  return { ok: true, value: { entities: campaign.stateOf(entities).entities.map(toView) } };
+  return { ok: true, value: { entities: campaign.stateOf(entities).entities.map(entityView) } };
 }
 
 export function createEntity(
@@ -146,7 +146,7 @@ export function createEntity(
     );
   }
 
-  return { ok: true, value: toView(record) };
+  return { ok: true, value: entityView(record) };
 }
 
 export function changeEntity(campaign: OpenCampaign, request: unknown): IpcResult<EntityView> {
@@ -183,5 +183,5 @@ export function changeEntity(campaign: OpenCampaign, request: unknown): IpcResul
     );
   }
 
-  return { ok: true, value: toView(record) };
+  return { ok: true, value: entityView(record) };
 }

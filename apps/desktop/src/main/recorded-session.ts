@@ -10,13 +10,17 @@ import { COIN, COIN_FLIPPED, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 
 import {
   answerSuggestion,
+  ENTITY_CREATED,
   ENTRY_CREATED,
   ORACLE_CONSULTED,
   readOffer,
   ROLL_PERFORMED,
   sequenceCheck,
   SUGGESTION_OFFERED,
+  TRACK_ADVANCED,
+  TRACK_STARTED,
   type RollPerformedV1,
+  type SuggestionOfferedV2,
 } from '@aether-forge/core';
 
 /**
@@ -153,6 +157,67 @@ function aCheckWhoseEffectWasRefused(): readonly UnversionedEventDraft[] {
   ];
 }
 
+/**
+ * A vow, and its progress moved through the consent door.
+ *
+ * The entity events joined the session with a suggestion declined and then a
+ * second one accepted, because a track that only ever moved by direct order
+ * would not exercise the path the product is for: proposed, refused, the
+ * track unmoved; proposed again, taken, the track advanced.
+ *
+ * The identifier is fixed so the fixture stays deterministic.
+ */
+const VOW_ID = 'entity-recorded-session-vow';
+
+function aVowWhoseProgressWasRefusedThenMarked(): readonly UnversionedEventDraft[] {
+  const proposal: SuggestionOfferedV2 = {
+    suggestion: 'recorded-session#mark-progress',
+    label: 'Mark progress',
+    why: 'the message is closer to carried',
+    fields: [
+      { id: 'entityId', label: 'On', kind: 'text' },
+      { id: 'trackId', label: 'Track', kind: 'text' },
+      { id: 'by', label: 'Amount', kind: 'number' },
+    ],
+    proposes: {
+      type: TRACK_ADVANCED,
+      payload: { entityId: VOW_ID, trackId: 'progress', by: 2 },
+    },
+  };
+
+  const refused = answerSuggestion(proposal, { kind: 'declined' });
+  if (!refused.ok) throw new Error(`the fixture could not refuse: ${refused.failure.kind}`);
+
+  const taken = answerSuggestion(proposal, { kind: 'accepted' });
+  if (!taken.ok) throw new Error(`the fixture could not accept: ${taken.failure.kind}`);
+
+  const offered = (): UnversionedEventDraft => ({
+    type: SUGGESTION_OFFERED,
+    payload: { ...proposal },
+  });
+
+  return [
+    {
+      type: ENTITY_CREATED,
+      payload: {
+        entityId: VOW_ID,
+        entityType: `sys.${STARFORGED_SYSTEM_ID}.vow`,
+        fields: { name: 'Carry the message', rank: 'dangerous' },
+      },
+    },
+    {
+      type: TRACK_STARTED,
+      payload: { entityId: VOW_ID, trackId: 'progress', segments: 10, filled: 0 },
+    },
+    offered(),
+    refused.value.answer,
+    ...(refused.value.applied === undefined ? [] : [refused.value.applied]),
+    offered(),
+    taken.value.answer,
+    ...(taken.value.applied === undefined ? [] : [taken.value.applied]),
+  ];
+}
+
 export const RECORDED_SESSION: readonly UnversionedEventDraft[] = [
   entry('The Sundered Reach, forty years after the last supply run.'),
   entry('I take the shuttle down through the debris field.'),
@@ -196,5 +261,8 @@ export const RECORDED_SESSION: readonly UnversionedEventDraft[] = [
   entry('Whatever kept them tidy is still aboard, and it has heard me.'),
   ...aCheckWhoseEffectWasRefused(),
   entry('I could have taken the loss. I did not.'),
+  entry('I swear it properly this time, out loud, with the recorder running.'),
+  ...aVowWhoseProgressWasRefusedThenMarked(),
+  entry('Two boxes. It is a start.'),
   entry('End of session.'),
 ];

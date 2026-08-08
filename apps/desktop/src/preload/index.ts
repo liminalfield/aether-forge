@@ -49,6 +49,15 @@ const api: AetherForgeApi = {
   changeEntity: (request) =>
     ipcRenderer.invoke(IPC.changeEntity, request) as Promise<IpcResult<EntityView>>,
 
+  startTrack: (request) =>
+    ipcRenderer.invoke(IPC.startTrack, request) as Promise<IpcResult<EntityView>>,
+
+  advanceTrack: (request) =>
+    ipcRenderer.invoke(IPC.advanceTrack, request) as Promise<IpcResult<EntityView>>,
+
+  setTrack: (request) =>
+    ipcRenderer.invoke(IPC.setTrack, request) as Promise<IpcResult<EntityView>>,
+
   readPreferences: () =>
     ipcRenderer.invoke(IPC.readPreferences) as Promise<IpcResult<PreferencesView>>,
 

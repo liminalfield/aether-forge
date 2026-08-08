@@ -28,6 +28,9 @@ export const IPC = {
   readEntities: 'entities:read',
   createEntity: 'entities:create',
   changeEntity: 'entities:change',
+  startTrack: 'tracks:start',
+  advanceTrack: 'tracks:advance',
+  setTrack: 'tracks:set',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];
@@ -270,6 +273,28 @@ export interface ChangeEntityRequest {
   readonly fields: Readonly<Record<string, FieldValueView>>;
 }
 
+/** Starting a track on an entity: its shape, and how full it begins. */
+export interface StartTrackRequest {
+  readonly entityId: string;
+  readonly trackId: string;
+  readonly segments: number;
+  readonly filled: number;
+}
+
+/** Moving a track by an amount, which may be negative. */
+export interface AdvanceTrackRequest {
+  readonly entityId: string;
+  readonly trackId: string;
+  readonly by: number;
+}
+
+/** Stating outright where a track now stands. */
+export interface SetTrackRequest {
+  readonly entityId: string;
+  readonly trackId: string;
+  readonly filled: number;
+}
+
 /** A part of a proposal a person may change before taking it. */
 export interface ProposalFieldView {
   readonly id: string;
@@ -462,6 +487,18 @@ export interface AetherForgeApi {
    * earlier value.
    */
   changeEntity(request: ChangeEntityRequest): Promise<IpcResult<EntityView>>;
+
+  /**
+   * Start a track on an entity. Answers with the entity as it now stands,
+   * because a track is part of its entity, not a lone number.
+   */
+  startTrack(request: StartTrackRequest): Promise<IpcResult<EntityView>>;
+
+  /** Move a track by an amount, which may be negative. */
+  advanceTrack(request: AdvanceTrackRequest): Promise<IpcResult<EntityView>>;
+
+  /** State outright where a track now stands. */
+  setTrack(request: SetTrackRequest): Promise<IpcResult<EntityView>>;
 
   /** What this person has chosen. Answers with the defaults when nothing is stored. */
   readPreferences(): Promise<IpcResult<PreferencesView>>;

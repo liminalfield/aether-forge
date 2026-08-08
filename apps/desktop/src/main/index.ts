@@ -26,6 +26,7 @@ import { correctEntry, readJournal, recordEntry } from './journal';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
+import { advanceTrack, setTrack, startTrack } from './tracks';
 import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
@@ -110,6 +111,10 @@ function registerIpcHandlers(
     createEntity(campaign, nextEntityId, request),
   );
   ipcMain.handle(IPC.changeEntity, (_event, request: unknown) => changeEntity(campaign, request));
+
+  ipcMain.handle(IPC.startTrack, (_event, request: unknown) => startTrack(campaign, request));
+  ipcMain.handle(IPC.advanceTrack, (_event, request: unknown) => advanceTrack(campaign, request));
+  ipcMain.handle(IPC.setTrack, (_event, request: unknown) => setTrack(campaign, request));
 
   ipcMain.handle(IPC.readPreferences, () => ({
     ok: true as const,
