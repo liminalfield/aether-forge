@@ -1,6 +1,7 @@
 # The journal you play in
 
-Status: proposed, 8 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted, 8 August 2026 (#188). Decomposed into epic
+[#189](https://github.com/liminalfield/aether-forge/issues/189) and its tasks.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
