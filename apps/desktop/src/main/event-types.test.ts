@@ -33,6 +33,36 @@ const moduleSamples = [...toyEventTypes, ...ironswornEventTypes].map((definition
 
 describeSchemaTranslations('this build', declareEventTypes, [
   {
+    type: 'core.entity.created',
+    payloadsByVersion: {
+      1: { entityId: 'entity-1', entityType: 'sys.example.character', fields: { name: 'Vess' } },
+    },
+  },
+  {
+    type: 'core.entity.changed',
+    payloadsByVersion: {
+      1: { entityId: 'entity-1', fields: { iron: 2 } },
+    },
+  },
+  {
+    type: 'core.track.started',
+    payloadsByVersion: {
+      1: { entityId: 'entity-1', trackId: 'health', segments: 5, filled: 5 },
+    },
+  },
+  {
+    type: 'core.track.advanced',
+    payloadsByVersion: {
+      1: { entityId: 'entity-1', trackId: 'health', by: -2 },
+    },
+  },
+  {
+    type: 'core.track.set',
+    payloadsByVersion: {
+      1: { entityId: 'entity-1', trackId: 'health', filled: 3 },
+    },
+  },
+  {
     type: ENTRY_CREATED,
     payloadsByVersion: {
       1: { text: 'The airlock did not open.' },

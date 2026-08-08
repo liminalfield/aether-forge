@@ -145,6 +145,7 @@ describe('a check that rolls nothing', () => {
       {
         systemId: 'example',
         checks: [rollsNothing],
+        templates: [],
         checkEvents: {
           invoked: 'sys.example.check.invoked',
           resolved: 'sys.example.check.resolved',

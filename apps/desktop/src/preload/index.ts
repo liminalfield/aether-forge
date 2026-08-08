@@ -11,6 +11,8 @@ import {
   type TimelineView,
   type JournalEntryView,
   type PreferencesView,
+  type EntitiesView,
+  type EntityView,
 } from '../shared/ipc';
 
 /**
@@ -38,6 +40,14 @@ const api: AetherForgeApi = {
 
   answerOffer: (request) =>
     ipcRenderer.invoke(IPC.answerOffer, request) as Promise<IpcResult<AnsweredOfferView>>,
+
+  readEntities: () => ipcRenderer.invoke(IPC.readEntities) as Promise<IpcResult<EntitiesView>>,
+
+  createEntity: (request) =>
+    ipcRenderer.invoke(IPC.createEntity, request) as Promise<IpcResult<EntityView>>,
+
+  changeEntity: (request) =>
+    ipcRenderer.invoke(IPC.changeEntity, request) as Promise<IpcResult<EntityView>>,
 
   readPreferences: () =>
     ipcRenderer.invoke(IPC.readPreferences) as Promise<IpcResult<PreferencesView>>,
