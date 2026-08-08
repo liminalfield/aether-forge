@@ -332,3 +332,13 @@ export const VOW_TEMPLATE: EntityTemplate = {
 };
 
 export const templates: readonly EntityTemplate[] = [CHARACTER_TEMPLATE, VOW_TEMPLATE];
+
+export {
+  ACTION_ROLL_OUTCOMES,
+  interpretActionRoll,
+  interpretNoRoll,
+  interpretProgressRoll,
+  NO_ROLL_OUTCOMES,
+  PROGRESS_ROLL_OUTCOMES,
+  type SuggestsFor,
+} from './interpreters.js';
