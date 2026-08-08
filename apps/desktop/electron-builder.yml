@@ -11,6 +11,13 @@ files:
   - package.json
   - '!**/*.map'
 
+# Bundled content packages, generated at build time by scripts/bundle-content.mjs
+# from the pinned Datasworn sources. Outside the asar so the registry reads
+# them as ordinary files, the same way it reads imported ones.
+extraResources:
+  - from: resources/content
+    to: content
+
 # better-sqlite3 ships a .node binary that must stay outside the asar to be
 # loadable at runtime.
 asarUnpack:
