@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Button, labelStyle, Meter, slot, tokens } from '@aether-forge/ui';
+import { Button, labelStyle, Meter, slot, TABULAR_NUMERALS, tokens } from '@aether-forge/ui';
 
 import type { EntityTypeView, EntityView, FieldValueView } from '../shared/ipc';
 
@@ -46,19 +46,83 @@ export interface EntitiesRailProps {
   readonly onAdvance: (entityId: string, trackId: string, by: number) => void;
 }
 
+/**
+ * The entities, in groups, in the order the modules describe their types.
+ *
+ * That order is the module's own opinion about what matters: Ironsworn
+ * declares a character before a vow, so a character sits above the vows. The
+ * window does not know what a character is and does not need to; it puts the
+ * groups in the order it was given them.
+ *
+ * Free-form entities and unnamed ones come last, because they are notes
+ * rather than the things you are playing.
+ */
 function groupsOf(
   entities: readonly EntityView[],
+  types: readonly EntityTypeView[],
 ): readonly { readonly title: string; readonly members: readonly EntityView[] }[] {
   const named = entities.filter((entity) => entity.name !== undefined);
   const unnamed = entities.filter((entity) => entity.name === undefined);
 
-  const titles = [...new Set(named.map((entity) => entity.typeName ?? 'Notes'))];
-  const groups = titles.map((title) => ({
-    title,
-    members: named.filter((entity) => (entity.typeName ?? 'Notes') === title),
-  }));
+  const described = types.flatMap((type) => {
+    const members = named.filter((entity) => entity.entityType === type.id);
+    return members.length === 0 ? [] : [{ title: type.name, members }];
+  });
 
-  return unnamed.length === 0 ? groups : [...groups, { title: 'Unnamed', members: unnamed }];
+  const loose = named.filter((entity) => !types.some((type) => type.id === entity.entityType));
+
+  return [
+    ...described,
+    ...(loose.length === 0 ? [] : [{ title: 'Notes', members: loose }]),
+    ...(unnamed.length === 0 ? [] : [{ title: 'Unnamed', members: unnamed }]),
+  ];
+}
+
+/** What a person can read at a glance, without opening anything. */
+function Summary({ entity }: { readonly entity: EntityView }): React.JSX.Element | null {
+  const numbers = Object.entries(entity.fields).filter(([, value]) => typeof value === 'number');
+
+  if (numbers.length === 0 && entity.tracks.length === 0) return null;
+
+  return (
+    <div style={{ display: 'grid', gap: tokens.space[2], padding: `0 0 0 ${tokens.space[8]}` }}>
+      {numbers.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: tokens.space[8] }}>
+          {numbers.map(([field, value]) => (
+            <span
+              key={field}
+              data-testid={`stat-${field}`}
+              style={{ display: 'flex', gap: tokens.space[4], alignItems: 'baseline' }}
+            >
+              <span style={labelStyle('line')}>{field}</span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-numeric)',
+                  fontSize: tokens.type.compact,
+                  ...TABULAR_NUMERALS,
+                }}
+              >
+                {String(value)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {entity.tracks.map((track) => (
+        <div key={track.id} style={{ display: 'flex', gap: tokens.space[8], alignItems: 'center' }}>
+          <span style={{ ...labelStyle('line'), minWidth: '7ch' }}>{track.label ?? track.id}</span>
+          <Meter
+            data-testid={`summary-${track.id}`}
+            label={track.label ?? track.id}
+            segments={track.segments}
+            filled={track.filled}
+            shape={track.draws === 'earned' ? 'boxes' : 'bar'}
+          />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function Expanded({
@@ -176,14 +240,14 @@ export function EntitiesRail({
       style={{
         width: tokens.layout.rail,
         padding: tokens.space[16],
-        borderRight: `1px solid ${slot('ink', 'hairline')}`,
+        borderLeft: `${tokens.border.hair} solid ${slot('ink', 'hairline')}`,
         display: 'flex',
         flexDirection: 'column',
         gap: tokens.space[16],
         overflowY: 'auto',
       }}
     >
-      {groupsOf(entities).map((group) => (
+      {groupsOf(entities, types).map((group) => (
         <section key={group.title} style={{ display: 'grid', gap: tokens.space[4] }}>
           <h2 style={{ fontWeight: 500 }}>{group.title}</h2>
           {group.members.map((entity) => (
@@ -206,6 +270,8 @@ export function EntitiesRail({
               >
                 {entity.name ?? `${entity.typeName ?? 'something'}, unnamed`}
               </button>
+              <Summary entity={entity} />
+
               {open === entity.id && (
                 <Expanded
                   entity={entity}

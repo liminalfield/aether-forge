@@ -1,6 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Button, KeyHint, Label, labelStyle, slot, tokens } from '@aether-forge/ui';
+import {
+  Button,
+  Label,
+  labelStyle,
+  Palette,
+  PaletteList,
+  PaletteRow,
+  slot,
+  tokens,
+} from '@aether-forge/ui';
 
 import type { OracleSearchView, OracleTableView } from '../shared/ipc';
 
@@ -52,20 +61,16 @@ export function OraclePalette({
   const [found, setFound] = useState<OracleSearchView | null>(null);
   const [at, setAt] = useState(0);
   const [thrown, setThrown] = useState('');
-  const searching = useRef<HTMLInputElement>(null);
 
-  // Opening puts the cursor where a person is about to type, and closing
-  // forgets what they typed: a palette that reopens holding an old search has
-  // answered a question nobody asked twice.
+  // Closing forgets what was typed: a palette that reopens holding an old
+  // search has answered a question nobody asked twice. Opening puts the
+  // cursor in the search, which the frame does.
   useEffect(() => {
-    if (!open) {
-      setQuery('');
-      setThrown('');
-      setAt(0);
-      setFound(null);
-      return;
-    }
-    searching.current?.focus();
+    if (open) return;
+    setQuery('');
+    setThrown('');
+    setAt(0);
+    setFound(null);
   }, [open]);
 
   useEffect(() => {
@@ -80,8 +85,6 @@ export function OraclePalette({
       current = false;
     };
   }, [open, query, onSearch]);
-
-  if (!open) return null;
 
   const tables: readonly OracleTableView[] = found?.tables ?? [];
   const chosen = tables[Math.min(at, tables.length - 1)];
@@ -99,155 +102,71 @@ export function OraclePalette({
   };
 
   return (
-    <div
+    <Palette
       data-testid="oracle-palette"
-      role="dialog"
-      aria-label="Ask an oracle"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          onClose();
-        }
-        if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          setAt((held) => Math.min(held + 1, tables.length - 1));
-        }
-        if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          setAt((held) => Math.max(held - 1, 0));
-        }
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          consult(chosen);
-        }
-      }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        paddingTop: tokens.space[64],
-        background: slot('ground', 'void'),
-      }}
+      open={open}
+      title="Ask an oracle"
+      placeholder="A table, or a group: derelict, planet, ask"
+      query={query}
+      onQuery={setQuery}
+      count={tables.length}
+      at={at}
+      onAt={setAt}
+      onChoose={() => consult(chosen)}
+      onClose={onClose}
     >
-      <section
-        style={{
-          width: tokens.layout.palette,
-          maxWidth: '90vw',
-          display: 'grid',
-          gap: tokens.space[12],
-          padding: tokens.space[16],
-          background: slot('ground', 'raised'),
-          border: `${tokens.border.hair} solid ${slot('ink', 'hairline')}`,
-          borderRadius: tokens.radius.lg,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <Label as="label" htmlFor="oracle-search">
-            Ask an oracle
-          </Label>
-          <span style={labelStyle('line')}>
-            <KeyHint>esc to close</KeyHint>
-          </span>
-        </div>
+      <PaletteList data-testid="oracle-results">
+        {tables.map((table, index) => (
+          <li key={table.id}>
+            <PaletteRow
+              data-testid="oracle-result"
+              chosen={index === at}
+              aside={table.group}
+              onClick={() => {
+                setAt(index);
+                consult(table);
+              }}
+            >
+              {table.name}
+            </PaletteRow>
+          </li>
+        ))}
 
-        <input
-          id="oracle-search"
-          ref={searching}
-          data-testid="oracle-search"
-          value={query}
-          placeholder="A table, or a group: derelict, planet, ask"
-          onChange={(event) => setQuery(event.target.value)}
-          style={FIELD}
-        />
-
-        {/*
-          The list scrolls itself rather than growing. Thirty matches is a lot
-          of rows, and a list that grows pushes the die and the button under it
-          off the bottom of the window, where nothing can reach them.
-        */}
-        <ul
-          data-testid="oracle-results"
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 0,
-            display: 'grid',
-            maxHeight: tokens.layout.paletteList,
-            overflowY: 'auto',
-          }}
-        >
-          {tables.map((table, index) => (
-            <li key={table.id}>
-              <button
-                type="button"
-                data-testid="oracle-result"
-                aria-current={index === at}
-                onClick={() => {
-                  setAt(index);
-                  consult(table);
-                }}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: tokens.space[12],
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: `${tokens.space[4]} ${tokens.space[8]}`,
-                  border: 'none',
-                  borderRadius: tokens.radius.sm,
-                  background: index === at ? slot('ground', 'overlay') : 'transparent',
-                  color: slot('ink', 'primary'),
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: tokens.type.compact,
-                  cursor: 'pointer',
-                }}
-              >
-                <span>{table.name}</span>
-                <span style={labelStyle('line')}>{table.group}</span>
-              </button>
-            </li>
-          ))}
-
-          {tables.length === 0 && (
-            <li style={{ ...labelStyle('line'), padding: tokens.space[8] }}>
-              Nothing matches that
-            </li>
-          )}
-        </ul>
-
-        {/*
-          How many matched, when more matched than crossed. A capped list that
-          says nothing reads as a complete one.
-        */}
-        {found !== null && found.matched > tables.length && (
-          <Label size="line" as="p" data-testid="oracle-more">
-            {found.matched} match. Showing the first {tables.length}.
-          </Label>
+        {tables.length === 0 && (
+          <li style={{ ...labelStyle('line'), padding: tokens.space[8] }}>Nothing matches that</li>
         )}
+      </PaletteList>
 
-        <div style={{ display: 'flex', gap: tokens.space[8], alignItems: 'center' }}>
-          <Label as="label" htmlFor="oracle-thrown">
-            Dice you threw
-          </Label>
-          <input
-            id="oracle-thrown"
-            data-testid="oracle-thrown"
-            value={thrown}
-            placeholder="leave it empty to roll"
-            onChange={(event) => setThrown(event.target.value)}
-            style={{ ...FIELD, width: '18ch' }}
-          />
-          <Button
-            data-testid="oracle-consult"
-            disabled={busy || chosen === undefined}
-            onClick={() => consult(chosen)}
-          >
-            {thrown.trim() === '' ? 'Roll it' : 'Take that'}
-          </Button>
-        </div>
-      </section>
-    </div>
+      {/*
+        How many matched, when more matched than crossed. A capped list that
+        says nothing reads as a complete one.
+      */}
+      {found !== null && found.matched > tables.length && (
+        <Label size="line" as="p" data-testid="oracle-more">
+          {found.matched} match. Showing the first {tables.length}.
+        </Label>
+      )}
+
+      <div style={{ display: 'flex', gap: tokens.space[8], alignItems: 'center' }}>
+        <Label as="label" htmlFor="oracle-thrown">
+          Dice you threw
+        </Label>
+        <input
+          id="oracle-thrown"
+          data-testid="oracle-thrown"
+          value={thrown}
+          placeholder="leave it empty to roll"
+          onChange={(event) => setThrown(event.target.value)}
+          style={{ ...FIELD, width: '18ch' }}
+        />
+        <Button
+          data-testid="oracle-consult"
+          disabled={busy || chosen === undefined}
+          onClick={() => consult(chosen)}
+        >
+          {thrown.trim() === '' ? 'Roll it' : 'Take that'}
+        </Button>
+      </div>
+    </Palette>
   );
 }

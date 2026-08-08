@@ -15,6 +15,7 @@ import {
   type EntityTypesView,
   type ConsultationView,
   type OracleSearchView,
+  type ReferenceDocView,
   type PackagesView,
   type ImportedPackagesView,
   type EntityView,
@@ -61,6 +62,9 @@ const api: AetherForgeApi = {
 
   searchOracles: (query) =>
     ipcRenderer.invoke(IPC.searchOracles, query) as Promise<IpcResult<OracleSearchView>>,
+
+  readDocument: (id) =>
+    ipcRenderer.invoke(IPC.readDocument, id) as Promise<IpcResult<ReferenceDocView>>,
 
   consultOracle: (request) =>
     ipcRenderer.invoke(IPC.consultOracle, request) as Promise<IpcResult<ConsultationView>>,

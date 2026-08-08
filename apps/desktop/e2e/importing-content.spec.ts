@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 
+import { openTheMovePalette } from './making-moves';
 import { launchPackagedApp } from './packaged-app';
 
 /**
@@ -116,7 +117,9 @@ test('says so when an import changes nothing, rather than looking like it worked
   // and then not held. Silence there is the worst answer available: a person
   // sees the dialog close and assumes their content arrived.
   const page = await open();
-  const before = await page.getByTestId('which-check').locator('option').count();
+  await openTheMovePalette(page);
+  const before = await page.getByTestId('move-result').count();
+  await page.keyboard.press('Escape');
 
   await app.evaluate(
     ({ dialog }, path) => {
@@ -128,5 +131,7 @@ test('says so when an import changes nothing, rather than looking like it worked
   await page.getByTestId('import-content').click();
 
   await expect(page.getByTestId('problem')).toContainText('already carries this id');
-  await expect(page.getByTestId('which-check').locator('option')).toHaveCount(before);
+
+  await openTheMovePalette(page);
+  await expect(page.getByTestId('move-result')).toHaveCount(before);
 });

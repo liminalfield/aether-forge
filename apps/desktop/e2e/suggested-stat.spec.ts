@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 
+import { chooseTheMove, openTheMovePalette } from './making-moves';
 import { launchPackagedApp } from './packaged-app';
 
 /**
@@ -34,14 +35,15 @@ test.afterEach(async () => {
 async function open(): Promise<Page> {
   app = await launchPackagedApp(userDataDir);
   const page = await app.firstWindow();
-  await expect(page.getByTestId('run-a-check')).toBeVisible();
+  await expect(page.getByTestId('journal')).toBeVisible();
   return page;
 }
 
 test('suggests nothing while the campaign has nobody to read from', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
+  await openTheMovePalette(page);
+  await chooseTheMove(page, 'Face Danger');
   await expect(page.getByTestId('input-stat')).toHaveValue('');
   await expect(page.getByTestId('suggested-stat')).toHaveCount(0);
 });
@@ -54,7 +56,8 @@ test('reads the stat from a character made a moment ago, and rolls it untyped', 
   await page.getByTestId('note-it').click();
 
   // The box holds the suggestion, and says why, without a restart.
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
+  await openTheMovePalette(page);
+  await chooseTheMove(page, 'Face Danger');
   await expect(page.getByTestId('input-stat')).toHaveValue('1');
   await expect(page.getByTestId('suggested-stat')).toContainText('the strongest Vess has');
 

@@ -130,12 +130,22 @@ export function interpretProgressRoll(
   return hitsAndMisses(inputs['progress'] ?? 0, challenge, suggests);
 }
 
-/** A move with no dice: it happens as the move says, and the log records that it did. */
+/**
+ * A move with no dice: it happens as the move says, and the log records that
+ * it did.
+ *
+ * The summary is empty on purpose. It read "It happens as the move says",
+ * which was one sentence standing in for eighteen different moves and told a
+ * person nothing. The move's own text says what happens, and a card should
+ * not paraphrase a book badly. What is left is a card with a name and no
+ * summary, which is honest: what happened is that you did the thing the move
+ * describes.
+ */
 export function interpretNoRoll(): CheckOutcome {
   return {
     id: 'resolved',
     label: labelled(NO_ROLL_OUTCOMES, 'resolved'),
-    summary: 'It happens as the move says.',
+    summary: '',
     suggests: [],
   };
 }

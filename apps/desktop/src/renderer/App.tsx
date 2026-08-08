@@ -27,12 +27,12 @@ import type {
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
 import { ConsultationCard } from './ConsultationCard';
+import { MovePalette } from './MovePalette';
 import { OraclePalette } from './OraclePalette';
 import { applyMotion, wearTheme } from './appearance';
 import { PreferencesRow } from './Preferences';
 import { EntitiesRail } from './EntitiesRail';
 import { Entry } from './Entry';
-import { RunACheck } from './RunACheck';
 
 /**
  * The campaign as a document: oldest at the top, newest at the bottom, and the
@@ -61,6 +61,7 @@ export function App(): React.JSX.Element {
   const [credits, setCredits] = useState<readonly InstalledPackageView[]>([]);
   const [preferences, setPreferences] = useState<PreferencesView | null>(null);
   const [asking, setAsking] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [entityTypes, setEntityTypes] = useState<readonly EntityTypeView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -109,7 +110,7 @@ export function App(): React.JSX.Element {
   }, []);
 
   /**
-   * One key opens the oracle, from wherever a person is.
+   * One key opens the oracle and another the moves, from wherever a person is.
    *
    * On the window rather than on a control, because the point is that you do
    * not have to go anywhere to ask. It is left alone while somebody is typing
@@ -118,13 +119,15 @@ export function App(): React.JSX.Element {
    */
   useEffect(() => {
     const listen = (event: KeyboardEvent): void => {
-      if (event.key !== 'o' || !(event.metaKey || event.ctrlKey)) return;
+      const wanted = event.key === 'o' ? 'oracle' : event.key === 'k' ? 'move' : undefined;
+      if (wanted === undefined || !(event.metaKey || event.ctrlKey)) return;
       const inAField =
         event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
       if (inAField) return;
 
       event.preventDefault();
-      setAsking(true);
+      if (wanted === 'oracle') setAsking(true);
+      else setMoving(true);
     };
 
     window.addEventListener('keydown', listen);
@@ -301,6 +304,11 @@ export function App(): React.JSX.Element {
     [arrived, reread],
   );
 
+  const readAMove = useCallback(async (docRef: string) => {
+    const read = await window.aetherForge.readDocument(docRef);
+    return read.ok ? read.value : undefined;
+  }, []);
+
   const findAnOracle = useCallback(async (query: string) => {
     const found = await window.aetherForge.searchOracles(query);
     return found.ok ? found.value : { tables: [], matched: 0 };
@@ -435,6 +443,18 @@ export function App(): React.JSX.Element {
         </span>
       </header>
 
+      <MovePalette
+        open={moving}
+        checks={checks}
+        busy={busy}
+        onRead={readAMove}
+        onRun={(request) => {
+          setMoving(false);
+          void runACheck(request);
+        }}
+        onClose={() => setMoving(false)}
+      />
+
       <OraclePalette
         open={asking}
         busy={busy}
@@ -444,15 +464,6 @@ export function App(): React.JSX.Element {
       />
 
       <div style={{ display: 'flex', minHeight: 0, alignItems: 'stretch' }}>
-        <EntitiesRail
-          entities={held}
-          types={entityTypes}
-          busy={busy}
-          onCreate={(request) => void createAnEntity(request)}
-          onSetField={(entityId, fieldId, value) => void setAField(entityId, fieldId, value)}
-          onAdvance={(entityId, trackId, by) => void advanceATrack(entityId, trackId, by)}
-        />
-
         <main
           style={{
             margin: '0 auto',
@@ -495,8 +506,6 @@ export function App(): React.JSX.Element {
               ),
             )}
           </section>
-
-          <RunACheck checks={checks} busy={busy} onRun={(request) => void runACheck(request)} />
 
           <form
             onSubmit={(event) => {
@@ -558,6 +567,19 @@ export function App(): React.JSX.Element {
 
           <div ref={end} />
         </main>
+
+        {/*
+          The campaign, beside the writing. The design puts it either side;
+          only what exists gets a rail, and what exists is entities.
+        */}
+        <EntitiesRail
+          entities={held}
+          types={entityTypes}
+          busy={busy}
+          onCreate={(request) => void createAnEntity(request)}
+          onSetField={(entityId, fieldId, value) => void setAField(entityId, fieldId, value)}
+          onAdvance={(entityId, trackId, by) => void advanceATrack(entityId, trackId, by)}
+        />
       </div>
     </div>
   );
