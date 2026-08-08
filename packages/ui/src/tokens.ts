@@ -4,12 +4,99 @@
  * These are load-bearing in an interface this dense: a person reconfiguring
  * them would quietly destroy the thing the design is for. See
  * `design/themes-and-components.md`.
+ *
+ * Every size the interface uses has a name here. A component that writes a
+ * size by hand is refused by lint, the same way a colour written by hand is,
+ * because a scale nobody is held to stops being a scale within a week.
  */
 
 export const tokens = {
-  space: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '40px' },
+  /**
+   * Space between things, as the handoff sets it out.
+   *
+   * Keyed by the number of pixels, so nothing has to remember whether large
+   * is bigger than extra-large. Two pixels sits below the scale on purpose:
+   * it is the gap between things that are almost touching, like the pair of
+   * step buttons on a track.
+   */
+  space: {
+    2: '2px',
+    4: '4px',
+    8: '8px',
+    12: '12px',
+    16: '16px',
+    24: '24px',
+    32: '32px',
+    48: '48px',
+    64: '64px',
+  },
+
   radius: { sm: '3px', md: '6px', lg: '10px', pill: '999px' },
-  fontSize: { sm: '0.875rem', md: '1rem', lg: '1.25rem', xl: '1.75rem' },
+
+  /**
+   * Type sizes, named for the job each does rather than for how big it is.
+   *
+   * The design uses more sizes than a tidy scale would, because a dense
+   * interface needs them: a die face and a small caps label are both
+   * "numeric" and could not be further apart.
+   */
+  type: {
+    /** The smallest caps labels, in the title bar and above fields. */
+    micro: '10.5px',
+    /** Settled lines and provenance strips. */
+    tiny: '11px',
+    /** Chips, and small numbers beside them. */
+    small: '12px',
+    /** Rail entries and form fields. */
+    compact: '13px',
+    /** The interface's ordinary size: card names, buttons. */
+    base: '14px',
+    /** Outcome summaries, which are read rather than scanned. */
+    reading: '15px',
+    /** The journal's own writing. */
+    prose: '18px',
+    /** A stat's value on a sheet. */
+    display: '22px',
+    /** A die face. */
+    figure: '30px',
+  },
+
+  /** Letter spacing, which only capitalised labels use. */
+  tracking: { caps: '.14em', capsWide: '.16em' },
+
+  lineHeight: { tight: 1.4, normal: 1.5, prose: 1.6 },
+
+  /** Border widths. The heavy one marks an outcome, and nothing else. */
+  border: { hair: '1px', emphasis: '2px' },
+
+  /** Fixed dimensions the design sets, rather than the scale deciding. */
+  layout: {
+    /** The left rail. */
+    rail: '210px',
+    /** The title bar. */
+    titleBar: '38px',
+    /** The writing column. Measured in characters, because prose is. */
+    column: '60ch',
+    /** The writing column's own padding, which the handoff sets by eye. */
+    pageTop: '34px',
+    pageSide: '40px',
+    pageBottom: '46px',
+  },
+
+  /**
+   * Sizes a single component's own anatomy, where the handoff set them by eye
+   * rather than from the scale. Kept apart from `space` so the scale stays a
+   * scale.
+   */
+  box: {
+    /** A die face in the result card. */
+    die: '30px',
+    /** The gap between the result card's three zones. */
+    cardGap: '14px',
+    /** The result card's padding: down the sides, and top to bottom. */
+    cardPadY: '16px',
+    cardPadX: '18px',
+  },
 
   /**
    * Three families, each doing one job.

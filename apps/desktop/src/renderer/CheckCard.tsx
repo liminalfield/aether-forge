@@ -86,8 +86,8 @@ function Settled({ offer }: { readonly offer: RecordedOfferView }): React.JSX.El
         margin: 0,
         color: slot('ink', 'muted'),
         fontFamily: 'var(--font-numeric)',
-        fontSize: '11px',
-        letterSpacing: '.14em',
+        fontSize: tokens.type.tiny,
+        letterSpacing: tokens.tracking.caps,
         textTransform: 'uppercase',
       }}
     >
@@ -121,9 +121,9 @@ function Offer({
   const [changingTo, setChangingTo] = useState('');
 
   return (
-    <div style={{ display: 'grid', gap: tokens.space.sm }}>
+    <div style={{ display: 'grid', gap: tokens.space[8] }}>
       {offer.why !== undefined && (
-        <p style={{ margin: 0, color: slot('ink', 'muted'), fontSize: tokens.fontSize.sm }}>
+        <p style={{ margin: 0, color: slot('ink', 'muted'), fontSize: tokens.type.base }}>
           {offer.why}
         </p>
       )}
@@ -181,9 +181,9 @@ function Offer({
                 color: slot('ink', 'primary'),
                 border: `1px solid ${slot('ink', 'hairline')}`,
                 borderRadius: tokens.radius.sm,
-                padding: '4px 6px',
+                padding: `${tokens.space[4]} ${tokens.radius.md}`,
                 fontFamily: 'var(--font-numeric)',
-                fontSize: '12px',
+                fontSize: tokens.type.small,
               }}
             />
             <Chip
@@ -268,7 +268,12 @@ export function CheckCard({ check, onAnswer, busy }: CheckCardProps): React.JSX.
       >
         <p
           data-testid="outcome-summary"
-          style={{ margin: 0, fontFamily: 'var(--font-prose)', fontSize: '15px', lineHeight: 1.5 }}
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-prose)',
+            fontSize: tokens.type.reading,
+            lineHeight: tokens.lineHeight.normal,
+          }}
         >
           {check.outcome.summary}
         </p>

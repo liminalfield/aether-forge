@@ -37,7 +37,7 @@ const TABULAR = { ...TABULAR_NUMERALS } as const;
 const QUIET = {
   color: slot('ink', 'muted'),
   fontFamily: 'var(--font-ui)',
-  fontSize: tokens.fontSize.sm,
+  fontSize: tokens.type.base,
   margin: 0,
 } as const;
 
@@ -287,7 +287,7 @@ export function App(): React.JSX.Element {
       style={{
         minHeight: '100vh',
         display: 'grid',
-        gridTemplateRows: '38px 1fr',
+        gridTemplateRows: `${tokens.layout.titleBar} 1fr`,
         background: slot('ground', 'base'),
         color: slot('ink', 'primary'),
       }}
@@ -301,12 +301,12 @@ export function App(): React.JSX.Element {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: `0 ${tokens.space.lg}`,
+          padding: `0 ${tokens.space[24]}`,
           borderBottom: `1px solid ${slot('ink', 'hairline')}`,
           background: slot('ground', 'sunken'),
           fontFamily: 'var(--font-numeric)',
-          fontSize: '10.5px',
-          letterSpacing: '.16em',
+          fontSize: tokens.type.micro,
+          letterSpacing: tokens.tracking.capsWide,
           textTransform: 'uppercase',
           color: slot('ink', 'muted'),
         }}
@@ -332,14 +332,14 @@ export function App(): React.JSX.Element {
             margin: '0 auto',
             width: '100%',
             maxWidth: '60ch',
-            padding: `34px ${tokens.space.xl} 46px`,
+            padding: `34px ${tokens.layout.pageSide} 46px`,
             display: 'flex',
             flexDirection: 'column',
-            gap: tokens.space.xl,
+            gap: tokens.layout.pageSide,
             overflowY: 'auto',
           }}
         >
-          <section data-testid="journal" style={{ display: 'grid', gap: tokens.space.lg }}>
+          <section data-testid="journal" style={{ display: 'grid', gap: tokens.space[24] }}>
             {items === null && <p style={QUIET}>Reading the campaign…</p>}
 
             {items?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
@@ -375,7 +375,7 @@ export function App(): React.JSX.Element {
               event.preventDefault();
               void record();
             }}
-            style={{ display: 'grid', gap: tokens.space.sm }}
+            style={{ display: 'grid', gap: tokens.space[8] }}
           >
             <WritingSurface
               id="entry"
@@ -394,7 +394,7 @@ export function App(): React.JSX.Element {
           quietly, where the content actually is. Not behind a menu: a
           condition on using someone's work is not a settings page.
         */}
-          <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space.xs }}>
+          <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space[4] }}>
             {credits.map((credit) => (
               <p key={credit.id} style={QUIET}>
                 {credit.attribution ?? `${credit.title} ${credit.version}, ${credit.license}.`}

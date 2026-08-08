@@ -22,8 +22,32 @@ import {
 
 describe('@aether-forge/ui', () => {
   it('exposes a token scale', () => {
-    expect(tokens.space.md).toBe('16px');
+    expect(tokens.space[16]).toBe('16px');
     expect(tokens.radius.pill).toBe('999px');
+  });
+
+  it('spaces things by the eight steps the handoff sets out', () => {
+    // A scale that skips steps sends a component looking for a raw value, and
+    // the lint rule then stops it with nowhere to go.
+    expect(Object.values(tokens.space)).toEqual([
+      '2px',
+      '4px',
+      '8px',
+      '12px',
+      '16px',
+      '24px',
+      '32px',
+      '48px',
+      '64px',
+    ]);
+  });
+
+  it('names a type size for every size the design actually uses', () => {
+    // Nine, which is more than a tidy scale would have. A dense interface
+    // needs them: a die face and a caps label are both numeric type.
+    expect(Object.keys(tokens.type)).toHaveLength(9);
+    expect(tokens.type.base).toBe('14px');
+    expect(tokens.type.prose).toBe('18px');
   });
 
   it('holds no colour outside a theme', () => {

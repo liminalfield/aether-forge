@@ -20,8 +20,8 @@ import type { CheckView, RunCheckRequest } from '../shared/ipc';
 
 const LABEL = {
   fontFamily: 'var(--font-numeric)',
-  fontSize: '10.5px',
-  letterSpacing: '.16em',
+  fontSize: tokens.type.micro,
+  letterSpacing: tokens.tracking.capsWide,
   textTransform: 'uppercase',
   color: slot('ink', 'muted'),
 } as const;
@@ -31,9 +31,9 @@ const FIELD = {
   color: slot('ink', 'primary'),
   border: `1px solid ${slot('ink', 'hairline')}`,
   borderRadius: tokens.radius.sm,
-  padding: '6px 8px',
+  padding: `${tokens.radius.md} ${tokens.space[8]}`,
   fontFamily: 'var(--font-numeric)',
-  fontSize: '13px',
+  fontSize: tokens.type.compact,
 } as const;
 
 /** How many dice a check asks for, which is how many a person may type in. */
@@ -94,14 +94,14 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
       data-testid="run-a-check"
       style={{
         display: 'grid',
-        gap: tokens.space.md,
-        padding: tokens.space.md,
+        gap: tokens.space[16],
+        padding: tokens.space[16],
         border: `1px solid ${slot('ink', 'hairline')}`,
         borderRadius: tokens.radius.md,
         background: slot('ground', 'sunken'),
       }}
     >
-      <div style={{ display: 'grid', gap: tokens.space.xs }}>
+      <div style={{ display: 'grid', gap: tokens.space[4] }}>
         <label style={LABEL} htmlFor="which-check">
           Check
         </label>
@@ -125,7 +125,7 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
       </div>
 
       {chosen.inputs.map((input) => (
-        <div key={input.id} style={{ display: 'grid', gap: tokens.space.xs }}>
+        <div key={input.id} style={{ display: 'grid', gap: tokens.space[4] }}>
           <label style={LABEL} htmlFor={`input-${input.id}`}>
             {input.label}
           </label>
@@ -157,7 +157,7 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
                 margin: 0,
                 color: slot('ink', 'muted'),
                 fontFamily: 'var(--font-ui)',
-                fontSize: '12px',
+                fontSize: tokens.type.small,
               }}
             >
               Suggested: {input.suggested.value}, because {input.suggested.why}. Type to use
@@ -168,7 +168,7 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
       ))}
 
       {wanted > 0 && (
-        <div style={{ display: 'grid', gap: tokens.space.xs }}>
+        <div style={{ display: 'grid', gap: tokens.space[4] }}>
           <label style={LABEL} htmlFor="thrown">
             Dice you threw
           </label>

@@ -89,6 +89,26 @@ const RENDERER_FORBIDDEN = {
   ],
 };
 
+/** A colour written into a component, which a theme can never reach. */
+const NO_LITERAL_COLOUR = {
+  selector: 'Literal[value=/^\\s*(#[0-9a-fA-F]{3,8}|rgba?\\(|hsla?\\(|color-mix\\()/]',
+  message:
+    'Colour belongs in a theme. Use slot(group, name) from @aether-forge/ui, and add the colour to packages/ui/src/theme.ts if it needs a slot.',
+};
+
+/**
+ * A size written into a component, which the scale can never reach.
+ *
+ * Units that describe content rather than the design are left alone: `ch`
+ * sizes a column by the prose in it, and percentages and viewport units are
+ * relationships rather than measurements.
+ */
+const NO_LITERAL_SIZE = {
+  selector: 'Literal[value=/^\\s*[0-9.]+(px|r?em)\\s*$/]',
+  message:
+    'Size belongs in the scale. Use tokens.space, tokens.type, tokens.radius, tokens.border, tokens.layout or tokens.box from @aether-forge/ui, and add the value to packages/ui/src/tokens.ts if the design needs a new one.',
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -125,28 +145,43 @@ export default tseslint.config(
     },
   },
 
-  // --- colour belongs in a theme, not in a component ---
+  // --- colour and size belong in the design system, not in a component ---
   //
   // A theme reaches components as CSS custom properties, which is what lets a
   // theme loaded from a file change code that has already rendered. A colour
   // written into a component is invisible to that, and the screen it is on
-  // stops responding to the theme without anything saying so.
+  // stops responding to the theme without anything saying so. Size is the same
+  // argument one step down: a scale nobody is held to stops being a scale, and
+  // within a week of the design system landing components were writing '14px'
+  // by hand.
   //
-  // packages/ui/src/theme.ts is where the built-in themes live, so it is the
-  // one place exempt. See design/themes-and-components.md.
+  // Both live in one block because ESLint flat config lets a later block
+  // replace an earlier one's rule outright. Two blocks each declaring
+  // no-restricted-syntax would leave only the second one running, and the
+  // first guard would be gone with nothing saying so. The two exemptions below
+  // re-declare the rule with the other selector, for the same reason.
+  //
+  // See design/themes-and-components.md.
   {
     files: ['packages/ui/src/**/*.{ts,tsx}', 'apps/desktop/src/renderer/**/*.{ts,tsx}'],
-    ignores: ['packages/ui/src/theme.ts', '**/*.test.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}'],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Literal[value=/^\\s*(#[0-9a-fA-F]{3,8}|rgba?\\(|hsla?\\(|color-mix\\()/]',
-          message:
-            'Colour belongs in a theme. Use slot(group, name) from @aether-forge/ui, and add the colour to packages/ui/src/theme.ts if it needs a slot.',
-        },
-      ],
+      'no-restricted-syntax': ['error', NO_LITERAL_COLOUR, NO_LITERAL_SIZE],
     },
+  },
+
+  // packages/ui/src/theme.ts is where the built-in themes live: colour is its
+  // whole job. It is still held to the size scale.
+  {
+    files: ['packages/ui/src/theme.ts'],
+    rules: { 'no-restricted-syntax': ['error', NO_LITERAL_SIZE] },
+  },
+
+  // packages/ui/src/tokens.ts is where the scale lives: size is its whole job.
+  // It is still held to the colour rule.
+  {
+    files: ['packages/ui/src/tokens.ts'],
+    rules: { 'no-restricted-syntax': ['error', NO_LITERAL_COLOUR] },
   },
 
   // --- packages/* may never depend on the app, on Electron, or on a system module ---
