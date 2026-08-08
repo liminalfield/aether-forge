@@ -32,6 +32,7 @@ export const IPC = {
   describeEntityTypes: 'entities:describeTypes',
   listPackages: 'packages:list',
   searchOracles: 'oracles:search',
+  consultOracle: 'oracles:consult',
   importPackage: 'packages:import',
   startTrack: 'tracks:start',
   advanceTrack: 'tracks:advance',
@@ -305,6 +306,30 @@ export interface OracleSearchView {
   readonly matched: number;
 }
 
+/**
+ * Consulting a table. The dice are optional: absent means the application
+ * rolls, present means somebody threw them and typed in what they showed, and
+ * everything downstream is identical.
+ */
+export interface ConsultRequest {
+  readonly tableId: string;
+  readonly thrown?: readonly number[];
+}
+
+/** What a consultation came to, complete enough to draw. */
+export interface ConsultationView {
+  readonly tableId: string;
+  readonly name: string;
+  readonly group: string;
+  /** What the row said. */
+  readonly answer: string;
+  /** The range the number landed in, so a reader can tell whether a table moved. */
+  readonly row: { readonly from: number; readonly to: number };
+  /** Which content answered, and which version of it. */
+  readonly package: { readonly id: string; readonly version: string };
+  readonly dice: readonly RolledDieView[];
+}
+
 /** One installed content package, described well enough to render and credit. */
 export interface InstalledPackageView {
   readonly id: string;
@@ -574,6 +599,15 @@ export interface AetherForgeApi {
    * just opened still shows what is in it.
    */
   searchOracles(query: string): Promise<IpcResult<OracleSearchView>>;
+
+  /**
+   * Consult a table, and write what it came to.
+   *
+   * One act, unlike a check, which is two. A check waits for a person to
+   * answer what it proposed; a consultation proposes nothing, so there is
+   * nothing to wait for.
+   */
+  consultOracle(request: ConsultRequest): Promise<IpcResult<ConsultationView>>;
 
   /**
    * Ask for a Datasworn file and install it as a package, atomically,
