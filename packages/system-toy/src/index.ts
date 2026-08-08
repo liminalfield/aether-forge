@@ -15,6 +15,7 @@ import {
   type CheckDefinition,
   type DieSpec,
   type EntityTemplate,
+  type OracleProvider,
   type EventTypeDefinition,
   type ModuleProjection,
   type RollPerformedV1,
@@ -223,3 +224,13 @@ export const checks: readonly CheckDefinition[] = [CALL_IT];
  * declare no templates.
  */
 export const templates: readonly EntityTemplate[] = [];
+
+/**
+ * The toy contributes no oracle provider, on purpose and forever.
+ *
+ * A coin has nothing to consult. A module with nothing to say about oracles
+ * must be a module that works, because saying nothing is the trivial
+ * implementation the contract owes the canary, and every oracle surface has
+ * to cope with a system that offers none.
+ */
+export const oracleProviders: readonly OracleProvider[] = [];

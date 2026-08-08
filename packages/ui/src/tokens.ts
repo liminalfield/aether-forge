@@ -77,6 +77,15 @@ export const tokens = {
     titleBar: '38px',
     /** The writing column. Measured in characters, because prose is. */
     column: '60ch',
+    /** A box that opens over the page, as the handoff sizes it. */
+    palette: '720px',
+    /**
+     * How tall a list inside that box may grow before it scrolls itself.
+     *
+     * Without a ceiling a long list pushes the controls under it off the
+     * bottom of the window, where nothing can reach them.
+     */
+    paletteList: '320px',
     /** The writing column's own padding, which the handoff sets by eye. */
     pageTop: '34px',
     pageSide: '40px',

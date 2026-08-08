@@ -158,6 +158,13 @@ export const VOW_TEMPLATE: EntityTemplate = {
 export const templates: readonly EntityTemplate[] = [CHARACTER_TEMPLATE, VOW_TEMPLATE];
 
 export {
+  YES_OR_NO_PREFIX,
+  YES_OR_NO_STAMP,
+  YES_OR_NO_TABLES,
+  yesOrNo,
+} from './asking-yes-or-no.js';
+
+export {
   ACTION_ROLL_OUTCOMES,
   interpretActionRoll,
   interpretNoRoll,

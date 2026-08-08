@@ -3,6 +3,7 @@ import type {
   ContentPackage,
   EntityTemplate,
   ModuleEventType,
+  OracleProvider,
   SystemId,
 } from '@aether-forge/core';
 import {
@@ -11,11 +12,13 @@ import {
   MOVE_RESOLVED,
   STARFORGED_SYSTEM_ID,
   templates as ironswornTemplates,
+  yesOrNo,
 } from '@aether-forge/system-ironsworn';
 import {
   CHECK_INVOKED,
   CHECK_RESOLVED,
   checks as toyChecks,
+  oracleProviders as toyOracleProviders,
   templates as toyTemplates,
   TOY_SYSTEM_ID,
 } from '@aether-forge/system-toy';
@@ -38,6 +41,12 @@ export interface LoadedSystem {
   readonly checks: readonly CheckDefinition[];
   /** The entities this system describes. Empty is a module that works. */
   readonly templates: readonly EntityTemplate[];
+  /**
+   * Oracles this system answers itself, for anything that is a rule rather
+   * than content. Empty is a module that works: a coin has nothing to
+   * consult, and every oracle surface has to cope with a system offering none.
+   */
+  readonly oracleProviders: readonly OracleProvider[];
   /**
    * The two events this system writes either side of a check's roll.
    *
@@ -82,6 +91,7 @@ export function loadSystems(packages: readonly ContentPackage[]): readonly Loade
       systemId: TOY_SYSTEM_ID,
       checks: toyChecks,
       templates: toyTemplates,
+      oracleProviders: toyOracleProviders,
       checkEvents: { invoked: CHECK_INVOKED, resolved: CHECK_RESOLVED },
       playable: false,
     },
@@ -89,6 +99,7 @@ export function loadSystems(packages: readonly ContentPackage[]): readonly Loade
       systemId: STARFORGED_SYSTEM_ID,
       checks: checksFrom(packages),
       templates: ironswornTemplates,
+      oracleProviders: [yesOrNo],
       checkEvents: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
       playable: true,
     },

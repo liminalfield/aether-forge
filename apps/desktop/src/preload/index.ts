@@ -13,6 +13,8 @@ import {
   type PreferencesView,
   type EntitiesView,
   type EntityTypesView,
+  type ConsultationView,
+  type OracleSearchView,
   type PackagesView,
   type ImportedPackagesView,
   type EntityView,
@@ -56,6 +58,12 @@ const api: AetherForgeApi = {
 
   importPackage: () =>
     ipcRenderer.invoke(IPC.importPackage) as Promise<IpcResult<ImportedPackagesView>>,
+
+  searchOracles: (query) =>
+    ipcRenderer.invoke(IPC.searchOracles, query) as Promise<IpcResult<OracleSearchView>>,
+
+  consultOracle: (request) =>
+    ipcRenderer.invoke(IPC.consultOracle, request) as Promise<IpcResult<ConsultationView>>,
 
   describeEntityTypes: () =>
     ipcRenderer.invoke(IPC.describeEntityTypes) as Promise<IpcResult<EntityTypesView>>,

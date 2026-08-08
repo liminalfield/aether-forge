@@ -31,6 +31,8 @@ export const IPC = {
   changeEntity: 'entities:change',
   describeEntityTypes: 'entities:describeTypes',
   listPackages: 'packages:list',
+  searchOracles: 'oracles:search',
+  consultOracle: 'oracles:consult',
   importPackage: 'packages:import',
   startTrack: 'tracks:start',
   advanceTrack: 'tracks:advance',
@@ -99,7 +101,32 @@ export interface TimelineView {
 
 export type TimelineItem =
   | { readonly kind: 'entry'; readonly at: string; readonly entry: JournalEntryView }
-  | { readonly kind: 'check'; readonly at: string; readonly check: RecordedCheckView };
+  | { readonly kind: 'check'; readonly at: string; readonly check: RecordedCheckView }
+  | {
+      readonly kind: 'consultation';
+      readonly at: string;
+      readonly consultation: RecordedConsultationView;
+    };
+
+/**
+ * A consultation as the log holds it.
+ *
+ * What was asked and what came back are facts and were written down. The
+ * table's name is presentation and comes from what is installed today, so a
+ * package removed since leaves the identifier standing rather than a blank.
+ */
+export interface RecordedConsultationView {
+  /** The event that recorded it, which is what identifies it on screen. */
+  readonly id: string;
+  readonly tableId: string;
+  /** The table's name today, or its identifier when nothing holds it any more. */
+  readonly name: string;
+  readonly group: string;
+  readonly answer: string;
+  readonly row: { readonly from: number; readonly to: number };
+  readonly package: { readonly id: string; readonly version: string };
+  readonly dice: readonly RolledDieView[];
+}
 
 /**
  * A check as the log holds it, complete enough to draw without asking a module
@@ -284,6 +311,48 @@ export interface CreateEntityRequest {
 export interface ChangeEntityRequest {
   readonly entityId: string;
   readonly fields: Readonly<Record<string, FieldValueView>>;
+}
+
+/** One thing that can be consulted, described well enough to offer. */
+export interface OracleTableView {
+  readonly id: string;
+  readonly name: string;
+  /** Where it sits, in words: "planet desert", "core", "ask". May be empty. */
+  readonly group: string;
+  /** Which provider answers it, for anything that needs to know. */
+  readonly provider: string;
+  readonly dice: { readonly sides: number; readonly count: number };
+}
+
+export interface OracleSearchView {
+  /** The matches, capped so a palette stays readable. */
+  readonly tables: readonly OracleTableView[];
+  /** How many matched in total, so a capped answer never reads as a complete one. */
+  readonly matched: number;
+}
+
+/**
+ * Consulting a table. The dice are optional: absent means the application
+ * rolls, present means somebody threw them and typed in what they showed, and
+ * everything downstream is identical.
+ */
+export interface ConsultRequest {
+  readonly tableId: string;
+  readonly thrown?: readonly number[];
+}
+
+/** What a consultation came to, complete enough to draw. */
+export interface ConsultationView {
+  readonly tableId: string;
+  readonly name: string;
+  readonly group: string;
+  /** What the row said. */
+  readonly answer: string;
+  /** The range the number landed in, so a reader can tell whether a table moved. */
+  readonly row: { readonly from: number; readonly to: number };
+  /** Which content answered, and which version of it. */
+  readonly package: { readonly id: string; readonly version: string };
+  readonly dice: readonly RolledDieView[];
 }
 
 /** One installed content package, described well enough to render and credit. */
@@ -546,6 +615,24 @@ export interface AetherForgeApi {
 
   /** What content this machine holds, with the attribution the licenses require. */
   listPackages(): Promise<IpcResult<PackagesView>>;
+
+  /**
+   * What can be consulted, narrowed by what somebody typed.
+   *
+   * A search rather than a list, because there are hundreds of tables. An
+   * empty query answers with the first of everything, so a palette that has
+   * just opened still shows what is in it.
+   */
+  searchOracles(query: string): Promise<IpcResult<OracleSearchView>>;
+
+  /**
+   * Consult a table, and write what it came to.
+   *
+   * One act, unlike a check, which is two. A check waits for a person to
+   * answer what it proposed; a consultation proposes nothing, so there is
+   * nothing to wait for.
+   */
+  consultOracle(request: ConsultRequest): Promise<IpcResult<ConsultationView>>;
 
   /**
    * Ask for a Datasworn file and install it as a package, atomically,

@@ -1,6 +1,8 @@
 import {
   isModuleEvent,
   journal,
+  ORACLE_CONSULTED,
+  readOracleConsultation,
   readRoll,
   ROLL_PERFORMED,
   SUGGESTION_ACCEPTED,
@@ -16,6 +18,7 @@ import {
 
 import type {
   JournalEntryView,
+  RecordedConsultationView,
   RecordedInputView,
   RecordedOfferView,
   RecordedOutcomeView,
@@ -182,9 +185,21 @@ function toOfferView(
  * is the point at which there is something to say: the invocation on its own is
  * a check somebody started, and the roll on its own is three numbers.
  */
+/**
+ * What a table is called, asked of what is installed today.
+ *
+ * Presentation, like an outcome's colour: a person who installs a newer
+ * package should see its names over their old campaign. A table nothing holds
+ * any more leaves its identifier standing, because the consultation happened
+ * and losing a line of the record to a missing package would be worse than
+ * showing it plainly.
+ */
+export type NameATable = (tableId: string) => { name: string; group: string } | undefined;
+
 export function readTimeline(
   campaign: OpenCampaign,
   events: readonly EventEnvelope[],
+  nameATable: NameATable = () => undefined,
 ): TimelineView {
   const entries = new Map(campaign.stateOf(journal).entries.map((entry) => [entry.id, entry]));
   const offers = campaign.stateOf(suggestions).offers;
@@ -197,6 +212,27 @@ export function readTimeline(
   for (const event of events) {
     if (event.type === ROLL_PERFORMED) {
       lastRoll = readRoll(event.payload);
+      continue;
+    }
+
+    if (event.type === ORACLE_CONSULTED) {
+      const consulted = readOracleConsultation(event.payload);
+      if (consulted === undefined) continue;
+
+      const named = nameATable(consulted.table);
+      const view: RecordedConsultationView = {
+        id: event.id,
+        tableId: consulted.table,
+        name: named?.name ?? consulted.table,
+        group: named?.group ?? '',
+        answer: consulted.row.text,
+        row: { from: consulted.row.from, to: consulted.row.to },
+        package: consulted.package,
+        dice: lastRoll === undefined ? [] : toDiceView(lastRoll, undefined),
+      };
+
+      items.push({ kind: 'consultation', at: event.at, consultation: view });
+      lastRoll = undefined;
       continue;
     }
 

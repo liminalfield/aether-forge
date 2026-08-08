@@ -28,6 +28,8 @@ import {
   type RegistryDirectories,
   type RegistryHolder,
 } from './import-package';
+import { consultOracle } from './consult';
+import { everyProvider, groupOf, searchOracles } from './oracles';
 import { listPackages, openRegistry } from './packages';
 import { loadSystems } from './systems';
 import { isKnownTheme, readPreferences, writePreferences } from './preferences';
@@ -106,6 +108,27 @@ function registerIpcHandlers(
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
 
+  /**
+   * What a table is called, from what is installed today.
+   *
+   * Presentation, so it comes from the providers as they stand rather than
+   * from the event. A table nothing holds any more leaves its identifier in
+   * the journal instead of a blank.
+   */
+  const nameATable = (tableId: string): { name: string; group: string } | undefined => {
+    for (const provider of everyProvider(holder)) {
+      const table = provider
+        .listTables({
+          stateOf: () => {
+            throw new Error('naming a table read campaign state, which nothing here supplies');
+          },
+        })
+        .find((each) => each.id === tableId);
+      if (table !== undefined) return { name: table.name, group: groupOf(table.id) };
+    }
+    return undefined;
+  };
+
   ipcMain.handle(IPC.readTimeline, () => {
     const events = log.read();
     if (!events.ok) {
@@ -115,7 +138,7 @@ function registerIpcHandlers(
       };
     }
 
-    return { ok: true as const, value: readTimeline(campaign, events.value) };
+    return { ok: true as const, value: readTimeline(campaign, events.value, nameATable) };
   });
   ipcMain.handle(IPC.recordEntry, (_event, text: unknown) => recordEntry(campaign, text));
   ipcMain.handle(IPC.correctEntry, (_event, entryId: unknown, text: unknown) =>
@@ -132,6 +155,11 @@ function registerIpcHandlers(
     createEntity(campaign, nextEntityId, request),
   );
   ipcMain.handle(IPC.changeEntity, (_event, request: unknown) => changeEntity(campaign, request));
+
+  ipcMain.handle(IPC.searchOracles, (_event, query: unknown) => searchOracles(holder, query));
+  ipcMain.handle(IPC.consultOracle, (_event, request: unknown) =>
+    consultOracle(campaign, holder, request),
+  );
 
   ipcMain.handle(IPC.describeEntityTypes, () => ({
     ok: true as const,

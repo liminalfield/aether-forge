@@ -1,6 +1,7 @@
 # Consulting an oracle
 
-Status: proposed, 8 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted, 8 August 2026 (#179). Decomposed into epic
+[#180](https://github.com/liminalfield/aether-forge/issues/180) and its tasks.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
