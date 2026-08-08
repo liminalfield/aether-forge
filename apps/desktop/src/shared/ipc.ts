@@ -31,6 +31,7 @@ export const IPC = {
   changeEntity: 'entities:change',
   describeEntityTypes: 'entities:describeTypes',
   listPackages: 'packages:list',
+  searchOracles: 'oracles:search',
   importPackage: 'packages:import',
   startTrack: 'tracks:start',
   advanceTrack: 'tracks:advance',
@@ -284,6 +285,24 @@ export interface CreateEntityRequest {
 export interface ChangeEntityRequest {
   readonly entityId: string;
   readonly fields: Readonly<Record<string, FieldValueView>>;
+}
+
+/** One thing that can be consulted, described well enough to offer. */
+export interface OracleTableView {
+  readonly id: string;
+  readonly name: string;
+  /** Where it sits, in words: "planet desert", "core", "ask". May be empty. */
+  readonly group: string;
+  /** Which provider answers it, for anything that needs to know. */
+  readonly provider: string;
+  readonly dice: { readonly sides: number; readonly count: number };
+}
+
+export interface OracleSearchView {
+  /** The matches, capped so a palette stays readable. */
+  readonly tables: readonly OracleTableView[];
+  /** How many matched in total, so a capped answer never reads as a complete one. */
+  readonly matched: number;
 }
 
 /** One installed content package, described well enough to render and credit. */
@@ -546,6 +565,15 @@ export interface AetherForgeApi {
 
   /** What content this machine holds, with the attribution the licenses require. */
   listPackages(): Promise<IpcResult<PackagesView>>;
+
+  /**
+   * What can be consulted, narrowed by what somebody typed.
+   *
+   * A search rather than a list, because there are hundreds of tables. An
+   * empty query answers with the first of everything, so a palette that has
+   * just opened still shows what is in it.
+   */
+  searchOracles(query: string): Promise<IpcResult<OracleSearchView>>;
 
   /**
    * Ask for a Datasworn file and install it as a package, atomically,

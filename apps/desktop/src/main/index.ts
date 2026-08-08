@@ -28,6 +28,7 @@ import {
   type RegistryDirectories,
   type RegistryHolder,
 } from './import-package';
+import { searchOracles } from './oracles';
 import { listPackages, openRegistry } from './packages';
 import { loadSystems } from './systems';
 import { isKnownTheme, readPreferences, writePreferences } from './preferences';
@@ -132,6 +133,8 @@ function registerIpcHandlers(
     createEntity(campaign, nextEntityId, request),
   );
   ipcMain.handle(IPC.changeEntity, (_event, request: unknown) => changeEntity(campaign, request));
+
+  ipcMain.handle(IPC.searchOracles, (_event, query: unknown) => searchOracles(holder, query));
 
   ipcMain.handle(IPC.describeEntityTypes, () => ({
     ok: true as const,
