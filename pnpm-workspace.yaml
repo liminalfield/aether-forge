@@ -31,3 +31,12 @@ allowBuilds:
   # missing for a target, this fails loudly at require() time rather than
   # silently building something ABI-mismatched.
   better-sqlite3: false
+
+# Transitive-only floor for a published advisory (GHSA-2v37-7h3g-55p8):
+# nanoid below 3.3.17 can loop indefinitely on a zero size. It reaches this
+# tree only through the vite and postcss dev toolchain and never ships in the
+# application; the floor exists so `pnpm audit` stays meaningful rather than
+# becoming a red light everyone learns to ignore. Remove when the toolchain
+# catches up on its own.
+overrides:
+  'nanoid@<3.3.17': 3.3.17
