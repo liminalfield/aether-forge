@@ -6,6 +6,12 @@ without this line being updated. Corrected 7 August 2026.
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
 
+> Two of its exclusions ended on 8 August 2026, in `design/the-journal-you-play-in.md` (#189). This
+> record said it was not doing the rails and not doing a way of choosing a check from a list. Both
+> are built: the entities rail sits at the right of the writing, and moves are found in a palette
+> with a search in it. The form panel this record's decomposition produced has been deleted, and the
+> card itself is unchanged.
+
 Everything a check needs exists except a place to do one. Core sequences the events, both modules
 declare a check, the log records what was suggested and what was refused, and none of it can be
 reached from the window. This is the surface that reaches it.
