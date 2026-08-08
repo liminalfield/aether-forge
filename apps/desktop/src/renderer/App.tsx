@@ -33,7 +33,6 @@ import { applyMotion, wearTheme } from './appearance';
 import { PreferencesRow } from './Preferences';
 import { EntitiesRail } from './EntitiesRail';
 import { Entry } from './Entry';
-import { RunACheck } from './RunACheck';
 
 /**
  * The campaign as a document: oldest at the top, newest at the bottom, and the
@@ -447,7 +446,12 @@ export function App(): React.JSX.Element {
       <MovePalette
         open={moving}
         checks={checks}
+        busy={busy}
         onRead={readAMove}
+        onRun={(request) => {
+          setMoving(false);
+          void runACheck(request);
+        }}
         onClose={() => setMoving(false)}
       />
 
@@ -511,8 +515,6 @@ export function App(): React.JSX.Element {
               ),
             )}
           </section>
-
-          <RunACheck checks={checks} busy={busy} onRun={(request) => void runACheck(request)} />
 
           <form
             onSubmit={(event) => {

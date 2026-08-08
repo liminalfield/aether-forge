@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test, type ElectronApplication, type Locator, type Page } from '@playwright/test';
 
+import { makeAMove } from './making-moves';
 import { launchPackagedApp } from './packaged-app';
 
 /**
@@ -37,7 +38,7 @@ test.afterEach(async () => {
 async function open(): Promise<Page> {
   app = await launchPackagedApp(userDataDir);
   const page = await app.firstWindow();
-  await expect(page.getByTestId('run-a-check')).toBeVisible();
+  await expect(page.getByTestId('journal')).toBeVisible();
   return page;
 }
 
@@ -53,10 +54,7 @@ async function open(): Promise<Page> {
 async function rollACheck(page: Page): Promise<Locator> {
   const before = await page.getByTestId('check-card').count();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
-  await page.getByTestId('input-stat').fill('2');
-  await page.getByTestId('thrown').fill(THREW);
-  await page.getByTestId('roll-it').click();
+  await makeAMove(page, 'Face Danger', { inputs: { stat: '2' }, thrown: THREW });
 
   await expect(page.getByTestId('check-card')).toHaveCount(before + 1);
   const card = page.getByTestId('check-card').last();

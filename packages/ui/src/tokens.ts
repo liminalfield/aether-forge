@@ -86,6 +86,17 @@ export const tokens = {
      * bottom of the window, where nothing can reach them.
      */
     paletteList: '320px',
+    /**
+     * How tall the box itself may grow before it scrolls.
+     *
+     * Everything inside it is capped too, and it still adds up: a search, a
+     * list, a piece of prose and a row of controls will outgrow a window
+     * between them. The box scrolls so the controls at its foot can always
+     * be reached.
+     */
+    paletteBox: '78vh',
+    /** How much of a long move's text shows before that pane scrolls. */
+    paletteText: '180px',
     /** The writing column's own padding, which the handoff sets by eye. */
     pageTop: '34px',
     pageSide: '40px',

@@ -107,6 +107,10 @@ export function Palette({
         style={{
           width: tokens.layout.palette,
           maxWidth: '90vw',
+          // Everything inside is capped and it still adds up. The box scrolls
+          // so the controls at its foot can always be reached.
+          maxHeight: tokens.layout.paletteBox,
+          overflowY: 'auto',
           display: 'grid',
           gap: tokens.space[12],
           padding: tokens.space[16],

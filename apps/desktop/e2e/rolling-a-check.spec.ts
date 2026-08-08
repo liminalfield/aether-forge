@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 
+import { chooseTheMove, openTheMovePalette } from './making-moves';
 import { launchPackagedApp } from './packaged-app';
 
 /**
@@ -39,14 +40,15 @@ test.afterEach(async () => {
 async function open(): Promise<Page> {
   app = await launchPackagedApp(userDataDir);
   const page = await app.firstWindow();
-  await expect(page.getByTestId('run-a-check')).toBeVisible();
+  await expect(page.getByTestId('journal')).toBeVisible();
   return page;
 }
 
 test('rolls a check from dice a person threw, and refuses what it proposes', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
+  await openTheMovePalette(page);
+  await chooseTheMove(page, 'Face Danger');
   await page.getByTestId('input-stat').fill('2');
   await page.getByTestId('input-bonus').fill('0');
   await page.getByTestId('thrown').fill(THREW);
@@ -101,7 +103,8 @@ test('still has the card, and the refusal, after the application is opened again
 test('rolls its own dice when nobody hands any in, and takes what it proposes', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
+  await openTheMovePalette(page);
+  await chooseTheMove(page, 'Face Danger');
   await page.getByTestId('input-stat').fill('3');
   await expect(page.getByTestId('roll-it')).toHaveText('Roll it');
   await page.getByTestId('roll-it').click();

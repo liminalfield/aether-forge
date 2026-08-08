@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 
+import { chooseTheMove, makeAMove, openTheMovePalette } from './making-moves';
 import { launchPackagedApp } from './packaged-app';
 
 /**
@@ -33,14 +34,15 @@ test.afterEach(async () => {
 async function open(): Promise<Page> {
   app = await launchPackagedApp(userDataDir);
   const page = await app.firstWindow();
-  await expect(page.getByTestId('run-a-check')).toBeVisible();
+  await expect(page.getByTestId('journal')).toBeVisible();
   return page;
 }
 
 test('says what its button does, and asks for no dice', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Begin a Session' });
+  await openTheMovePalette(page);
+  await chooseTheMove(page, 'Begin a Session');
 
   await expect(page.getByTestId('roll-it')).toHaveText('Do it');
   await expect(page.getByTestId('thrown')).toHaveCount(0);
@@ -49,8 +51,7 @@ test('says what its button does, and asks for no dice', async () => {
 test('records that the move happened, and summarises nothing', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Begin a Session' });
-  await page.getByTestId('roll-it').click();
+  await makeAMove(page, 'Begin a Session');
 
   const card = page.getByTestId('check-card').last();
   await expect(card).toContainText('Begin a Session');
@@ -63,7 +64,8 @@ test('records that the move happened, and summarises nothing', async () => {
 test('still offers a roll, and a box for dice, to a move that has them', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
+  await openTheMovePalette(page);
+  await chooseTheMove(page, 'Face Danger');
 
   await expect(page.getByTestId('roll-it')).toHaveText('Roll it');
   await expect(page.getByTestId('thrown')).toBeVisible();

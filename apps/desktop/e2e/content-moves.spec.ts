@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test';
 
+import { makeAMove, openTheMovePalette } from './making-moves';
 import { launchPackagedApp } from './packaged-app';
 
 /**
@@ -32,17 +33,14 @@ test.afterEach(async () => {
 async function open(): Promise<Page> {
   app = await launchPackagedApp(userDataDir);
   const page = await app.firstWindow();
-  await expect(page.getByTestId('run-a-check')).toBeVisible();
+  await expect(page.getByTestId('journal')).toBeVisible();
   return page;
 }
 
 test('rolls a move that was never hand-written, from the bundled content', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Secure an Advantage' });
-  await page.getByTestId('input-stat').fill('2');
-  await page.getByTestId('thrown').fill('4 2 9');
-  await page.getByTestId('roll-it').click();
+  await makeAMove(page, 'Secure an Advantage', { inputs: { stat: '2' }, thrown: '4 2 9' });
 
   const card = page.getByTestId('check-card').last();
   await expect(card).toContainText('Secure an Advantage');
@@ -52,19 +50,18 @@ test('rolls a move that was never hand-written, from the bundled content', async
 test('offers the whole move list, not a hand-written handful', async () => {
   const page = await open();
 
-  const options = page.getByTestId('which-check').locator('option');
+  await openTheMovePalette(page);
+
   // 31 action, 5 progress and 18 no-roll moves; the two special-track moves
-  // offer no check yet, honestly.
-  await expect(options).toHaveCount(54);
+  // offer no check yet, honestly. The palette shows all of them until
+  // somebody narrows it.
+  await expect(page.getByTestId('move-result')).toHaveCount(54);
 });
 
 test('still proposes momentum on Face Danger, which is the tuned move', async () => {
   const page = await open();
 
-  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
-  await page.getByTestId('input-stat').fill('2');
-  await page.getByTestId('thrown').fill('4 2 9');
-  await page.getByTestId('roll-it').click();
+  await makeAMove(page, 'Face Danger', { inputs: { stat: '2' }, thrown: '4 2 9' });
 
   const card = page.getByTestId('check-card').last();
   await expect(card).toContainText('Weak hit');
