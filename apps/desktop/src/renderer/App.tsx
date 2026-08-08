@@ -253,7 +253,14 @@ export function App(): React.JSX.Element {
       const asked = await window.aetherForge.importPackage();
       if (asked.ok) {
         setCredits(asked.value.listing.packages);
-        setProblem(null);
+        // What arrived may have brought moves with it, and a person who has
+        // just installed a ruleset should be able to roll from it without
+        // restarting.
+        const declared = await window.aetherForge.readChecks();
+        if (declared.ok) setChecks(declared.value.checks);
+
+        // An import that changed nothing must not look like one that worked.
+        setProblem(asked.value.notes.length === 0 ? null : asked.value.notes.join('. '));
       } else {
         setProblem(asked.failure.detail);
       }

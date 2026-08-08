@@ -6,8 +6,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { importPackageFromFile, type RegistryHolder } from './import-package';
 import { openRegistry } from './packages';
+import { loadedSystems, loadSystems } from './systems';
 
 /** Obviously-dummy Datasworn, for the flow. Nothing from a published book. */
+/** A dummy ruleset carrying one move, so an install can be seen to add one. */
 const A_DUMMY_FILE = {
   _id: 'example_import',
   type: 'ruleset',
@@ -28,7 +30,19 @@ const A_DUMMY_FILE = {
       },
     },
   },
-  moves: {},
+  moves: {
+    doing: {
+      contents: {
+        try_it: {
+          _id: 'move:example_import/doing/try_it',
+          type: 'move',
+          name: 'Try It',
+          roll_type: 'no_roll',
+          text: '__When you try it__, do so.',
+        },
+      },
+    },
+  },
 };
 
 let root: string;
@@ -108,5 +122,46 @@ describe('importing a package file', () => {
     if (!again.ok) throw new Error(again.failure.detail);
     expect(again.value.listing.packages).toHaveLength(1);
     expect(again.value.listing.packages[0]?.version).toBe('0.3.0');
+  });
+});
+
+describe('what a person can roll after importing', () => {
+  /** Obviously-dummy content, under the ruleset id this build's module claims. */
+  const A_CLAIMED_RULESET = {
+    ...A_DUMMY_FILE,
+    _id: 'starforged',
+    title: 'Example Dummy Ruleset Claiming A System',
+    oracles: {},
+    moves: {
+      doing: {
+        contents: {
+          try_it: {
+            _id: 'move:example/doing/try_it',
+            type: 'move',
+            name: 'Try It',
+            roll_type: 'no_roll',
+            text: '__When you try it__, do so.',
+          },
+        },
+      },
+    },
+  };
+
+  const starforgedChecks = () =>
+    loadedSystems().find((system) => system.systemId === 'ironsworn-starforged')?.checks ?? [];
+
+  it('offers the new content moves at once, without a restart', async () => {
+    // The half-arrival this fixes: tables and the credit appeared straight
+    // away, and moves only on the next launch, which is not something a
+    // person can explain to themselves.
+    loadSystems([]);
+    expect(starforgedChecks()).toEqual([]);
+
+    const file = join(root, 'claimed.json');
+    writeFileSync(file, JSON.stringify(A_CLAIMED_RULESET));
+    const asked = await importPackageFromFile(holder, { imported }, pick(file));
+
+    if (!asked.ok) throw new Error(asked.failure.detail);
+    expect(starforgedChecks().map((check) => check.name)).toEqual(['Try It']);
   });
 });

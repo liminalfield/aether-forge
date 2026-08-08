@@ -46,6 +46,30 @@ test.beforeAll(() => {
   userDataDir = mkdtempSync(join(tmpdir(), 'aether-forge-import-e2e-'));
   fixtureDir = mkdtempSync(join(tmpdir(), 'aether-forge-import-fixture-'));
   writeFileSync(join(fixtureDir, 'dummy.json'), JSON.stringify(A_DUMMY_FILE));
+
+  // The same dummy content, under the ruleset id this build's module claims,
+  // so importing it replaces what a person can roll.
+  writeFileSync(
+    join(fixtureDir, 'claimed.json'),
+    JSON.stringify({
+      ...A_DUMMY_FILE,
+      _id: 'starforged',
+      title: 'Example Dummy Ruleset Claiming A System',
+      moves: {
+        doing: {
+          contents: {
+            try_it: {
+              _id: 'move:example/doing/try_it',
+              type: 'move',
+              name: 'Try It',
+              roll_type: 'no_roll',
+              text: '__When you try it__, do so.',
+            },
+          },
+        },
+      },
+    }),
+  );
 });
 
 test.afterAll(() => {
@@ -85,4 +109,24 @@ test('still holds the imported package after the application reopens', async () 
   const page = await open();
 
   await expect(page.getByTestId('content-credits')).toContainText('A. Test Author');
+});
+
+test('says so when an import changes nothing, rather than looking like it worked', async () => {
+  // A file whose package id something already installed carries is written
+  // and then not held. Silence there is the worst answer available: a person
+  // sees the dialog close and assumes their content arrived.
+  const page = await open();
+  const before = await page.getByTestId('which-check').locator('option').count();
+
+  await app.evaluate(
+    ({ dialog }, path) => {
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [path] });
+    },
+    join(fixtureDir, 'claimed.json'),
+  );
+
+  await page.getByTestId('import-content').click();
+
+  await expect(page.getByTestId('problem')).toContainText('already carries this id');
+  await expect(page.getByTestId('which-check').locator('option')).toHaveCount(before);
 });
