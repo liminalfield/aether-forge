@@ -175,8 +175,13 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
         </div>
       )}
 
+      {/*
+        A move with nothing to roll gets a verb that says what the button
+        does. "Roll it" on a move with no dice is the application lying about
+        its own control.
+      */}
       <Button data-testid="roll-it" disabled={busy} onClick={run} style={{ justifySelf: 'start' }}>
-        {typedIn.length === wanted && wanted > 0 ? 'Take those dice' : 'Roll it'}
+        {wanted === 0 ? 'Do it' : typedIn.length === wanted ? 'Take those dice' : 'Roll it'}
       </Button>
     </section>
   );

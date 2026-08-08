@@ -258,17 +258,25 @@ export function CheckCard({ check, onAnswer, busy }: CheckCardProps): React.JSX.
         dice={toCardDice(check)}
         reference={check.checkId}
       >
-        <p
-          data-testid="outcome-summary"
-          style={{
-            margin: 0,
-            fontFamily: 'var(--font-prose)',
-            fontSize: tokens.type.reading,
-            lineHeight: tokens.lineHeight.normal,
-          }}
-        >
-          {check.outcome.summary}
-        </p>
+        {/*
+          A move with no dice has nothing to summarise: its own text said what
+          happens. An empty paragraph would leave a gap where a sentence
+          belongs, which reads as something missing rather than something
+          deliberately absent.
+        */}
+        {check.outcome.summary !== '' && (
+          <p
+            data-testid="outcome-summary"
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-prose)',
+              fontSize: tokens.type.reading,
+              lineHeight: tokens.lineHeight.normal,
+            }}
+          >
+            {check.outcome.summary}
+          </p>
+        )}
 
         {waiting.map((offer) => (
           <Offer key={offer.id} offer={offer} onAnswer={onAnswer} busy={busy} />

@@ -100,11 +100,14 @@ describe('the progress roll interpreter', () => {
 });
 
 describe('the no-roll interpreter', () => {
-  it('resolves as written, proposing nothing', () => {
+  it('resolves as written, proposing nothing, and summarising nothing', () => {
+    // The summary is empty on purpose. It read "It happens as the move says",
+    // one sentence standing in for eighteen different moves, which told a
+    // person nothing. The move's own text says what happens.
     expect(interpretNoRoll()).toEqual({
       id: 'resolved',
       label: 'As written',
-      summary: 'It happens as the move says.',
+      summary: '',
       suggests: [],
     });
   });
