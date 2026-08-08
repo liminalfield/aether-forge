@@ -13,7 +13,7 @@ import {
 } from '@aether-forge/core';
 import { glacialDark } from '@aether-forge/ui';
 import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
 import { answerOffer } from './answer-offer';
@@ -23,6 +23,13 @@ import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
 import { correctEntry, readJournal, recordEntry } from './journal';
+import {
+  importPackageFromFile,
+  type RegistryDirectories,
+  type RegistryHolder,
+} from './import-package';
+import { listPackages, openRegistry } from './packages';
+import { loadSystems } from './systems';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
@@ -81,7 +88,21 @@ function registerIpcHandlers(
   campaign: OpenCampaign,
   log: TranslatingLog,
   userDataDir: string,
+  holder: RegistryHolder,
+  directories: RegistryDirectories,
 ): void {
+  ipcMain.handle(IPC.listPackages, () => listPackages(holder.current));
+  ipcMain.handle(IPC.importPackage, () =>
+    importPackageFromFile(holder, directories, async () => {
+      const picked = await dialog.showOpenDialog({
+        title: 'Import a Datasworn file',
+        filters: [{ name: 'Datasworn JSON', extensions: ['json'] }],
+        properties: ['openFile'],
+      });
+      return picked.canceled ? undefined : picked.filePaths[0];
+    }),
+  );
+
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
 
@@ -152,7 +173,7 @@ function registerIpcHandlers(
   });
 }
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   const db = openCampaignDatabase(app.getPath('userData'), ONLY_CAMPAIGN);
   app.once('will-quit', () => db.close());
 
@@ -186,7 +207,23 @@ void app.whenReady().then(() => {
     throw new Error(`this campaign could not be opened: ${describeFailure(opened.failure)}`);
   }
 
-  registerIpcHandlers(opened.value, log, app.getPath('userData'));
+  // What content this machine holds. Bundled packages ride in the install's
+  // resources; imported ones live in the application data directory. Read
+  // once at startup; the import flow re-reads when it installs.
+  const directories: RegistryDirectories = {
+    bundled: app.isPackaged
+      ? join(process.resourcesPath, 'content')
+      : join(app.getAppPath(), 'resources', 'content'),
+    imported: join(app.getPath('userData'), 'packages'),
+  };
+  const holder: RegistryHolder = { current: await openRegistry(directories) };
+
+  // The modules receive their installed content at load, per contract §9.
+  // An import mid-session re-reads the registry but not the systems; new
+  // checks arrive on restart, which the import surface says.
+  loadSystems(holder.current.packages);
+
+  registerIpcHandlers(opened.value, log, app.getPath('userData'), holder, directories);
   createWindow();
 
   app.on('activate', () => {

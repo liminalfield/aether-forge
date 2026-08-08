@@ -29,6 +29,8 @@ export const IPC = {
   createEntity: 'entities:create',
   changeEntity: 'entities:change',
   describeEntityTypes: 'entities:describeTypes',
+  listPackages: 'packages:list',
+  importPackage: 'packages:import',
   startTrack: 'tracks:start',
   advanceTrack: 'tracks:advance',
   setTrack: 'tracks:set',
@@ -281,6 +283,35 @@ export interface ChangeEntityRequest {
   readonly fields: Readonly<Record<string, FieldValueView>>;
 }
 
+/** One installed content package, described well enough to render and credit. */
+export interface InstalledPackageView {
+  readonly id: string;
+  readonly version: string;
+  readonly title: string;
+  readonly license: string;
+  /** Rendered wherever the content is credited. CC-BY requires it. */
+  readonly attribution?: string;
+  readonly source: 'bundled' | 'imported' | 'user';
+  readonly tables: number;
+  readonly documents: number;
+}
+
+export interface PackagesView {
+  readonly packages: readonly InstalledPackageView[];
+  /** Files the registry refused, said by name, never silently dropped. */
+  readonly problems: readonly string[];
+}
+
+/** What came of asking to import a package file. */
+export interface ImportedPackagesView {
+  /** The machine's content as it now stands. */
+  readonly listing: PackagesView;
+  /** Present when something was installed; absent when the dialog was dismissed. */
+  readonly installedId?: string;
+  /** What the conversion left out, said per item, never hidden. */
+  readonly notes: readonly string[];
+}
+
 /** One entity type a loaded module describes, named well enough to offer. */
 export interface EntityTypeView {
   readonly id: string;
@@ -505,6 +536,16 @@ export interface AetherForgeApi {
    * earlier value.
    */
   changeEntity(request: ChangeEntityRequest): Promise<IpcResult<EntityView>>;
+
+  /** What content this machine holds, with the attribution the licenses require. */
+  listPackages(): Promise<IpcResult<PackagesView>>;
+
+  /**
+   * Ask for a Datasworn file and install it as a package, atomically,
+   * through the same importer the build uses. Dismissing the dialog is not
+   * an error; the answer simply installs nothing.
+   */
+  importPackage(): Promise<IpcResult<ImportedPackagesView>>;
 
   /**
    * The entity types the loaded modules describe, for a creation surface to

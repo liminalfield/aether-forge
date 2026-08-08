@@ -9,16 +9,23 @@ import {
   type OpenCampaign,
   type Projection,
 } from '@aether-forge/core';
-import {
-  FACE_DANGER,
-  momentum,
-  MOMENTUM_CHANGED,
-  STARFORGED_SYSTEM_ID,
-} from '@aether-forge/system-ironsworn';
+import { momentum, MOMENTUM_CHANGED, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
 import { asProjection } from '@aether-forge/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { answerOffer } from './answer-offer';
+import { loadFixtureSystems } from './content-fixture';
+import { loadedSystems } from './systems';
+
+loadFixtureSystems();
+
+const FACE_DANGER = (() => {
+  const found = loadedSystems()
+    .flatMap((system) => system.checks)
+    .find((check) => check.id === 'starforged/adventure/face_danger');
+  if (found === undefined) throw new Error('the fixture content built no Face Danger');
+  return found;
+})();
 import { declareEventTypes } from './event-types';
 import { runCheck } from './run-check';
 

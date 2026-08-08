@@ -127,6 +127,24 @@ export {
   readEntityCreated,
 } from './entity.js';
 
+export type {
+  ContentPackage,
+  OracleFailure,
+  OracleOutcome,
+  OracleProvider,
+  OracleTable,
+  PackageManifest,
+  PackageSource,
+  ReferenceDoc,
+} from './content.js';
+export {
+  readContentPackage,
+  readManifest,
+  readOracleTable,
+  readReferenceDoc,
+  rowFor,
+} from './content.js';
+
 export type { EntityTemplate, FieldSpec, TrackSpec } from './template.js';
 export { describesRecordableEntities } from './template.js';
 

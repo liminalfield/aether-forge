@@ -41,6 +41,7 @@ async function open(): Promise<Page> {
 test('suggests nothing while the campaign has nobody to read from', async () => {
   const page = await open();
 
+  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
   await expect(page.getByTestId('input-stat')).toHaveValue('');
   await expect(page.getByTestId('suggested-stat')).toHaveCount(0);
 });
@@ -53,6 +54,7 @@ test('reads the stat from a character made a moment ago, and rolls it untyped', 
   await page.getByTestId('note-it').click();
 
   // The box holds the suggestion, and says why, without a restart.
+  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
   await expect(page.getByTestId('input-stat')).toHaveValue('1');
   await expect(page.getByTestId('suggested-stat')).toContainText('the strongest Vess has');
 

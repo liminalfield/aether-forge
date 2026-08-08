@@ -25,3 +25,7 @@ CHANGELOG.md
 **/CHANGELOG.md
 test-results/
 playwright-report/
+
+# Generated at build time by apps/desktop/scripts/bundle-content.mjs from the
+# pinned Datasworn sources; compact on purpose and remade on every build.
+apps/desktop/resources/content/

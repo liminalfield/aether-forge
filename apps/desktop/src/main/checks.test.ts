@@ -1,18 +1,21 @@
 import type { CheckDefinition } from '@aether-forge/core';
-import { checks as ironswornChecks, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
+import { STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
 import { CALL_IT, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 import { describe, expect, it } from 'vitest';
 
 import type { CheckView } from '../shared/ipc';
 import { describeChecks } from './checks';
-import { LOADED_SYSTEMS, playableSystems } from './systems';
+import { loadFixtureSystems } from './content-fixture';
+import { loadedSystems, playableSystems } from './systems';
+
+loadFixtureSystems();
 
 const described = (): readonly CheckView[] => describeChecks(undefined).checks;
 
 const find = (id: string): CheckView | undefined => described().find((check) => check.id === id);
 
 /** Everything this build loads, playable or not. */
-const everything = (): readonly CheckView[] => describeChecks(undefined, LOADED_SYSTEMS).checks;
+const everything = (): readonly CheckView[] => describeChecks(undefined, loadedSystems()).checks;
 
 const findAnywhere = (id: string): CheckView | undefined =>
   everything().find((check) => check.id === id);
@@ -29,7 +32,7 @@ describe('what crosses to the window', () => {
     // systems. It is not a game, and offering its coin flip beside a real check
     // would be showing somebody a test fixture.
     expect(described().some((check) => check.systemId === TOY_SYSTEM_ID)).toBe(false);
-    expect(LOADED_SYSTEMS.some((system) => system.systemId === TOY_SYSTEM_ID)).toBe(true);
+    expect(loadedSystems().some((system) => system.systemId === TOY_SYSTEM_ID)).toBe(true);
   });
 
   it('describes it perfectly well when asked for it', () => {
@@ -37,7 +40,7 @@ describe('what crosses to the window', () => {
     // cross this boundary as cleanly as anything else.
     const toy = describeChecks(
       undefined,
-      LOADED_SYSTEMS.filter((s) => s.systemId === TOY_SYSTEM_ID),
+      loadedSystems().filter((s) => s.systemId === TOY_SYSTEM_ID),
     );
 
     expect(toy.checks.map((check) => check.id)).toEqual([CALL_IT.id]);
@@ -45,7 +48,9 @@ describe('what crosses to the window', () => {
 
   it('says which system each one belongs to', () => {
     expect(findAnywhere(CALL_IT.id)?.systemId).toBe(TOY_SYSTEM_ID);
-    expect(find(ironswornChecks[0]?.id ?? '')?.systemId).toBe(STARFORGED_SYSTEM_ID);
+    expect(find(playableSystems().flatMap((system) => system.checks)[0]?.id ?? '')?.systemId).toBe(
+      STARFORGED_SYSTEM_ID,
+    );
   });
 
   it('carries no function across', () => {
@@ -72,7 +77,7 @@ describe('what crosses to the window', () => {
 });
 
 describe('a check with inputs', () => {
-  const faceDanger = ironswornChecks[0];
+  const faceDanger = playableSystems().flatMap((system) => system.checks)[0];
 
   it('describes each one well enough to draw', () => {
     const inputs = find(faceDanger?.id ?? '')?.inputs ?? [];
@@ -167,7 +172,7 @@ describe('the window is told, never asked to know', () => {
     // Everything a person will read on screen came from a module. This walks
     // both directions so that a mapping which quietly renamed a label, or lost
     // one of a choice's values, fails here rather than on screen.
-    for (const system of LOADED_SYSTEMS) {
+    for (const system of loadedSystems()) {
       for (const declared of system.checks) {
         const crossed = findAnywhere(declared.id);
 

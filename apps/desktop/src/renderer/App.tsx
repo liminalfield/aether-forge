@@ -6,6 +6,7 @@ import type {
   ChecksView,
   CheckView,
   EntitiesView,
+  InstalledPackageView,
   EntityTypeView,
   EntityView,
   FieldValueView,
@@ -45,6 +46,7 @@ export function App(): React.JSX.Element {
   const [items, setItems] = useState<readonly TimelineItem[] | null>(null);
   const [checks, setChecks] = useState<readonly CheckView[]>([]);
   const [held, setHeld] = useState<readonly EntityView[]>([]);
+  const [credits, setCredits] = useState<readonly InstalledPackageView[]>([]);
   const [entityTypes, setEntityTypes] = useState<readonly EntityTypeView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -79,6 +81,11 @@ export function App(): React.JSX.Element {
     void window.aetherForge.describeEntityTypes().then((types) => {
       if (types.ok) setEntityTypes(types.value.types);
       else setProblem(types.failure.detail);
+    });
+
+    void window.aetherForge.listPackages().then((held) => {
+      if (held.ok) setCredits(held.value.packages);
+      else setProblem(held.failure.detail);
     });
   }, []);
 
@@ -183,6 +190,21 @@ export function App(): React.JSX.Element {
     },
     [entitiesArrived, rereadShape],
   );
+
+  const importContent = useCallback(async () => {
+    setBusy(true);
+    try {
+      const asked = await window.aetherForge.importPackage();
+      if (asked.ok) {
+        setCredits(asked.value.listing.packages);
+        setProblem(null);
+      } else {
+        setProblem(asked.failure.detail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
   const advanceATrack = useCallback(
     async (entityId: string, trackId: string, by: number) => {
@@ -366,6 +388,28 @@ export function App(): React.JSX.Element {
               Record it
             </Button>
           </form>
+
+          {/*
+          The licenses require the credit, so the application renders it,
+          quietly, where the content actually is. Not behind a menu: a
+          condition on using someone's work is not a settings page.
+        */}
+          <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space.xs }}>
+            {credits.map((credit) => (
+              <p key={credit.id} style={QUIET}>
+                {credit.attribution ?? `${credit.title} ${credit.version}, ${credit.license}.`}
+              </p>
+            ))}
+            <Button
+              weight="quiet"
+              data-testid="import-content"
+              disabled={busy}
+              onClick={() => void importContent()}
+              style={{ justifySelf: 'start' }}
+            >
+              Import content…
+            </Button>
+          </footer>
 
           {problem !== null && (
             <p

@@ -9,30 +9,18 @@
 
 import {
   CORE_CONTRACT_VERSION,
-  entities,
-  nameOf,
-  readRoll,
-  type CheckDefinition,
-  type CheckOutcome,
-  type OutcomeStyle,
-  type EffectSuggestion,
   type EntityTemplate,
   type EventTypeDefinition,
   type FieldSpec,
   type ModuleProjection,
-  type ProjectionContext,
-  type RollPerformedV1,
-  type SystemId,
 } from '@aether-forge/core';
 
-export const STARFORGED_SYSTEM_ID: SystemId = 'ironsworn-starforged';
-export const IRONSWORN_SYSTEM_ID: SystemId = 'ironsworn-classic';
+export { IRONSWORN_SYSTEM_ID, STARFORGED_SYSTEM_ID } from './ids.js';
+import { MOMENTUM_CHANGED, MOVE_INVOKED, MOVE_RESOLVED, STARFORGED_SYSTEM_ID } from './ids.js';
+export { MOMENTUM_CHANGED, MOVE_INVOKED, MOVE_RESOLVED } from './ids.js';
 
 /** The contract version this module was written against. */
 export const COMPATIBLE_CORE_CONTRACT_VERSION = CORE_CONTRACT_VERSION;
-
-/** Momentum moved. Carries the change, never the resulting value. */
-export const MOMENTUM_CHANGED = 'sys.ironsworn-starforged.momentum.changed';
 
 export interface MomentumChanged {
   /** How far it moved, positive or negative. */
@@ -101,10 +89,6 @@ export const momentum: ModuleProjection<Momentum> = {
  * Declared by the module rather than by the application, because the module is
  * the only thing that knows what its events mean or how they have changed.
  */
-/** The two event types a check writes either side of its roll. */
-export const MOVE_INVOKED = 'sys.ironsworn-starforged.move.invoked';
-export const MOVE_RESOLVED = 'sys.ironsworn-starforged.move.resolved';
-
 export const eventTypes: readonly EventTypeDefinition[] = [
   {
     type: MOMENTUM_CHANGED,
@@ -128,173 +112,13 @@ export const eventTypes: readonly EventTypeDefinition[] = [
 export const STATS = ['edge', 'heart', 'iron', 'shadow', 'wits'] as const;
 
 /**
- * The stat the application would use, read from the character.
- *
- * The campaign's first character-typed entity stands in for "the character"
- * until session zero decides the question properly; the design record carries
- * it as an open question with exactly this interim answer. The suggestion is
- * the strongest stat, which is advice a rulebook would not argue with and a
- * player is free to.
- *
- * No character, or a character with no numeric stats, suggests nothing, and
- * suggesting nothing must work: the check runs on typed-in values the way it
- * always has.
+ * The checks this module offers come from installed content joined to its
+ * interpreters; see `checks-from-content.ts`. The hand-written Face Danger
+ * declaration that stood here retired when the whole move list arrived,
+ * 8 August 2026 (#167). Its behaviour lives on in the action-roll
+ * interpreter and the tuned momentum proposals, held to parity by tests.
  */
-function suggestStat(context: ProjectionContext): { value: number; why: string } | undefined {
-  const character = context
-    .stateOf(entities)
-    .entities.find((each) => each.entityType === `sys.${STARFORGED_SYSTEM_ID}.character`);
-  if (character === undefined) return undefined;
-
-  let best: { stat: string; value: number } | undefined;
-  for (const stat of STATS) {
-    const value = character.fields[stat];
-    if (typeof value !== 'number') continue;
-    if (best === undefined || value > best.value) best = { stat, value };
-  }
-  if (best === undefined) return undefined;
-
-  const whose = nameOf(character) ?? 'the character';
-  return { value: best.value, why: `${best.stat} is the strongest ${whose} has` };
-}
-
-/**
- * Face Danger, as a check.
- *
- * The first check with everything in it: a choice the application has an
- * opinion about, dice, an interpretation, and a proposed effect the player can
- * change or refuse.
- *
- * The action die is added to the stat and any bonus, and the total is compared
- * against each challenge die. Beating both is a strong hit, beating one is a
- * weak hit, beating neither is a miss.
- */
-/**
- * Every result this check can produce, and how each is shown.
- *
- * The labels live here rather than in `interpret`, so the word a person sees
- * while they roll and the word they see reading it back next year cannot drift
- * apart. `interpret` looks its own entry up.
- *
- * `unreadable` is shown the way a failure is. It is not one, and there is no
- * fifth colour: four is what a person can learn, and inventing one for a state
- * that only happens when something has gone wrong would spend it badly.
- */
-const FACE_DANGER_OUTCOMES: readonly OutcomeStyle[] = [
-  { id: 'strong-hit', label: 'Strong hit', tone: 'strong', glyph: '\u25C6' },
-  { id: 'weak-hit', label: 'Weak hit', tone: 'weak', glyph: '\u25C7' },
-  { id: 'miss', label: 'Miss', tone: 'miss', glyph: '\u25B3' },
-  { id: 'unreadable', label: 'Unreadable', tone: 'miss', glyph: '\u003F' },
-];
-
-/** The declared label for a result, so no result is named twice. */
-function labelled(id: string): string {
-  return FACE_DANGER_OUTCOMES.find((style) => style.id === id)?.label ?? id;
-}
-
-export const FACE_DANGER: CheckDefinition = {
-  id: 'starforged/moves/adventure/face_danger',
-  name: 'Face Danger',
-
-  roll: {
-    dice: [
-      { sides: 6, count: 1, label: 'action' },
-      { sides: 10, count: 2, label: 'challenge' },
-    ],
-  },
-
-  // The challenge dice are what the result turned on: the action side is what
-  // you brought, the challenge dice are what the world answered with.
-  decisive: 'challenge',
-
-  outcomes: FACE_DANGER_OUTCOMES,
-
-  inputs: [
-    {
-      id: 'stat',
-      label: 'Stat',
-      kind: 'choice',
-      source: 'chosen',
-      options: STATS.map((stat) => ({ id: stat, label: stat, value: 0 })),
-      suggest: suggestStat,
-    },
-    { id: 'bonus', label: 'Bonus', kind: 'number', source: 'chosen' },
-  ],
-
-  interpret: (roll, inputs) => interpretFaceDanger(roll, inputs),
-};
-
-/** Everything the check offers. One is enough to prove the shape carries a real system. */
-export const checks: readonly CheckDefinition[] = [FACE_DANGER];
-
-function interpretFaceDanger(
-  roll: RollPerformedV1 | null,
-  inputs: Readonly<Record<string, number>>,
-): CheckOutcome {
-  const read = roll === null ? undefined : readRoll(roll);
-  const action = read?.dice[0];
-  const challenge = read?.dice.slice(1) ?? [];
-
-  if (action === undefined || challenge.length !== 2) {
-    return {
-      id: 'unreadable',
-      label: labelled('unreadable'),
-      summary: 'That roll was not an action roll.',
-      suggests: [],
-    };
-  }
-
-  const total = action.value + (inputs['stat'] ?? 0) + (inputs['bonus'] ?? 0);
-  const beaten = challenge.filter((die) => total > die.value).length;
-
-  if (beaten === 2) {
-    return {
-      id: 'strong-hit',
-      label: labelled('strong-hit'),
-      summary: 'You do it, and you are in control.',
-      suggests: [momentumSuggestion(1, 'a clean success')],
-    };
-  }
-
-  if (beaten === 1) {
-    return {
-      id: 'weak-hit',
-      label: labelled('weak-hit'),
-      summary: 'You do it, but at a cost.',
-      suggests: [momentumSuggestion(-1, 'a cost paid')],
-    };
-  }
-
-  return {
-    id: 'miss',
-    label: labelled('miss'),
-    summary: 'It goes badly.',
-    suggests: [momentumSuggestion(-2, 'it went badly')],
-  };
-}
-
-/**
- * What the module proposes doing about an outcome.
- *
- * Every field of the proposal is described, because the contract requires it. A
- * proposal describing only some of its payload would be adjustable in parts,
- * and a player pressing adjust would be guessing at which parts.
- */
-function momentumSuggestion(by: number, reason: string): EffectSuggestion {
-  return {
-    id: `${FACE_DANGER.id}#momentum`,
-    label: `Momentum ${by > 0 ? '+' : ''}${by}`,
-    fields: [
-      { id: 'by', label: 'Amount', kind: 'number' as const },
-      { id: 'reason', label: 'Reason', kind: 'text' as const },
-    ],
-    proposes: {
-      type: MOMENTUM_CHANGED,
-      systemId: STARFORGED_SYSTEM_ID,
-      payload: { by, reason },
-    },
-  };
-}
+export { checksFrom } from './checks-from-content.js';
 
 /**
  * The entities this system is about.
@@ -332,3 +156,13 @@ export const VOW_TEMPLATE: EntityTemplate = {
 };
 
 export const templates: readonly EntityTemplate[] = [CHARACTER_TEMPLATE, VOW_TEMPLATE];
+
+export {
+  ACTION_ROLL_OUTCOMES,
+  interpretActionRoll,
+  interpretNoRoll,
+  interpretProgressRoll,
+  NO_ROLL_OUTCOMES,
+  PROGRESS_ROLL_OUTCOMES,
+  type SuggestsFor,
+} from './interpreters.js';
