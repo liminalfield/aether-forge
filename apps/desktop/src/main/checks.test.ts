@@ -7,12 +7,12 @@ import type { CheckView } from '../shared/ipc';
 import { describeChecks } from './checks';
 import { LOADED_SYSTEMS, playableSystems } from './systems';
 
-const described = (): readonly CheckView[] => describeChecks().checks;
+const described = (): readonly CheckView[] => describeChecks(undefined).checks;
 
 const find = (id: string): CheckView | undefined => described().find((check) => check.id === id);
 
 /** Everything this build loads, playable or not. */
-const everything = (): readonly CheckView[] => describeChecks(LOADED_SYSTEMS).checks;
+const everything = (): readonly CheckView[] => describeChecks(undefined, LOADED_SYSTEMS).checks;
 
 const findAnywhere = (id: string): CheckView | undefined =>
   everything().find((check) => check.id === id);
@@ -35,7 +35,10 @@ describe('what crosses to the window', () => {
   it('describes it perfectly well when asked for it', () => {
     // Not offered is not the same as not supported. The canary still has to
     // cross this boundary as cleanly as anything else.
-    const toy = describeChecks(LOADED_SYSTEMS.filter((s) => s.systemId === TOY_SYSTEM_ID));
+    const toy = describeChecks(
+      undefined,
+      LOADED_SYSTEMS.filter((s) => s.systemId === TOY_SYSTEM_ID),
+    );
 
     expect(toy.checks.map((check) => check.id)).toEqual([CALL_IT.id]);
   });
@@ -141,7 +144,7 @@ describe('a check that rolls nothing', () => {
       interpret: () => ({ id: 'done', label: 'Done', summary: 'You looked around.', suggests: [] }),
     };
 
-    const only = describeChecks([
+    const only = describeChecks(undefined, [
       {
         systemId: 'example',
         checks: [rollsNothing],

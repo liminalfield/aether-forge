@@ -165,6 +165,13 @@ export interface CheckInputView {
   readonly kind: 'choice' | 'number';
   /** Present when the kind is `choice`. */
   readonly options?: readonly CheckOptionView[];
+  /**
+   * What the application would put in the box, and why, computed from the
+   * campaign when the check was described. A suggestion in the ordinary
+   * sense: shown, takeable, ignorable, and what the player did about it is
+   * recorded when the check runs.
+   */
+  readonly suggested?: { readonly value: number; readonly why: string };
 }
 
 /** Dice a check asks for, before any of them have been rolled or thrown. */

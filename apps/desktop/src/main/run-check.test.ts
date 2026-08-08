@@ -1,4 +1,5 @@
 import {
+  entities,
   createMemoryEventLog,
   createTranslatingLog,
   openCampaign,
@@ -9,10 +10,11 @@ import {
   type OpenCampaign,
   type Projection,
 } from '@aether-forge/core';
-import { FACE_DANGER, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
+import { FACE_DANGER, MOVE_INVOKED, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
 import { CALL_IT, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 import { describe, expect, it } from 'vitest';
 
+import { createEntity } from './entities';
 import { declareEventTypes } from './event-types';
 import { runCheck } from './run-check';
 
@@ -27,7 +29,9 @@ function openACampaign(): { campaign: OpenCampaign; read: () => readonly EventEn
     declareEventTypes(),
   );
 
-  const opened = openCampaign(log, { projections: [suggestions as Projection<unknown>] });
+  const opened = openCampaign(log, {
+    projections: [suggestions as Projection<unknown>, entities as Projection<unknown>],
+  });
   if (!opened.ok) throw new Error('could not open the campaign');
 
   return {
@@ -266,5 +270,61 @@ describe('what it refuses, and what it does not', () => {
     });
 
     expect(ran.ok).toBe(true);
+  });
+});
+
+describe('what was suggested before the roll', () => {
+  it('records the suggestion as accepted when the check ran with it', () => {
+    const { campaign, read } = openACampaign();
+    createEntity(campaign, () => 'vess', {
+      entityType: `sys.${STARFORGED_SYSTEM_ID}.character`,
+      fields: { name: 'Vess', wits: 3 },
+    });
+
+    runCheck(campaign, {
+      systemId: STARFORGED_SYSTEM_ID,
+      checkId: FACE_DANGER.id,
+      inputs: { stat: 3, bonus: 0 },
+      thrown: [4, 2, 9],
+    });
+
+    const types = read().map((event) => event.type);
+    const offerAt = types.indexOf('core.suggestion.offered');
+    expect(offerAt).toBeGreaterThanOrEqual(0);
+    expect(types[offerAt + 1]).toBe('core.suggestion.accepted');
+    expect(types.indexOf('core.suggestion.offered')).toBeLessThan(types.indexOf(MOVE_INVOKED));
+  });
+
+  it('records the suggestion as adjusted when the player used another number', () => {
+    const { campaign, read } = openACampaign();
+    createEntity(campaign, () => 'vess', {
+      entityType: `sys.${STARFORGED_SYSTEM_ID}.character`,
+      fields: { name: 'Vess', wits: 3 },
+    });
+
+    runCheck(campaign, {
+      systemId: STARFORGED_SYSTEM_ID,
+      checkId: FACE_DANGER.id,
+      inputs: { stat: 1, bonus: 0 },
+      thrown: [4, 2, 9],
+    });
+
+    const types = read().map((event) => event.type);
+    expect(types).toContain('core.suggestion.adjusted');
+  });
+
+  it('offers nothing before the roll when the campaign has no character', () => {
+    const { campaign, read } = openACampaign();
+
+    runCheck(campaign, {
+      systemId: STARFORGED_SYSTEM_ID,
+      checkId: FACE_DANGER.id,
+      inputs: { stat: 2, bonus: 0 },
+      thrown: [4, 2, 9],
+    });
+
+    const types = read().map((event) => event.type);
+    const beforeInvoked = types.slice(0, types.indexOf(MOVE_INVOKED));
+    expect(beforeInvoked).not.toContain('core.suggestion.offered');
   });
 });

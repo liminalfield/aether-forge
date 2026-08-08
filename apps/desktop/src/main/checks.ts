@@ -1,4 +1,4 @@
-import type { CheckDefinition, CheckInput, SystemId } from '@aether-forge/core';
+import type { CheckDefinition, CheckInput, ProjectionContext, SystemId } from '@aether-forge/core';
 
 import type { CheckInputView, CheckView, ChecksView } from '../shared/ipc';
 import { playableSystems, type LoadedSystem } from './systems';
@@ -19,21 +19,32 @@ import { playableSystems, type LoadedSystem } from './systems';
  * that can only ever say `ok` is a shape nobody should have to check.
  */
 
-function describeInput(input: CheckInput): CheckInputView {
-  const described = { id: input.id, label: input.label, kind: input.kind };
+function describeInput(input: CheckInput, context: ProjectionContext | undefined): CheckInputView {
+  const described: CheckInputView = { id: input.id, label: input.label, kind: input.kind };
 
   // Spread rather than a key set to undefined. `exactOptionalPropertyTypes` is
   // on, and a key that exists holding undefined is a different thing over IPC
   // from a key that is absent.
-  return input.options === undefined ? described : { ...described, options: [...input.options] };
+  const withOptions =
+    input.options === undefined ? described : { ...described, options: [...input.options] };
+
+  // What the application would put in the box, computed from the campaign as
+  // it stands when asked. Absent when the module suggests nothing, and the
+  // window must draw that fine: an empty box was the whole surface until now.
+  const suggested = context === undefined ? undefined : input.suggest?.(context);
+  return suggested === undefined ? withOptions : { ...withOptions, suggested };
 }
 
-function describeCheck(check: CheckDefinition, systemId: SystemId): CheckView {
+function describeCheck(
+  check: CheckDefinition,
+  systemId: SystemId,
+  context: ProjectionContext | undefined,
+): CheckView {
   const described: CheckView = {
     id: check.id,
     systemId,
     name: check.name,
-    inputs: check.inputs.map(describeInput),
+    inputs: check.inputs.map((input) => describeInput(input, context)),
   };
 
   // A check with no dice is a real thing rather than an oversight: taking stock
@@ -57,10 +68,13 @@ function describeCheck(check: CheckDefinition, systemId: SystemId): CheckView {
  * offering its coin flip beside a real check would be showing somebody a test
  * fixture. Running one is still possible, which is what the tests do.
  */
-export function describeChecks(systems: readonly LoadedSystem[] = playableSystems()): ChecksView {
+export function describeChecks(
+  context?: ProjectionContext,
+  systems: readonly LoadedSystem[] = playableSystems(),
+): ChecksView {
   return {
     checks: systems.flatMap((system) =>
-      system.checks.map((check) => describeCheck(check, system.systemId)),
+      system.checks.map((check) => describeCheck(check, system.systemId, context)),
     ),
   };
 }

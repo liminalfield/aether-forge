@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, slot, TABULAR_NUMERALS, tokens, WritingSurface } from '@aether-forge/ui';
 
 import type {
+  ChecksView,
   CheckView,
   EntitiesView,
   EntityTypeView,
@@ -124,14 +125,29 @@ export function App(): React.JSX.Element {
     }
   }, []);
 
-  /** A fresh reading of the entities, applied in the same render as busy. */
-  const entitiesArrived = useCallback((entities: IpcResult<EntitiesView>) => {
-    if (entities.ok) {
-      setHeld(entities.value.entities);
-      setProblem(null);
-    } else {
-      setProblem(entities.failure.detail);
-    }
+  /**
+   * A fresh reading of the entities and the checks, applied in the same
+   * render as busy. The checks come along because a suggestion is computed
+   * from the campaign when a check is described, and a character created a
+   * moment ago should be suggesting stats without a restart.
+   */
+  const entitiesArrived = useCallback(
+    (entities: IpcResult<EntitiesView>, checks: IpcResult<ChecksView>) => {
+      if (entities.ok) {
+        setHeld(entities.value.entities);
+        setProblem(null);
+      } else {
+        setProblem(entities.failure.detail);
+      }
+      if (checks.ok) setChecks(checks.value.checks);
+    },
+    [],
+  );
+
+  const rereadShape = useCallback(async (): Promise<
+    [IpcResult<EntitiesView>, IpcResult<ChecksView>]
+  > => {
+    return Promise.all([window.aetherForge.readEntities(), window.aetherForge.readChecks()]);
   }, []);
 
   const createAnEntity = useCallback(
@@ -142,13 +158,13 @@ export function App(): React.JSX.Element {
           ...(request.entityType === undefined ? {} : { entityType: request.entityType }),
           fields: { name: request.name },
         });
-        if (made.ok) entitiesArrived(await window.aetherForge.readEntities());
+        if (made.ok) entitiesArrived(...(await rereadShape()));
         else setProblem(made.failure.detail);
       } finally {
         setBusy(false);
       }
     },
-    [entitiesArrived],
+    [entitiesArrived, rereadShape],
   );
 
   const setAField = useCallback(
@@ -159,13 +175,13 @@ export function App(): React.JSX.Element {
           entityId,
           fields: { [fieldId]: value },
         });
-        if (changed.ok) entitiesArrived(await window.aetherForge.readEntities());
+        if (changed.ok) entitiesArrived(...(await rereadShape()));
         else setProblem(changed.failure.detail);
       } finally {
         setBusy(false);
       }
     },
-    [entitiesArrived],
+    [entitiesArrived, rereadShape],
   );
 
   const advanceATrack = useCallback(
@@ -173,13 +189,13 @@ export function App(): React.JSX.Element {
       setBusy(true);
       try {
         const moved = await window.aetherForge.advanceTrack({ entityId, trackId, by });
-        if (moved.ok) entitiesArrived(await window.aetherForge.readEntities());
+        if (moved.ok) entitiesArrived(...(await rereadShape()));
         else setProblem(moved.failure.detail);
       } finally {
         setBusy(false);
       }
     },
-    [entitiesArrived],
+    [entitiesArrived, rereadShape],
   );
 
   const runACheck = useCallback(

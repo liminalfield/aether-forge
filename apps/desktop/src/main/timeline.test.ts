@@ -1,4 +1,5 @@
 import {
+  entities,
   createMemoryEventLog,
   createTranslatingLog,
   declaresStyleFor,
@@ -35,7 +36,11 @@ function openOver(stored: EventLog): {
 } {
   const log = createTranslatingLog(stored, declareEventTypes());
   const opened = openCampaign(log, {
-    projections: [journal as Projection<unknown>, suggestions as Projection<unknown>],
+    projections: [
+      journal as Projection<unknown>,
+      suggestions as Projection<unknown>,
+      entities as Projection<unknown>,
+    ],
   });
 
   if (!opened.ok) throw new Error('could not open the campaign');

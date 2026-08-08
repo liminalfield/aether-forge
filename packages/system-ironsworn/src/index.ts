@@ -9,6 +9,8 @@
 
 import {
   CORE_CONTRACT_VERSION,
+  entities,
+  nameOf,
   readRoll,
   type CheckDefinition,
   type CheckOutcome,
@@ -18,6 +20,7 @@ import {
   type EventTypeDefinition,
   type FieldSpec,
   type ModuleProjection,
+  type ProjectionContext,
   type RollPerformedV1,
   type SystemId,
 } from '@aether-forge/core';
@@ -125,6 +128,37 @@ export const eventTypes: readonly EventTypeDefinition[] = [
 export const STATS = ['edge', 'heart', 'iron', 'shadow', 'wits'] as const;
 
 /**
+ * The stat the application would use, read from the character.
+ *
+ * The campaign's first character-typed entity stands in for "the character"
+ * until session zero decides the question properly; the design record carries
+ * it as an open question with exactly this interim answer. The suggestion is
+ * the strongest stat, which is advice a rulebook would not argue with and a
+ * player is free to.
+ *
+ * No character, or a character with no numeric stats, suggests nothing, and
+ * suggesting nothing must work: the check runs on typed-in values the way it
+ * always has.
+ */
+function suggestStat(context: ProjectionContext): { value: number; why: string } | undefined {
+  const character = context
+    .stateOf(entities)
+    .entities.find((each) => each.entityType === `sys.${STARFORGED_SYSTEM_ID}.character`);
+  if (character === undefined) return undefined;
+
+  let best: { stat: string; value: number } | undefined;
+  for (const stat of STATS) {
+    const value = character.fields[stat];
+    if (typeof value !== 'number') continue;
+    if (best === undefined || value > best.value) best = { stat, value };
+  }
+  if (best === undefined) return undefined;
+
+  const whose = nameOf(character) ?? 'the character';
+  return { value: best.value, why: `${best.stat} is the strongest ${whose} has` };
+}
+
+/**
  * Face Danger, as a check.
  *
  * The first check with everything in it: a choice the application has an
@@ -182,6 +216,7 @@ export const FACE_DANGER: CheckDefinition = {
       kind: 'choice',
       source: 'chosen',
       options: STATS.map((stat) => ({ id: stat, label: stat, value: 0 })),
+      suggest: suggestStat,
     },
     { id: 'bonus', label: 'Bonus', kind: 'number', source: 'chosen' },
   ],

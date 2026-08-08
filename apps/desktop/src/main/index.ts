@@ -101,7 +101,7 @@ function registerIpcHandlers(
     correctEntry(campaign, entryId, text),
   );
 
-  ipcMain.handle(IPC.readChecks, () => ({ ok: true as const, value: describeChecks() }));
+  ipcMain.handle(IPC.readChecks, () => ({ ok: true as const, value: describeChecks(campaign) }));
   ipcMain.handle(IPC.runCheck, (_event, request: unknown) => runCheck(campaign, request));
   ipcMain.handle(IPC.answerOffer, (_event, request: unknown) => answerOffer(campaign, request));
 
