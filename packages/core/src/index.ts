@@ -127,6 +127,9 @@ export {
   readEntityCreated,
 } from './entity.js';
 
+export type { EntityTemplate, FieldSpec, TrackSpec } from './template.js';
+export { describesRecordableEntities } from './template.js';
+
 export type { TrackAdvancedV1, TrackSetV1, TrackStartedV1 } from './track.js';
 export {
   readTrackAdvanced,

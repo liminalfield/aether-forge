@@ -18,6 +18,7 @@ import {
   readCoinFlip,
   TOY_SYSTEM_ID,
   type CoinTally,
+  templates,
 } from './index.js';
 
 function aFlip(seq: number, result: 'heads' | 'tails'): EventEnvelope {
@@ -276,5 +277,14 @@ describe('running the toy check through core', () => {
         {},
       ).id,
     ).toBe('tails');
+  });
+});
+
+describe('the entities the toy declines to describe', () => {
+  it('declares no templates, which must be a module that works', () => {
+    // The canary. Saying nothing about entities is the trivial
+    // implementation, and every entity surface has to render a campaign
+    // whose modules say nothing.
+    expect(templates).toEqual([]);
   });
 });

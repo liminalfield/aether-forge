@@ -6,6 +6,7 @@ import {
   SUGGESTION_OFFERED,
   type EventEnvelope,
   type RollPerformedV1,
+  describesRecordableEntities,
 } from '@aether-forge/core';
 import { asProjection, describeProjectionIsPredictable } from '@aether-forge/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -20,6 +21,9 @@ import {
   MOVE_RESOLVED,
   STARFORGED_SYSTEM_ID,
   STARTING_MOMENTUM,
+  CHARACTER_TEMPLATE,
+  templates,
+  VOW_TEMPLATE,
 } from './index.js';
 
 function aChange(seq: number, by: number): EventEnvelope {
@@ -292,5 +296,37 @@ describe('running Face Danger through core', () => {
     const [offered, answered] = run('accepted').ran;
     expect((offered?.draft.payload as { why: string }).why).toBe('your vehicle is built for this');
     expect(answered?.draft.type).toBe('core.suggestion.accepted');
+  });
+});
+
+describe('the entities this system describes', () => {
+  it('describes recordable entities, both of them', () => {
+    for (const template of templates) {
+      expect(describesRecordableEntities(template)).toBe(true);
+    }
+    expect(templates).toHaveLength(2);
+  });
+
+  it('gives a character the five stats and three condition meters', () => {
+    const stats = CHARACTER_TEMPLATE.fields.filter((field) => field.kind === 'number');
+    expect(stats.map((field) => field.id)).toEqual(['edge', 'heart', 'iron', 'shadow', 'wits']);
+    expect(CHARACTER_TEMPLATE.tracks.map((track) => track.id)).toEqual([
+      'health',
+      'spirit',
+      'supply',
+    ]);
+    expect(CHARACTER_TEMPLATE.tracks.every((track) => track.startsFilled === track.segments)).toBe(
+      true,
+    );
+  });
+
+  it('gives a vow ten segments of progress, starting empty', () => {
+    const [progress] = VOW_TEMPLATE.tracks;
+    expect(progress?.segments).toBe(10);
+    expect(progress?.startsFilled).toBe(0);
+  });
+
+  it('does not describe momentum as a track, because burning it is a rule', () => {
+    expect(CHARACTER_TEMPLATE.tracks.some((track) => track.id === 'momentum')).toBe(false);
   });
 });

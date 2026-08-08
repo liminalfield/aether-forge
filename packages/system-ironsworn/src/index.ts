@@ -14,7 +14,9 @@ import {
   type CheckOutcome,
   type OutcomeStyle,
   type EffectSuggestion,
+  type EntityTemplate,
   type EventTypeDefinition,
+  type FieldSpec,
   type ModuleProjection,
   type RollPerformedV1,
   type SystemId,
@@ -258,3 +260,38 @@ function momentumSuggestion(by: number, reason: string): EffectSuggestion {
     },
   };
 }
+
+/**
+ * The entities this system is about.
+ *
+ * A template describes what a new one starts with and never enforces
+ * anything. Momentum is deliberately not a track here: it is module state
+ * with its own projection, because burning and resetting it are rules, not
+ * marks on a row of segments.
+ */
+export const CHARACTER_TEMPLATE: EntityTemplate = {
+  typeId: `sys.${STARFORGED_SYSTEM_ID}.character`,
+  name: 'Character',
+  fields: [
+    { id: 'name', label: 'Name', kind: 'text' },
+    ...STATS.map((stat): FieldSpec => ({ id: stat, label: stat, kind: 'number', initial: 1 })),
+  ],
+  tracks: [
+    { id: 'health', label: 'Health', segments: 5, startsFilled: 5 },
+    { id: 'spirit', label: 'Spirit', segments: 5, startsFilled: 5 },
+    { id: 'supply', label: 'Supply', segments: 5, startsFilled: 5 },
+  ],
+};
+
+/** A vow: a rank in words, and ten segments of progress starting empty. */
+export const VOW_TEMPLATE: EntityTemplate = {
+  typeId: `sys.${STARFORGED_SYSTEM_ID}.vow`,
+  name: 'Vow',
+  fields: [
+    { id: 'name', label: 'Name', kind: 'text' },
+    { id: 'rank', label: 'Rank', kind: 'text' },
+  ],
+  tracks: [{ id: 'progress', label: 'Progress', segments: 10, startsFilled: 0 }],
+};
+
+export const templates: readonly EntityTemplate[] = [CHARACTER_TEMPLATE, VOW_TEMPLATE];
