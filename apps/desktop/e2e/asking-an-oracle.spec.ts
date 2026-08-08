@@ -56,7 +56,7 @@ test('asks whether something likely is so, and the answer lands in the journal',
   await openThePalette(page);
 
   // The five ways of asking are the module's own, and need no content.
-  await page.getByTestId('oracle-search').fill('likely');
+  await page.getByTestId('palette-search').fill('likely');
   await expect(page.getByTestId('oracle-result').first()).toContainText('Likely');
 
   // Forty against a line at 75 is yes, and typing the die in is the ordinary
@@ -76,7 +76,7 @@ test('finds a real table by searching for its group, and consults it', async () 
 
   // Nothing in the bundled content is called Derelict. Matching the group is
   // what finds it.
-  await page.getByTestId('oracle-search').fill('derelict');
+  await page.getByTestId('palette-search').fill('derelict');
   await expect(page.getByTestId('oracle-result').first()).toBeVisible();
 
   await page.getByTestId('oracle-thrown').fill('47');
@@ -93,7 +93,7 @@ test('says how many matched when more matched than it showed', async () => {
   const page = await open();
   await openThePalette(page);
 
-  await page.getByTestId('oracle-search').fill('a');
+  await page.getByTestId('palette-search').fill('a');
 
   // A capped list that says nothing reads as a complete one.
   await expect(page.getByTestId('oracle-more')).toContainText('Showing the first');

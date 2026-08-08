@@ -57,6 +57,9 @@ export { ChipRow } from './ChipRow.js';
 export type { GhostBlockProps } from './GhostBlock.js';
 export { GHOST_KEYFRAMES, GhostBlock } from './GhostBlock.js';
 
+export type { PaletteProps, PaletteRowProps } from './Palette.js';
+export { Palette, paletteKeyIntent, PaletteList, PaletteRow } from './Palette.js';
+
 export type { MeterProps, MeterShape } from './Meter.js';
 export { Meter } from './Meter.js';
 
