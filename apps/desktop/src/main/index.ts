@@ -18,7 +18,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { IPC } from '../shared/ipc';
 import { answerOffer } from './answer-offer';
 import { describeChecks } from './checks';
-import { changeEntity, createEntity, readEntities } from './entities';
+import { changeEntity, createEntity, describeEntityTypes, readEntities } from './entities';
 import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
@@ -112,6 +112,10 @@ function registerIpcHandlers(
   );
   ipcMain.handle(IPC.changeEntity, (_event, request: unknown) => changeEntity(campaign, request));
 
+  ipcMain.handle(IPC.describeEntityTypes, () => ({
+    ok: true as const,
+    value: describeEntityTypes(),
+  }));
   ipcMain.handle(IPC.startTrack, (_event, request: unknown) => startTrack(campaign, request));
   ipcMain.handle(IPC.advanceTrack, (_event, request: unknown) => advanceTrack(campaign, request));
   ipcMain.handle(IPC.setTrack, (_event, request: unknown) => setTrack(campaign, request));

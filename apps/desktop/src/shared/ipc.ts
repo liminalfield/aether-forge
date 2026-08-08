@@ -28,6 +28,7 @@ export const IPC = {
   readEntities: 'entities:read',
   createEntity: 'entities:create',
   changeEntity: 'entities:change',
+  describeEntityTypes: 'entities:describeTypes',
   startTrack: 'tracks:start',
   advanceTrack: 'tracks:advance',
   setTrack: 'tracks:set',
@@ -273,6 +274,16 @@ export interface ChangeEntityRequest {
   readonly fields: Readonly<Record<string, FieldValueView>>;
 }
 
+/** One entity type a loaded module describes, named well enough to offer. */
+export interface EntityTypeView {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface EntityTypesView {
+  readonly types: readonly EntityTypeView[];
+}
+
 /** Starting a track on an entity: its shape, and how full it begins. */
 export interface StartTrackRequest {
   readonly entityId: string;
@@ -487,6 +498,13 @@ export interface AetherForgeApi {
    * earlier value.
    */
   changeEntity(request: ChangeEntityRequest): Promise<IpcResult<EntityView>>;
+
+  /**
+   * The entity types the loaded modules describe, for a creation surface to
+   * offer. A campaign whose modules describe none answers with an empty list,
+   * and creating free-form needs nothing from here.
+   */
+  describeEntityTypes(): Promise<IpcResult<EntityTypesView>>;
 
   /**
    * Start a track on an entity. Answers with the entity as it now stands,

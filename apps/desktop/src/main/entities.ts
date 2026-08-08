@@ -19,6 +19,7 @@ import type {
   ChangeEntityRequest,
   CreateEntityRequest,
   EntitiesView,
+  EntityTypesView,
   EntityView,
   IpcFailure,
   IpcResult,
@@ -74,6 +75,15 @@ export function entityView(record: EntityRecord): EntityView {
   if (template !== undefined) view = { ...view, typeName: template.name };
   if (name !== undefined) view = { ...view, name };
   return view;
+}
+
+/** The entity types the loaded modules describe, in load order. */
+export function describeEntityTypes(): EntityTypesView {
+  return {
+    types: LOADED_SYSTEMS.flatMap((system) =>
+      system.templates.map((template) => ({ id: template.typeId, name: template.name })),
+    ),
+  };
 }
 
 /** Every entity in the campaign, in the order they came to exist. */

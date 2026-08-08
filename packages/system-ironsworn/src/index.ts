@@ -289,7 +289,9 @@ export const VOW_TEMPLATE: EntityTemplate = {
   name: 'Vow',
   fields: [
     { id: 'name', label: 'Name', kind: 'text' },
-    { id: 'rank', label: 'Rank', kind: 'text' },
+    // The lowest rank, as an opinion a player changes, not a rule. A vow
+    // sworn without saying a rank still has one on its sheet to argue with.
+    { id: 'rank', label: 'Rank', kind: 'text', initial: 'troublesome' },
   ],
   tracks: [{ id: 'progress', label: 'Progress', segments: 10, startsFilled: 0 }],
 };

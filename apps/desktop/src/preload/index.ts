@@ -12,6 +12,7 @@ import {
   type JournalEntryView,
   type PreferencesView,
   type EntitiesView,
+  type EntityTypesView,
   type EntityView,
 } from '../shared/ipc';
 
@@ -48,6 +49,9 @@ const api: AetherForgeApi = {
 
   changeEntity: (request) =>
     ipcRenderer.invoke(IPC.changeEntity, request) as Promise<IpcResult<EntityView>>,
+
+  describeEntityTypes: () =>
+    ipcRenderer.invoke(IPC.describeEntityTypes) as Promise<IpcResult<EntityTypesView>>,
 
   startTrack: (request) =>
     ipcRenderer.invoke(IPC.startTrack, request) as Promise<IpcResult<EntityView>>,
