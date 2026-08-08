@@ -1,6 +1,7 @@
 # Entities, and the tracks they carry
 
-Status: accepted, 7 August 2026. Not yet decomposed.
+Status: accepted, 7 August 2026. Decomposed into epic
+[#145](https://github.com/liminalfield/aether-forge/issues/145) and its tasks.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.

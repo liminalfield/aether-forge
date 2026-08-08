@@ -1,9 +1,11 @@
 import {
   createEventSchemas,
+  entityEventTypes,
   journalEventTypes,
   oracleEventTypes,
   rollEventTypes,
   suggestionEventTypes,
+  trackEventTypes,
   type EventSchemas,
   type EventTypeDefinition,
 } from '@aether-forge/core';
@@ -22,6 +24,8 @@ export function declareEventTypes(): EventSchemas {
 
   const everything: readonly EventTypeDefinition[] = [
     ...journalEventTypes,
+    ...entityEventTypes,
+    ...trackEventTypes,
     ...rollEventTypes,
     ...oracleEventTypes,
     ...suggestionEventTypes,

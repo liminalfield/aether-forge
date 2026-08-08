@@ -6,6 +6,8 @@ import {
   SUGGESTION_OFFERED,
   type EventEnvelope,
   type RollPerformedV1,
+  describesRecordableEntities,
+  type ProjectionContext,
 } from '@aether-forge/core';
 import { asProjection, describeProjectionIsPredictable } from '@aether-forge/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -20,6 +22,9 @@ import {
   MOVE_RESOLVED,
   STARFORGED_SYSTEM_ID,
   STARTING_MOMENTUM,
+  CHARACTER_TEMPLATE,
+  templates,
+  VOW_TEMPLATE,
 } from './index.js';
 
 function aChange(seq: number, by: number): EventEnvelope {
@@ -292,5 +297,78 @@ describe('running Face Danger through core', () => {
     const [offered, answered] = run('accepted').ran;
     expect((offered?.draft.payload as { why: string }).why).toBe('your vehicle is built for this');
     expect(answered?.draft.type).toBe('core.suggestion.accepted');
+  });
+});
+
+describe('the entities this system describes', () => {
+  it('describes recordable entities, both of them', () => {
+    for (const template of templates) {
+      expect(describesRecordableEntities(template)).toBe(true);
+    }
+    expect(templates).toHaveLength(2);
+  });
+
+  it('gives a character the five stats and three condition meters', () => {
+    const stats = CHARACTER_TEMPLATE.fields.filter((field) => field.kind === 'number');
+    expect(stats.map((field) => field.id)).toEqual(['edge', 'heart', 'iron', 'shadow', 'wits']);
+    expect(CHARACTER_TEMPLATE.tracks.map((track) => track.id)).toEqual([
+      'health',
+      'spirit',
+      'supply',
+    ]);
+    expect(CHARACTER_TEMPLATE.tracks.every((track) => track.startsFilled === track.segments)).toBe(
+      true,
+    );
+  });
+
+  it('gives a vow ten segments of progress, starting empty', () => {
+    const [progress] = VOW_TEMPLATE.tracks;
+    expect(progress?.segments).toBe(10);
+    expect(progress?.startsFilled).toBe(0);
+  });
+
+  it('does not describe momentum as a track, because burning it is a rule', () => {
+    expect(CHARACTER_TEMPLATE.tracks.some((track) => track.id === 'momentum')).toBe(false);
+  });
+});
+
+describe('the stat the application would use', () => {
+  const statInput = FACE_DANGER.inputs.find((input) => input.id === 'stat');
+
+  const aCampaignHolding = (held: unknown): ProjectionContext => ({
+    stateOf: <State>() => held as State,
+  });
+
+  const character = (fields: Record<string, string | number | boolean>) => ({
+    entities: [
+      {
+        id: 'vess',
+        entityType: `sys.${STARFORGED_SYSTEM_ID}.character`,
+        fields,
+        tracks: [],
+        createdBy: 'event-1',
+        touchedBy: 'event-1',
+      },
+    ],
+    entityOf: {},
+    trackEventOf: {},
+  });
+
+  it('suggests the strongest stat, read from the character, saying whose it is', () => {
+    const suggested = statInput?.suggest?.(
+      aCampaignHolding(character({ name: 'Vess', edge: 1, heart: 2, iron: 1, shadow: 2, wits: 3 })),
+    );
+
+    expect(suggested).toEqual({ value: 3, why: 'wits is the strongest Vess has' });
+  });
+
+  it('suggests nothing when the campaign has no character, and nothing must work', () => {
+    expect(
+      statInput?.suggest?.(aCampaignHolding({ entities: [], entityOf: {}, trackEventOf: {} })),
+    ).toBeUndefined();
+  });
+
+  it('suggests nothing from a character whose stats are not numbers yet', () => {
+    expect(statInput?.suggest?.(aCampaignHolding(character({ name: 'Vess' })))).toBeUndefined();
   });
 });

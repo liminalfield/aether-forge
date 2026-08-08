@@ -25,6 +25,13 @@ export const IPC = {
   answerOffer: 'checks:answerOffer',
   readPreferences: 'preferences:read',
   setMotionPreference: 'preferences:setMotion',
+  readEntities: 'entities:read',
+  createEntity: 'entities:create',
+  changeEntity: 'entities:change',
+  describeEntityTypes: 'entities:describeTypes',
+  startTrack: 'tracks:start',
+  advanceTrack: 'tracks:advance',
+  setTrack: 'tracks:set',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];
@@ -158,6 +165,13 @@ export interface CheckInputView {
   readonly kind: 'choice' | 'number';
   /** Present when the kind is `choice`. */
   readonly options?: readonly CheckOptionView[];
+  /**
+   * What the application would put in the box, and why, computed from the
+   * campaign when the check was described. A suggestion in the ordinary
+   * sense: shown, takeable, ignorable, and what the player did about it is
+   * recorded when the check runs.
+   */
+  readonly suggested?: { readonly value: number; readonly why: string };
 }
 
 /** Dice a check asks for, before any of them have been rolled or thrown. */
@@ -211,6 +225,92 @@ export interface RolledDieView {
    * exactly the same card.
    */
   readonly from: string;
+}
+
+/** What one recorded fact about an entity may hold, as it crosses the boundary. */
+export type FieldValueView = string | number | boolean;
+
+/** One track as the window needs it. */
+export interface TrackView {
+  readonly id: string;
+  /** The template's word for it, when a loaded module has one. */
+  readonly label?: string;
+  readonly segments: number;
+  /** May stand past full or below empty. Drawn, never judged. */
+  readonly filled: number;
+}
+
+/**
+ * One entity as the window needs it.
+ *
+ * The type name and track labels come from the loaded modules as they stand
+ * today, and are absent when no module describes the type, which must draw
+ * fine: a free-form entity and an entity whose module is gone both remain
+ * part of the record.
+ */
+export interface EntityView {
+  readonly id: string;
+  readonly entityType?: string;
+  /** The template's word for the type, when a loaded module has one. */
+  readonly typeName?: string;
+  /** The name field, when the entity has one worth the word. */
+  readonly name?: string;
+  readonly fields: Readonly<Record<string, FieldValueView>>;
+  readonly tracks: readonly TrackView[];
+}
+
+export interface EntitiesView {
+  /** In the order they came to exist. */
+  readonly entities: readonly EntityView[];
+}
+
+/**
+ * Creating an entity. Everything is optional except that the request exists,
+ * because an entity must be recordable the moment it matters, named or not,
+ * typed or not. A request naming a type a loaded module describes starts from
+ * that template's initial fields and tracks.
+ */
+export interface CreateEntityRequest {
+  readonly entityType?: string;
+  readonly fields?: Readonly<Record<string, FieldValueView>>;
+}
+
+/** Changing an entity: the fields being set, each carrying its whole new value. */
+export interface ChangeEntityRequest {
+  readonly entityId: string;
+  readonly fields: Readonly<Record<string, FieldValueView>>;
+}
+
+/** One entity type a loaded module describes, named well enough to offer. */
+export interface EntityTypeView {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface EntityTypesView {
+  readonly types: readonly EntityTypeView[];
+}
+
+/** Starting a track on an entity: its shape, and how full it begins. */
+export interface StartTrackRequest {
+  readonly entityId: string;
+  readonly trackId: string;
+  readonly segments: number;
+  readonly filled: number;
+}
+
+/** Moving a track by an amount, which may be negative. */
+export interface AdvanceTrackRequest {
+  readonly entityId: string;
+  readonly trackId: string;
+  readonly by: number;
+}
+
+/** Stating outright where a track now stands. */
+export interface SetTrackRequest {
+  readonly entityId: string;
+  readonly trackId: string;
+  readonly filled: number;
 }
 
 /** A part of a proposal a person may change before taking it. */
@@ -386,6 +486,44 @@ export interface AetherForgeApi {
    * happened and stays in the log, and this is a second decision, later.
    */
   answerOffer(request: AnswerOfferRequest): Promise<IpcResult<AnsweredOfferView>>;
+
+  /** Every entity in the campaign, in the order they came to exist. */
+  readEntities(): Promise<IpcResult<EntitiesView>>;
+
+  /**
+   * Bring an entity into the campaign.
+   *
+   * Answers with the entity as recorded, its template's tracks already
+   * started when its type has a template.
+   */
+  createEntity(request: CreateEntityRequest): Promise<IpcResult<EntityView>>;
+
+  /**
+   * Set some of an entity's fields, each to a whole new value.
+   *
+   * Nothing is edited; a change event is appended and the log keeps every
+   * earlier value.
+   */
+  changeEntity(request: ChangeEntityRequest): Promise<IpcResult<EntityView>>;
+
+  /**
+   * The entity types the loaded modules describe, for a creation surface to
+   * offer. A campaign whose modules describe none answers with an empty list,
+   * and creating free-form needs nothing from here.
+   */
+  describeEntityTypes(): Promise<IpcResult<EntityTypesView>>;
+
+  /**
+   * Start a track on an entity. Answers with the entity as it now stands,
+   * because a track is part of its entity, not a lone number.
+   */
+  startTrack(request: StartTrackRequest): Promise<IpcResult<EntityView>>;
+
+  /** Move a track by an amount, which may be negative. */
+  advanceTrack(request: AdvanceTrackRequest): Promise<IpcResult<EntityView>>;
+
+  /** State outright where a track now stands. */
+  setTrack(request: SetTrackRequest): Promise<IpcResult<EntityView>>;
 
   /** What this person has chosen. Answers with the defaults when nothing is stored. */
   readPreferences(): Promise<IpcResult<PreferencesView>>;

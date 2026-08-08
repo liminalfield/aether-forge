@@ -108,6 +108,40 @@ export type { EntryCreatedV1, EntryRevisedV1, Journal, JournalEntry } from './jo
 export { ENTRY_CREATED, ENTRY_REVISED, journal, journalEventTypes } from './journal.js';
 
 export type {
+  Entities,
+  EntityChangedV1,
+  EntityCreatedV1,
+  EntityFields,
+  EntityRecord,
+  FieldValue,
+  TrackContribution,
+  TrackState,
+} from './entity.js';
+export {
+  entities,
+  ENTITY_CHANGED,
+  ENTITY_CREATED,
+  entityEventTypes,
+  nameOf,
+  readEntityChanged,
+  readEntityCreated,
+} from './entity.js';
+
+export type { EntityTemplate, FieldSpec, TrackSpec } from './template.js';
+export { describesRecordableEntities } from './template.js';
+
+export type { TrackAdvancedV1, TrackSetV1, TrackStartedV1 } from './track.js';
+export {
+  readTrackAdvanced,
+  readTrackSet,
+  readTrackStarted,
+  TRACK_ADVANCED,
+  TRACK_SET,
+  TRACK_STARTED,
+  trackEventTypes,
+} from './track.js';
+
+export type {
   DieSource,
   DieSpec,
   DieValue,

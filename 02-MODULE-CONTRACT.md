@@ -271,31 +271,44 @@ reference docs, which the contract permits by making everything optional beyond 
 
 ## 7. Entities, sheets, tracks
 
+> Implemented 7 August 2026, per `design/entities-and-tracks.md` (#145). The shapes below are the
+> code (`packages/core/src/template.ts`, `entity.ts`, `track.ts`). The sketch that stood here had
+> `generators` (waits for content packages) and `SheetDefinition` (split off to the sheet surface
+> work; the sheet's data is fields and tracks, the instrument drawn from them is not contract).
+> Entity fields are core's own data, stored without judgement — a deliberately different
+> arrangement from `sys.*` payloads, argued in the record.
+
 ```ts
 interface EntityTemplate {
-  typeId: string;                    // "npc", "site", "sys.ironsworn.vow" — module types namespaced
-  name: string;
-  fields: FieldSpec[];               // typed fields; free-form entities (no template) are first-class
-  generators?: string[];             // oracle table ids offered at creation (create-in-context)
-  trackSpec?: TrackSpec;             // entities may carry a track (vows, scene challenges)
+  typeId: string;                    // namespaced: "sys.<system>.<type>"
+  name: string;                      // the module's word for the type
+  fields: FieldSpec[];               // describes; never enforces. Free-form entities are first-class
+  tracks: TrackSpec[];               // what a new one starts with (vows, condition meters)
+}
+
+interface FieldSpec {
+  id: string; label: string;
+  kind: 'text' | 'number' | 'marker';
+  initial?: FieldValue;              // what a new entity starts with, when the module has an opinion
 }
 
 interface TrackSpec {
-  segments: number;                  // 10 for Ironsworn tracks, 4/6/8 for clocks
-  unit?: string;                     // "tick" | "segment" — display only
-  stepOptions?: Array<{ label: string; amount: number }>;   // module-suggested advance sizes
-}
-
-interface SheetDefinition {
-  forEntityType: string;
-  layout: SheetLayout;               // declarative regions -> field/track/derived widgets
-  derived?: Array<{ id: string; label: string; compute(fields: Record<string, unknown>): unknown }>;
+  id: string; label: string;
+  segments: number;                  // 10 for an Ironsworn progress track, 4/6/8 for clocks
+  startsFilled: number;              // a condition meter starts full, a vow empty
 }
 ```
 
-`derived` is the 5e escape hatch: computed values (skill bonuses, AC) are pure functions over
-fields, recomputed on projection — core never stores them. Ironsworn barely uses it (max momentum
-from impacts); the toy ignores it. The contract holds across all three depths.
+Entity state is `core.entity.*` and `core.track.*` events, projected by core. A change names the
+fields it sets and carries whole values; an advance is relative and corrects by the difference, a
+set is absolute and corrects in place. There is no legality anywhere: a template cannot refuse an
+entity, and a track reports a fill past full without comment.
+
+**Stress test.** (A) Ironsworn: character (five stats, three meters) and vow (rank, ten segments)
+ship as `templates` in the module. (B) toy: declares `templates: []`, and every entity surface must
+render a campaign whose modules say nothing — asserted in its tests. (C) 5e: sheets need `derived`
+(computed values over fields); that arrives with the sheet surface work, not the entity model.
+Pass, with `derived` deferred rather than dropped.
 
 ## 8. Flows (session zero and friends)
 

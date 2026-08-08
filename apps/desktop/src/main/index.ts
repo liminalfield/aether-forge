@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import {
   createTranslatingLog,
   describeFailure,
+  entities,
   journal,
   openCampaign,
   suggestions,
@@ -17,6 +18,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { IPC } from '../shared/ipc';
 import { answerOffer } from './answer-offer';
 import { describeChecks } from './checks';
+import { changeEntity, createEntity, describeEntityTypes, readEntities } from './entities';
 import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
@@ -24,6 +26,7 @@ import { correctEntry, readJournal, recordEntry } from './journal';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
+import { advanceTrack, setTrack, startTrack } from './tracks';
 import { createUlidSource } from './ulid';
 
 const isDev = !app.isPackaged;
@@ -98,9 +101,24 @@ function registerIpcHandlers(
     correctEntry(campaign, entryId, text),
   );
 
-  ipcMain.handle(IPC.readChecks, () => ({ ok: true as const, value: describeChecks() }));
+  ipcMain.handle(IPC.readChecks, () => ({ ok: true as const, value: describeChecks(campaign) }));
   ipcMain.handle(IPC.runCheck, (_event, request: unknown) => runCheck(campaign, request));
   ipcMain.handle(IPC.answerOffer, (_event, request: unknown) => answerOffer(campaign, request));
+
+  const nextEntityId = createUlidSource();
+  ipcMain.handle(IPC.readEntities, () => readEntities(campaign));
+  ipcMain.handle(IPC.createEntity, (_event, request: unknown) =>
+    createEntity(campaign, nextEntityId, request),
+  );
+  ipcMain.handle(IPC.changeEntity, (_event, request: unknown) => changeEntity(campaign, request));
+
+  ipcMain.handle(IPC.describeEntityTypes, () => ({
+    ok: true as const,
+    value: describeEntityTypes(),
+  }));
+  ipcMain.handle(IPC.startTrack, (_event, request: unknown) => startTrack(campaign, request));
+  ipcMain.handle(IPC.advanceTrack, (_event, request: unknown) => advanceTrack(campaign, request));
+  ipcMain.handle(IPC.setTrack, (_event, request: unknown) => setTrack(campaign, request));
 
   ipcMain.handle(IPC.readPreferences, () => ({
     ok: true as const,
@@ -155,7 +173,11 @@ void app.whenReady().then(() => {
   // object; a log written behind the projections' back would leave them stale
   // and nothing would say so.
   const opened = openCampaign(log, {
-    projections: [journal as Projection<unknown>, suggestions as Projection<unknown>],
+    projections: [
+      journal as Projection<unknown>,
+      suggestions as Projection<unknown>,
+      entities as Projection<unknown>,
+    ],
   });
   if (!opened.ok) {
     // Nothing sensible can be shown for a campaign that cannot be read, and

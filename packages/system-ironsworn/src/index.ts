@@ -9,13 +9,18 @@
 
 import {
   CORE_CONTRACT_VERSION,
+  entities,
+  nameOf,
   readRoll,
   type CheckDefinition,
   type CheckOutcome,
   type OutcomeStyle,
   type EffectSuggestion,
+  type EntityTemplate,
   type EventTypeDefinition,
+  type FieldSpec,
   type ModuleProjection,
+  type ProjectionContext,
   type RollPerformedV1,
   type SystemId,
 } from '@aether-forge/core';
@@ -123,6 +128,37 @@ export const eventTypes: readonly EventTypeDefinition[] = [
 export const STATS = ['edge', 'heart', 'iron', 'shadow', 'wits'] as const;
 
 /**
+ * The stat the application would use, read from the character.
+ *
+ * The campaign's first character-typed entity stands in for "the character"
+ * until session zero decides the question properly; the design record carries
+ * it as an open question with exactly this interim answer. The suggestion is
+ * the strongest stat, which is advice a rulebook would not argue with and a
+ * player is free to.
+ *
+ * No character, or a character with no numeric stats, suggests nothing, and
+ * suggesting nothing must work: the check runs on typed-in values the way it
+ * always has.
+ */
+function suggestStat(context: ProjectionContext): { value: number; why: string } | undefined {
+  const character = context
+    .stateOf(entities)
+    .entities.find((each) => each.entityType === `sys.${STARFORGED_SYSTEM_ID}.character`);
+  if (character === undefined) return undefined;
+
+  let best: { stat: string; value: number } | undefined;
+  for (const stat of STATS) {
+    const value = character.fields[stat];
+    if (typeof value !== 'number') continue;
+    if (best === undefined || value > best.value) best = { stat, value };
+  }
+  if (best === undefined) return undefined;
+
+  const whose = nameOf(character) ?? 'the character';
+  return { value: best.value, why: `${best.stat} is the strongest ${whose} has` };
+}
+
+/**
  * Face Danger, as a check.
  *
  * The first check with everything in it: a choice the application has an
@@ -180,6 +216,7 @@ export const FACE_DANGER: CheckDefinition = {
       kind: 'choice',
       source: 'chosen',
       options: STATS.map((stat) => ({ id: stat, label: stat, value: 0 })),
+      suggest: suggestStat,
     },
     { id: 'bonus', label: 'Bonus', kind: 'number', source: 'chosen' },
   ],
@@ -258,3 +295,40 @@ function momentumSuggestion(by: number, reason: string): EffectSuggestion {
     },
   };
 }
+
+/**
+ * The entities this system is about.
+ *
+ * A template describes what a new one starts with and never enforces
+ * anything. Momentum is deliberately not a track here: it is module state
+ * with its own projection, because burning and resetting it are rules, not
+ * marks on a row of segments.
+ */
+export const CHARACTER_TEMPLATE: EntityTemplate = {
+  typeId: `sys.${STARFORGED_SYSTEM_ID}.character`,
+  name: 'Character',
+  fields: [
+    { id: 'name', label: 'Name', kind: 'text' },
+    ...STATS.map((stat): FieldSpec => ({ id: stat, label: stat, kind: 'number', initial: 1 })),
+  ],
+  tracks: [
+    { id: 'health', label: 'Health', segments: 5, startsFilled: 5 },
+    { id: 'spirit', label: 'Spirit', segments: 5, startsFilled: 5 },
+    { id: 'supply', label: 'Supply', segments: 5, startsFilled: 5 },
+  ],
+};
+
+/** A vow: a rank in words, and ten segments of progress starting empty. */
+export const VOW_TEMPLATE: EntityTemplate = {
+  typeId: `sys.${STARFORGED_SYSTEM_ID}.vow`,
+  name: 'Vow',
+  fields: [
+    { id: 'name', label: 'Name', kind: 'text' },
+    // The lowest rank, as an opinion a player changes, not a rule. A vow
+    // sworn without saying a rank still has one on its sheet to argue with.
+    { id: 'rank', label: 'Rank', kind: 'text', initial: 'troublesome' },
+  ],
+  tracks: [{ id: 'progress', label: 'Progress', segments: 10, startsFilled: 0 }],
+};
+
+export const templates: readonly EntityTemplate[] = [CHARACTER_TEMPLATE, VOW_TEMPLATE];

@@ -13,6 +13,7 @@ import {
   ROLL_PERFORMED,
   type CheckDefinition,
   type DieSpec,
+  type EntityTemplate,
   type EventTypeDefinition,
   type ModuleProjection,
   type RollPerformedV1,
@@ -211,3 +212,13 @@ export const CALL_IT: CheckDefinition = {
 
 /** The checks this module offers. One is enough to keep the contract honest. */
 export const checks: readonly CheckDefinition[] = [CALL_IT];
+
+/**
+ * The toy declares no entity templates, on purpose and forever.
+ *
+ * A module with nothing to say about entities must be a module that works,
+ * because saying nothing is the trivial implementation the contract owes the
+ * canary. Every entity surface has to render a campaign whose modules
+ * declare no templates.
+ */
+export const templates: readonly EntityTemplate[] = [];

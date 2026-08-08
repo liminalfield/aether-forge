@@ -1,4 +1,10 @@
-import { createMemoryEventLog, createTranslatingLog, openCampaign } from '@aether-forge/core';
+import {
+  createMemoryEventLog,
+  createTranslatingLog,
+  entities,
+  openCampaign,
+  type Entities,
+} from '@aether-forge/core';
 import type {
   ModuleProjection,
   OpenCampaign,
@@ -51,7 +57,7 @@ function anEmptyCampaign(): TranslatingLog {
 
 function playTheSession(): OpenCampaign {
   const opened = openCampaign(anEmptyCampaign(), {
-    projections: [journalSummary as Projection<unknown>],
+    projections: [journalSummary as Projection<unknown>, entities as Projection<unknown>],
     moduleProjections: [
       coinTally as ModuleProjection<unknown>,
       coinRolls as ModuleProjection<unknown>,
@@ -84,9 +90,18 @@ describe('a recorded session', () => {
     const campaign = playTheSession();
 
     expect(campaign.stateOf(journalSummary)).toEqual({
-      entries: 21,
+      entries: 23,
       latest: 'End of session.',
     });
+
+    // The vow, its progress at two: one suggestion refused with the track
+    // unmoved, a second accepted and applied. The consent door, replayed.
+    const held: Entities = campaign.stateOf(entities);
+    const vow = held.entities.find((each) => each.id === 'entity-recorded-session-vow');
+    expect(vow?.fields['name']).toBe('Carry the message');
+    expect(vow?.tracks).toEqual([
+      expect.objectContaining({ id: 'progress', segments: 10, filled: 2 }),
+    ]);
     expect(campaign.moduleStateOf(coinTally)).toEqual({ flips: 8, heads: 5, tails: 3 });
 
     // The same module, counting the same thing, reached through core rolls with

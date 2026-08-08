@@ -1,14 +1,21 @@
-import type { CheckDefinition, ModuleEventType, SystemId } from '@aether-forge/core';
+import type {
+  CheckDefinition,
+  EntityTemplate,
+  ModuleEventType,
+  SystemId,
+} from '@aether-forge/core';
 import {
   checks as ironswornChecks,
   MOVE_INVOKED,
   MOVE_RESOLVED,
   STARFORGED_SYSTEM_ID,
+  templates as ironswornTemplates,
 } from '@aether-forge/system-ironsworn';
 import {
   CHECK_INVOKED,
   CHECK_RESOLVED,
   checks as toyChecks,
+  templates as toyTemplates,
   TOY_SYSTEM_ID,
 } from '@aether-forge/system-toy';
 
@@ -28,6 +35,8 @@ import {
 export interface LoadedSystem {
   readonly systemId: SystemId;
   readonly checks: readonly CheckDefinition[];
+  /** The entities this system describes. Empty is a module that works. */
+  readonly templates: readonly EntityTemplate[];
   /**
    * The two events this system writes either side of a check's roll.
    *
@@ -61,12 +70,14 @@ export const LOADED_SYSTEMS: readonly LoadedSystem[] = [
   {
     systemId: TOY_SYSTEM_ID,
     checks: toyChecks,
+    templates: toyTemplates,
     checkEvents: { invoked: CHECK_INVOKED, resolved: CHECK_RESOLVED },
     playable: false,
   },
   {
     systemId: STARFORGED_SYSTEM_ID,
     checks: ironswornChecks,
+    templates: ironswornTemplates,
     checkEvents: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
     playable: true,
   },

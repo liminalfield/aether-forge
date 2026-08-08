@@ -73,7 +73,10 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
     for (const input of chosen.inputs) {
       // Every input has a number, and an empty box means nought rather than a
       // refusal to proceed. Nothing here blocks a person from rolling.
-      numbers[input.id] = Number(inputs[input.id] ?? 0) || 0;
+      // An untouched box holds the suggestion when there is one, and a person
+      // who typed something else has already declined it by typing.
+      const fallback = input.suggested?.value ?? 0;
+      numbers[input.id] = Number(inputs[input.id] ?? fallback) || 0;
     }
 
     onRun({
@@ -139,10 +142,28 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
             data-testid={`input-${input.id}`}
             inputMode="numeric"
             placeholder="0"
-            value={inputs[input.id] ?? ''}
+            value={
+              inputs[input.id] ??
+              (input.suggested === undefined ? '' : String(input.suggested.value))
+            }
             onChange={(event) => setInputs((held) => ({ ...held, [input.id]: event.target.value }))}
             style={FIELD}
           />
+
+          {input.suggested !== undefined && (
+            <p
+              data-testid={`suggested-${input.id}`}
+              style={{
+                margin: 0,
+                color: slot('ink', 'muted'),
+                fontFamily: 'var(--font-ui)',
+                fontSize: '12px',
+              }}
+            >
+              Suggested: {input.suggested.value}, because {input.suggested.why}. Type to use
+              something else.
+            </p>
+          )}
         </div>
       ))}
 

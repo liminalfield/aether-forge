@@ -3,7 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, slot, TABULAR_NUMERALS, tokens, WritingSurface } from '@aether-forge/ui';
 
 import type {
+  ChecksView,
   CheckView,
+  EntitiesView,
+  EntityTypeView,
+  EntityView,
+  FieldValueView,
   IpcResult,
   JournalEntryView,
   OfferAnswer,
@@ -12,6 +17,7 @@ import type {
   TimelineView,
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
+import { EntitiesRail } from './EntitiesRail';
 import { Entry } from './Entry';
 import { RunACheck } from './RunACheck';
 
@@ -38,6 +44,8 @@ export function App(): React.JSX.Element {
   const [version, setVersion] = useState<string | null>(null);
   const [items, setItems] = useState<readonly TimelineItem[] | null>(null);
   const [checks, setChecks] = useState<readonly CheckView[]>([]);
+  const [held, setHeld] = useState<readonly EntityView[]>([]);
+  const [entityTypes, setEntityTypes] = useState<readonly EntityTypeView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,6 +69,16 @@ export function App(): React.JSX.Element {
     void window.aetherForge.readChecks().then((declared) => {
       if (declared.ok) setChecks(declared.value.checks);
       else setProblem(declared.failure.detail);
+    });
+
+    void window.aetherForge.readEntities().then((entities) => {
+      if (entities.ok) setHeld(entities.value.entities);
+      else setProblem(entities.failure.detail);
+    });
+
+    void window.aetherForge.describeEntityTypes().then((types) => {
+      if (types.ok) setEntityTypes(types.value.types);
+      else setProblem(types.failure.detail);
     });
   }, []);
 
@@ -106,6 +124,79 @@ export function App(): React.JSX.Element {
       setProblem(timeline.failure.detail);
     }
   }, []);
+
+  /**
+   * A fresh reading of the entities and the checks, applied in the same
+   * render as busy. The checks come along because a suggestion is computed
+   * from the campaign when a check is described, and a character created a
+   * moment ago should be suggesting stats without a restart.
+   */
+  const entitiesArrived = useCallback(
+    (entities: IpcResult<EntitiesView>, checks: IpcResult<ChecksView>) => {
+      if (entities.ok) {
+        setHeld(entities.value.entities);
+        setProblem(null);
+      } else {
+        setProblem(entities.failure.detail);
+      }
+      if (checks.ok) setChecks(checks.value.checks);
+    },
+    [],
+  );
+
+  const rereadShape = useCallback(async (): Promise<
+    [IpcResult<EntitiesView>, IpcResult<ChecksView>]
+  > => {
+    return Promise.all([window.aetherForge.readEntities(), window.aetherForge.readChecks()]);
+  }, []);
+
+  const createAnEntity = useCallback(
+    async (request: { entityType?: string; name: string }) => {
+      setBusy(true);
+      try {
+        const made = await window.aetherForge.createEntity({
+          ...(request.entityType === undefined ? {} : { entityType: request.entityType }),
+          fields: { name: request.name },
+        });
+        if (made.ok) entitiesArrived(...(await rereadShape()));
+        else setProblem(made.failure.detail);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [entitiesArrived, rereadShape],
+  );
+
+  const setAField = useCallback(
+    async (entityId: string, fieldId: string, value: FieldValueView) => {
+      setBusy(true);
+      try {
+        const changed = await window.aetherForge.changeEntity({
+          entityId,
+          fields: { [fieldId]: value },
+        });
+        if (changed.ok) entitiesArrived(...(await rereadShape()));
+        else setProblem(changed.failure.detail);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [entitiesArrived, rereadShape],
+  );
+
+  const advanceATrack = useCallback(
+    async (entityId: string, trackId: string, by: number) => {
+      setBusy(true);
+      try {
+        const moved = await window.aetherForge.advanceTrack({ entityId, trackId, by });
+        if (moved.ok) entitiesArrived(...(await rereadShape()));
+        else setProblem(moved.failure.detail);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [entitiesArrived, rereadShape],
+  );
 
   const runACheck = useCallback(
     async (request: RunCheckRequest) => {
@@ -204,79 +295,91 @@ export function App(): React.JSX.Element {
         </span>
       </header>
 
-      <main
-        style={{
-          margin: '0 auto',
-          width: '100%',
-          maxWidth: '60ch',
-          padding: `34px ${tokens.space.xl} 46px`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: tokens.space.xl,
-        }}
-      >
-        <section data-testid="journal" style={{ display: 'grid', gap: tokens.space.lg }}>
-          {items === null && <p style={QUIET}>Reading the campaign…</p>}
+      <div style={{ display: 'flex', minHeight: 0, alignItems: 'stretch' }}>
+        <EntitiesRail
+          entities={held}
+          types={entityTypes}
+          busy={busy}
+          onCreate={(request) => void createAnEntity(request)}
+          onSetField={(entityId, fieldId, value) => void setAField(entityId, fieldId, value)}
+          onAdvance={(entityId, trackId, by) => void advanceATrack(entityId, trackId, by)}
+        />
 
-          {items?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
-
-          {items?.map((item) =>
-            item.kind === 'check' ? (
-              <CheckCard
-                key={item.check.id}
-                check={item.check}
-                onAnswer={(offerId, answer) => void answerAnOffer(offerId, answer)}
-                busy={busy}
-              />
-            ) : (
-              <Entry
-                key={item.entry.id}
-                entry={item.entry}
-                correcting={correcting}
-                correction={correction}
-                busy={busy}
-                onStart={startCorrecting}
-                onStop={stopCorrecting}
-                onChange={setCorrection}
-                onSave={() => void saveCorrection()}
-              />
-            ),
-          )}
-        </section>
-
-        <RunACheck checks={checks} busy={busy} onRun={(request) => void runACheck(request)} />
-
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void record();
+        <main
+          style={{
+            margin: '0 auto',
+            width: '100%',
+            maxWidth: '60ch',
+            padding: `34px ${tokens.space.xl} 46px`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: tokens.space.xl,
+            overflowY: 'auto',
           }}
-          style={{ display: 'grid', gap: tokens.space.sm }}
         >
-          <WritingSurface
-            id="entry"
-            label="What happened?"
-            value={text}
-            rows={4}
-            onChange={(event) => setText(event.target.value)}
-          />
-          <Button type="submit" disabled={busy} style={{ justifySelf: 'start' }}>
-            Record it
-          </Button>
-        </form>
+          <section data-testid="journal" style={{ display: 'grid', gap: tokens.space.lg }}>
+            {items === null && <p style={QUIET}>Reading the campaign…</p>}
 
-        {problem !== null && (
-          <p
-            data-testid="problem"
-            role="alert"
-            style={{ color: slot('outcome', 'miss'), margin: 0 }}
+            {items?.length === 0 && <p style={QUIET}>Nothing written yet.</p>}
+
+            {items?.map((item) =>
+              item.kind === 'check' ? (
+                <CheckCard
+                  key={item.check.id}
+                  check={item.check}
+                  onAnswer={(offerId, answer) => void answerAnOffer(offerId, answer)}
+                  busy={busy}
+                />
+              ) : (
+                <Entry
+                  key={item.entry.id}
+                  entry={item.entry}
+                  correcting={correcting}
+                  correction={correction}
+                  busy={busy}
+                  onStart={startCorrecting}
+                  onStop={stopCorrecting}
+                  onChange={setCorrection}
+                  onSave={() => void saveCorrection()}
+                />
+              ),
+            )}
+          </section>
+
+          <RunACheck checks={checks} busy={busy} onRun={(request) => void runACheck(request)} />
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void record();
+            }}
+            style={{ display: 'grid', gap: tokens.space.sm }}
           >
-            {problem}
-          </p>
-        )}
+            <WritingSurface
+              id="entry"
+              label="What happened?"
+              value={text}
+              rows={4}
+              onChange={(event) => setText(event.target.value)}
+            />
+            <Button type="submit" disabled={busy} style={{ justifySelf: 'start' }}>
+              Record it
+            </Button>
+          </form>
 
-        <div ref={end} />
-      </main>
+          {problem !== null && (
+            <p
+              data-testid="problem"
+              role="alert"
+              style={{ color: slot('outcome', 'miss'), margin: 0 }}
+            >
+              {problem}
+            </p>
+          )}
+
+          <div ref={end} />
+        </main>
+      </div>
     </div>
   );
 }

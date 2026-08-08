@@ -5,6 +5,7 @@ import {
   SUGGESTION_OFFERED,
   type CheckDefinition,
   type EventId,
+  type OfferedInput,
   type OpenCampaign,
   type RollPerformedV1,
   type SequencedDraft,
@@ -211,12 +212,30 @@ export function runCheck(campaign: OpenCampaign, request: unknown): IpcResult<Ch
   // somebody finished last winter.
   const outcome = check.interpret(roll, asked.inputs);
 
+  // What the application suggested for each input, and what the player did
+  // about it, worked out by comparing the suggestion against the value the
+  // check actually ran with. Recomputed here rather than trusted from the
+  // window, because the suggestion is a pure function of campaign state and
+  // the log should record what was computed, not what a window claims it saw.
+  const offered: OfferedInput[] = [];
+  for (const input of check.inputs) {
+    const suggested = input.suggest?.(campaign);
+    if (suggested === undefined) continue;
+
+    const used = asked.inputs[input.id] ?? 0;
+    offered.push({
+      input: input.id,
+      label: input.label,
+      value: suggested.value,
+      why: suggested.why,
+      answer: used === suggested.value ? 'accepted' : { adjustedTo: used },
+    });
+  }
+
   const drafts = sequenceCheck({
     check,
     systemId: system.systemId,
-    // Nothing is suggested before the roll yet. That needs a stat to read from,
-    // and there is nowhere to keep one. See the exclusion in the epic.
-    offered: [],
+    offered,
     inputs: asked.inputs,
     roll,
     outcome,
