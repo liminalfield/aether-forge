@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
+import { labelStyle } from './Label.js';
 import { slot, type SlotName } from './theme.js';
 import { TABULAR_NUMERALS, tokens } from './tokens.js';
 
@@ -103,11 +104,7 @@ function provenanceOf(dice: readonly CardDie[]): readonly string[] {
 }
 
 const QUIET_LABEL = {
-  fontFamily: 'var(--font-numeric)',
-  fontSize: tokens.type.tiny,
-  letterSpacing: tokens.tracking.caps,
-  textTransform: 'uppercase',
-  color: slot('ink', 'muted'),
+  ...labelStyle('line'),
 } as const;
 
 /**

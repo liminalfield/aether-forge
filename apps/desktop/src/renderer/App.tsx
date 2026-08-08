@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button, slot, TABULAR_NUMERALS, tokens, WritingSurface } from '@aether-forge/ui';
+import {
+  Button,
+  labelStyle,
+  slot,
+  TABULAR_NUMERALS,
+  tokens,
+  WritingSurface,
+} from '@aether-forge/ui';
 
 import type {
   ChecksView,
@@ -304,11 +311,7 @@ export function App(): React.JSX.Element {
           padding: `0 ${tokens.space[24]}`,
           borderBottom: `1px solid ${slot('ink', 'hairline')}`,
           background: slot('ground', 'sunken'),
-          fontFamily: 'var(--font-numeric)',
-          fontSize: tokens.type.micro,
-          letterSpacing: tokens.tracking.capsWide,
-          textTransform: 'uppercase',
-          color: slot('ink', 'muted'),
+          ...labelStyle(),
         }}
       >
         <span>Aether Forge</span>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { Button, slot, tokens } from '@aether-forge/ui';
+import { Button, labelStyle, slot, tokens } from '@aether-forge/ui';
 
 import type { CheckView, RunCheckRequest } from '../shared/ipc';
 
@@ -17,14 +17,6 @@ import type { CheckView, RunCheckRequest } from '../shared/ipc';
  * the path, and a real one needs content packages. See the exclusions in the
  * epic.
  */
-
-const LABEL = {
-  fontFamily: 'var(--font-numeric)',
-  fontSize: tokens.type.micro,
-  letterSpacing: tokens.tracking.capsWide,
-  textTransform: 'uppercase',
-  color: slot('ink', 'muted'),
-} as const;
 
 const FIELD = {
   background: slot('ground', 'raised'),
@@ -102,7 +94,7 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
       }}
     >
       <div style={{ display: 'grid', gap: tokens.space[4] }}>
-        <label style={LABEL} htmlFor="which-check">
+        <label style={labelStyle()} htmlFor="which-check">
           Check
         </label>
         <select
@@ -126,7 +118,7 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
 
       {chosen.inputs.map((input) => (
         <div key={input.id} style={{ display: 'grid', gap: tokens.space[4] }}>
-          <label style={LABEL} htmlFor={`input-${input.id}`}>
+          <label style={labelStyle()} htmlFor={`input-${input.id}`}>
             {input.label}
           </label>
 
@@ -169,7 +161,7 @@ export function RunACheck({ checks, onRun, busy }: RunACheckProps): React.JSX.El
 
       {wanted > 0 && (
         <div style={{ display: 'grid', gap: tokens.space[4] }}>
-          <label style={LABEL} htmlFor="thrown">
+          <label style={labelStyle()} htmlFor="thrown">
             Dice you threw
           </label>
           <input

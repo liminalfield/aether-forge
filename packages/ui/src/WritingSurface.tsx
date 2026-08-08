@@ -1,5 +1,6 @@
 import type { ReactNode, TextareaHTMLAttributes } from 'react';
 
+import { labelStyle } from './Label.js';
 import { slot } from './theme.js';
 import { tokens } from './tokens.js';
 
@@ -36,11 +37,7 @@ export function WritingSurface({
       <label
         htmlFor={id}
         style={{
-          fontFamily: 'var(--font-numeric)',
-          fontSize: tokens.type.micro,
-          letterSpacing: tokens.tracking.capsWide,
-          textTransform: 'uppercase',
-          color: slot('ink', 'muted'),
+          ...labelStyle(),
           ...(showLabel
             ? {}
             : {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Button, slot, tokens } from '@aether-forge/ui';
+import { Button, labelStyle, slot, tokens } from '@aether-forge/ui';
 
 import type { EntityTypeView, EntityView, FieldValueView } from '../shared/ipc';
 
@@ -17,14 +17,6 @@ import type { EntityTypeView, EntityView, FieldValueView } from '../shared/ipc';
  * real state and not a defect, because an open question matters before it has
  * a name.
  */
-
-const LABEL = {
-  fontFamily: 'var(--font-numeric)',
-  fontSize: tokens.type.micro,
-  letterSpacing: tokens.tracking.capsWide,
-  textTransform: 'uppercase',
-  color: slot('ink', 'muted'),
-} as const;
 
 const FIELD = {
   background: slot('ground', 'raised'),
@@ -95,7 +87,7 @@ function Expanded({
           key={fieldId}
           style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: tokens.space[4] }}
         >
-          <span style={LABEL}>{fieldId}</span>
+          <span style={labelStyle()}>{fieldId}</span>
           <input
             data-testid={`field-${fieldId}`}
             value={drafts[fieldId] ?? String(value)}
@@ -124,7 +116,7 @@ function Expanded({
             justifyContent: 'space-between',
           }}
         >
-          <span style={LABEL}>{track.label ?? track.id}</span>
+          <span style={labelStyle()}>{track.label ?? track.id}</span>
           <span
             data-testid={`track-${track.id}`}
             style={{ fontFamily: 'var(--font-numeric)', fontSize: tokens.type.small }}
@@ -192,7 +184,7 @@ export function EntitiesRail({
     >
       {groupsOf(entities).map((group) => (
         <section key={group.title} style={{ display: 'grid', gap: tokens.space[4] }}>
-          <h2 style={{ ...LABEL, margin: 0, fontWeight: 500 }}>{group.title}</h2>
+          <h2 style={{ fontWeight: 500 }}>{group.title}</h2>
           {group.members.map((entity) => (
             <div key={entity.id}>
               <button
@@ -233,7 +225,7 @@ export function EntitiesRail({
           note();
         }}
       >
-        <label style={LABEL} htmlFor="new-entity-name">
+        <label style={labelStyle()} htmlFor="new-entity-name">
           Note someone or something
         </label>
         {types.length > 0 && (

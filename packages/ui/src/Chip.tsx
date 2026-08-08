@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 import { duration } from './motion.js';
+import { KeyHint } from './KeyHint.js';
 import { slot } from './theme.js';
 import { tokens } from './tokens.js';
 
@@ -90,11 +91,7 @@ export function Chip({
   return (
     <button type={type} style={{ ...shared, ...look, ...style }} {...rest}>
       {children}
-      {hint !== undefined && (
-        <span aria-hidden="true" style={{ color: slot('ink', 'muted') }}>
-          {hint}
-        </span>
-      )}
+      {hint !== undefined && <KeyHint>{hint}</KeyHint>}
     </button>
   );
 }

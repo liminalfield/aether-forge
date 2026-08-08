@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   Chip,
   ChipRow,
+  Label,
   ResultCard,
   slot,
   TABULAR_NUMERALS,
@@ -80,24 +81,14 @@ function Settled({ offer }: { readonly offer: RecordedOfferView }): React.JSX.El
   }[offer.fate];
 
   return (
-    <p
-      data-testid="settled-offer"
-      style={{
-        margin: 0,
-        color: slot('ink', 'muted'),
-        fontFamily: 'var(--font-numeric)',
-        fontSize: tokens.type.tiny,
-        letterSpacing: tokens.tracking.caps,
-        textTransform: 'uppercase',
-      }}
-    >
+    <Label as="p" size="line" data-testid="settled-offer">
       {offer.label}: {said}
       {offer.answeredAt !== undefined && (
         <span data-testid="settled-when" style={{ float: 'right', ...TABULAR_NUMERALS }}>
           {saidWhen(offer.answeredAt)}
         </span>
       )}
-    </p>
+    </Label>
   );
 }
 
