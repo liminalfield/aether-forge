@@ -23,6 +23,7 @@ import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
 import { correctEntry, readJournal, recordEntry } from './journal';
+import { listPackages, openRegistry, type PackageRegistry } from './packages';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
@@ -81,7 +82,10 @@ function registerIpcHandlers(
   campaign: OpenCampaign,
   log: TranslatingLog,
   userDataDir: string,
+  registry: PackageRegistry,
 ): void {
+  ipcMain.handle(IPC.listPackages, () => listPackages(registry));
+
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
 
@@ -152,7 +156,7 @@ function registerIpcHandlers(
   });
 }
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   const db = openCampaignDatabase(app.getPath('userData'), ONLY_CAMPAIGN);
   app.once('will-quit', () => db.close());
 
@@ -186,7 +190,17 @@ void app.whenReady().then(() => {
     throw new Error(`this campaign could not be opened: ${describeFailure(opened.failure)}`);
   }
 
-  registerIpcHandlers(opened.value, log, app.getPath('userData'));
+  // What content this machine holds. Bundled packages ride in the install's
+  // resources; imported ones live in the application data directory. Read
+  // once at startup; the import flow re-reads when it installs.
+  const registry = await openRegistry({
+    bundled: app.isPackaged
+      ? join(process.resourcesPath, 'content')
+      : join(app.getAppPath(), 'resources', 'content'),
+    imported: join(app.getPath('userData'), 'packages'),
+  });
+
+  registerIpcHandlers(opened.value, log, app.getPath('userData'), registry);
   createWindow();
 
   app.on('activate', () => {

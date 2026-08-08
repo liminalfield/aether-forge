@@ -29,6 +29,7 @@ export const IPC = {
   createEntity: 'entities:create',
   changeEntity: 'entities:change',
   describeEntityTypes: 'entities:describeTypes',
+  listPackages: 'packages:list',
   startTrack: 'tracks:start',
   advanceTrack: 'tracks:advance',
   setTrack: 'tracks:set',
@@ -281,6 +282,25 @@ export interface ChangeEntityRequest {
   readonly fields: Readonly<Record<string, FieldValueView>>;
 }
 
+/** One installed content package, described well enough to render and credit. */
+export interface InstalledPackageView {
+  readonly id: string;
+  readonly version: string;
+  readonly title: string;
+  readonly license: string;
+  /** Rendered wherever the content is credited. CC-BY requires it. */
+  readonly attribution?: string;
+  readonly source: 'bundled' | 'imported' | 'user';
+  readonly tables: number;
+  readonly documents: number;
+}
+
+export interface PackagesView {
+  readonly packages: readonly InstalledPackageView[];
+  /** Files the registry refused, said by name, never silently dropped. */
+  readonly problems: readonly string[];
+}
+
 /** One entity type a loaded module describes, named well enough to offer. */
 export interface EntityTypeView {
   readonly id: string;
@@ -505,6 +525,9 @@ export interface AetherForgeApi {
    * earlier value.
    */
   changeEntity(request: ChangeEntityRequest): Promise<IpcResult<EntityView>>;
+
+  /** What content this machine holds, with the attribution the licenses require. */
+  listPackages(): Promise<IpcResult<PackagesView>>;
 
   /**
    * The entity types the loaded modules describe, for a creation surface to

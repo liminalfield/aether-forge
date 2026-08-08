@@ -70,3 +70,13 @@ test('opens its campaign database without crashing', async () => {
   const page = await app.firstWindow();
   await expect(page.locator('#root')).not.toBeEmpty();
 });
+
+test('carries the bundled content, credited on screen', async () => {
+  // The phase gate for the package registry: the packaged application holds
+  // the bundled Starforged package and renders the attribution its license
+  // requires, in the window, not behind a menu.
+  const page = await app.firstWindow();
+  const credits = page.getByTestId('content-credits');
+  await expect(credits).toContainText('Shawn Tomkin');
+  await expect(credits).toContainText('CC-BY-4.0');
+});

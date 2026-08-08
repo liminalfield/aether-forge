@@ -88,6 +88,26 @@ async function sha256(text: string): Promise<string> {
 }
 
 /**
+ * The hash a sealed package's manifest should carry, over everything inside
+ * the box: tables, documents, entity templates and the compartment alike. A
+ * registry verifies an installed file against this, so tampering with any
+ * part of the content, the compartment included, is visible.
+ */
+export async function contentHashOf(box: {
+  readonly tables: unknown;
+  readonly documents: unknown;
+  readonly entityTemplates: unknown;
+  readonly raw?: unknown;
+}): Promise<string> {
+  const { tables, documents, entityTemplates, raw } = box;
+  const content =
+    raw === undefined
+      ? { tables, documents, entityTemplates }
+      : { tables, documents, entityTemplates, raw };
+  return `sha256-${await sha256(canonical(content))}`;
+}
+
+/**
  * One stable stringification, so the same content always hashes the same.
  * Keys are sorted at every depth; nothing else is touched.
  */
@@ -183,7 +203,7 @@ export async function importDatasworn(
     license: asSpdx(ruleset.licenseUrl),
     attribution,
     source: options.source,
-    contentHash: `sha256-${await sha256(canonical(content))}`,
+    contentHash: await contentHashOf(content),
   };
 
   return ok({ package: { manifest, ...content }, problems });
