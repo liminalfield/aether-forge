@@ -1,6 +1,7 @@
 # Content packages, and the importer that fills them
 
-Status: proposed, 8 August 2026. Not yet agreed, not yet decomposed.
+Status: accepted, 8 August 2026 (#157). Decomposed into epic
+[#158](https://github.com/liminalfield/aether-forge/issues/158) and its tasks.
 
 If the code and this record ever disagree, the code is right and this needs a note saying what
 changed.
