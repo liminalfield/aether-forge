@@ -114,12 +114,12 @@ describe('reading an entity change', () => {
 
 describe('what the events refuse, and what they never refuse', () => {
   it('has no opinion about field names or values a module might disagree with', () => {
-    // Sovereignty check. A stat of -3, an iron of 900, a field no template
+    // Sovereignty check. A value of -3, a weight of 900, a field no template
     // mentions: all recordable. The only refusal is shape.
     expect(
       readEntityCreated({
         entityId: 'e-1',
-        fields: { iron: 900, notInAnyTemplate: 'yes', momentum: -3 },
+        fields: { weight: 900, notInAnyTemplate: 'yes', ballast: -3 },
       }),
     ).toBeDefined();
   });

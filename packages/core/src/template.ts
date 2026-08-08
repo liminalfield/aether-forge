@@ -30,14 +30,14 @@ export interface TrackSpec {
   readonly id: string;
   readonly label: string;
   readonly segments: number;
-  /** How full a new one begins. A condition meter full, a progress track empty. */
+  /** How full a new one begins. A meter starts full, a row of progress empty. */
   readonly startsFilled: number;
 }
 
 export interface EntityTemplate {
   /** Namespaced by the owning module: "sys.<system>.<type>". */
   readonly typeId: string;
-  /** The module's word for the type: "Character", "Vow". */
+  /** The module's word for the type: "Character", "Faction". */
   readonly name: string;
   readonly fields: readonly FieldSpec[];
   readonly tracks: readonly TrackSpec[];

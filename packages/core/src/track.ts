@@ -1,7 +1,7 @@
 /**
  * Tracks: segmented progress riding on an entity.
  *
- * A vow's progress, a clock's wedges, a condition meter. A track is started
+ * A promise being kept, a clock's wedges, a meter being spent. A track is started
  * once, fixing its shape, and then moved: `advanced` by an amount when
  * something happened, `set` outright when a rule or a person states where it
  * now stands. Moves are compensated, not corrected; un-marking progress is a
@@ -31,7 +31,7 @@ export interface TrackStartedV1 {
   readonly trackId: string;
   /** How many segments the row has. At least one. */
   readonly segments: number;
-  /** How full it begins. A condition meter starts full, a vow empty. */
+  /** How full it begins. A meter starts full, a row of progress empty. */
   readonly filled: number;
 }
 
