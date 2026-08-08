@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { consultOracle } from './consult';
 import { loadFixtureSystems } from './content-fixture';
 import { declareEventTypes } from './event-types';
+import { readTimeline } from './timeline';
 import type { RegistryHolder } from './import-package';
 
 loadFixtureSystems();
@@ -207,5 +208,16 @@ describe('what it refuses, and writes nothing for', () => {
 
     expect(!answer.ok && answer.failure.detail).toContain('1 dice');
     expect(read()).toEqual([]);
+  });
+});
+
+describe('and then reading the campaign back', () => {
+  it('shows the consultation on the timeline, which is where a person sees it', () => {
+    const { campaign, read } = aCampaign();
+
+    consultOracle(campaign, holder, { tableId: A_TABLE, thrown: [47] });
+
+    const items = readTimeline(campaign, read(), () => ({ name: 'It', group: 'derelict' })).items;
+    expect(items.map((item) => item.kind)).toEqual(['consultation']);
   });
 });

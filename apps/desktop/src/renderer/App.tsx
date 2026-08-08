@@ -27,6 +27,7 @@ import type {
 } from '../shared/ipc';
 import { CheckCard } from './CheckCard';
 import { ConsultationCard } from './ConsultationCard';
+import { OraclePalette } from './OraclePalette';
 import { applyMotion, wearTheme } from './appearance';
 import { PreferencesRow } from './Preferences';
 import { EntitiesRail } from './EntitiesRail';
@@ -59,6 +60,7 @@ export function App(): React.JSX.Element {
   const [held, setHeld] = useState<readonly EntityView[]>([]);
   const [credits, setCredits] = useState<readonly InstalledPackageView[]>([]);
   const [preferences, setPreferences] = useState<PreferencesView | null>(null);
+  const [asking, setAsking] = useState(false);
   const [entityTypes, setEntityTypes] = useState<readonly EntityTypeView[]>([]);
   const [text, setText] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -104,6 +106,29 @@ export function App(): React.JSX.Element {
       if (stored.ok) setPreferences(stored.value);
       else setProblem(stored.failure.detail);
     });
+  }, []);
+
+  /**
+   * One key opens the oracle, from wherever a person is.
+   *
+   * On the window rather than on a control, because the point is that you do
+   * not have to go anywhere to ask. It is left alone while somebody is typing
+   * into something: a person writing the letter O in their journal means the
+   * letter O.
+   */
+  useEffect(() => {
+    const listen = (event: KeyboardEvent): void => {
+      if (event.key !== 'o' || !(event.metaKey || event.ctrlKey)) return;
+      const inAField =
+        event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
+      if (inAField) return;
+
+      event.preventDefault();
+      setAsking(true);
+    };
+
+    window.addEventListener('keydown', listen);
+    return () => window.removeEventListener('keydown', listen);
   }, []);
 
   // Opening a campaign should land you where you left off, at the end of what
@@ -248,6 +273,39 @@ export function App(): React.JSX.Element {
     }
   }, []);
 
+  /**
+   * Asking an oracle, and writing what it said.
+   *
+   * The whole campaign is read again afterwards rather than the answer being
+   * slotted in, for the same reason a check does: two events were written and
+   * reassembling that here would be a second implementation of the timeline.
+   */
+  const consultAnOracle = useCallback(
+    async (tableId: string, thrown: readonly number[] | undefined) => {
+      setBusy(true);
+      try {
+        const asked = await window.aetherForge.consultOracle({
+          tableId,
+          ...(thrown === undefined ? {} : { thrown }),
+        });
+        if (asked.ok) {
+          arrived(await reread());
+          setAsking(false);
+        } else {
+          setProblem(asked.failure.detail);
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [arrived, reread],
+  );
+
+  const findAnOracle = useCallback(async (query: string) => {
+    const found = await window.aetherForge.searchOracles(query);
+    return found.ok ? found.value : { tables: [], matched: 0 };
+  }, []);
+
   const importContent = useCallback(async () => {
     setBusy(true);
     try {
@@ -376,6 +434,14 @@ export function App(): React.JSX.Element {
           {version === null ? 'connecting' : `v${version}`}
         </span>
       </header>
+
+      <OraclePalette
+        open={asking}
+        busy={busy}
+        onSearch={findAnOracle}
+        onConsult={(tableId, thrown) => void consultAnOracle(tableId, thrown)}
+        onClose={() => setAsking(false)}
+      />
 
       <div style={{ display: 'flex', minHeight: 0, alignItems: 'stretch' }}>
         <EntitiesRail
