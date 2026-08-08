@@ -32,6 +32,7 @@ export const IPC = {
   describeEntityTypes: 'entities:describeTypes',
   listPackages: 'packages:list',
   searchOracles: 'oracles:search',
+  readDocument: 'content:readDocument',
   consultOracle: 'oracles:consult',
   importPackage: 'packages:import',
   startTrack: 'tracks:start',
@@ -311,6 +312,19 @@ export interface CreateEntityRequest {
 export interface ChangeEntityRequest {
   readonly entityId: string;
   readonly fields: Readonly<Record<string, FieldValueView>>;
+}
+
+/**
+ * A piece of content that was written to be read: a move's own words.
+ *
+ * The package is carried because the text came from one, and a person
+ * reading a move should be able to tell which ruleset they are reading.
+ */
+export interface ReferenceDocView {
+  readonly id: string;
+  readonly title: string;
+  readonly text: string;
+  readonly package: { readonly id: string; readonly version: string };
 }
 
 /** One thing that can be consulted, described well enough to offer. */
@@ -624,6 +638,16 @@ export interface AetherForgeApi {
    * just opened still shows what is in it.
    */
   searchOracles(query: string): Promise<IpcResult<OracleSearchView>>;
+
+  /**
+   * What a move actually says, in its own words.
+   *
+   * Found by the identifier a check carries as its `docRef`. Answers with a
+   * failure for a move whose text this machine does not hold, which is real:
+   * a package can be removed, and a module can declare a check whose content
+   * came from somewhere else.
+   */
+  readDocument(id: string): Promise<IpcResult<ReferenceDocView>>;
 
   /**
    * Consult a table, and write what it came to.

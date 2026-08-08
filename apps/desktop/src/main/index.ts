@@ -29,6 +29,7 @@ import {
   type RegistryHolder,
 } from './import-package';
 import { consultOracle } from './consult';
+import { readDocument } from './documents';
 import { everyProvider, groupOf, searchOracles } from './oracles';
 import { listPackages, openRegistry } from './packages';
 import { loadSystems } from './systems';
@@ -157,6 +158,7 @@ function registerIpcHandlers(
   ipcMain.handle(IPC.changeEntity, (_event, request: unknown) => changeEntity(campaign, request));
 
   ipcMain.handle(IPC.searchOracles, (_event, query: unknown) => searchOracles(holder, query));
+  ipcMain.handle(IPC.readDocument, (_event, id: unknown) => readDocument(holder, id));
   ipcMain.handle(IPC.consultOracle, (_event, request: unknown) =>
     consultOracle(campaign, holder, request),
   );
