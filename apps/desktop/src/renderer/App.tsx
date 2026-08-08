@@ -464,15 +464,6 @@ export function App(): React.JSX.Element {
       />
 
       <div style={{ display: 'flex', minHeight: 0, alignItems: 'stretch' }}>
-        <EntitiesRail
-          entities={held}
-          types={entityTypes}
-          busy={busy}
-          onCreate={(request) => void createAnEntity(request)}
-          onSetField={(entityId, fieldId, value) => void setAField(entityId, fieldId, value)}
-          onAdvance={(entityId, trackId, by) => void advanceATrack(entityId, trackId, by)}
-        />
-
         <main
           style={{
             margin: '0 auto',
@@ -576,6 +567,19 @@ export function App(): React.JSX.Element {
 
           <div ref={end} />
         </main>
+
+        {/*
+          The campaign, beside the writing. The design puts it either side;
+          only what exists gets a rail, and what exists is entities.
+        */}
+        <EntitiesRail
+          entities={held}
+          types={entityTypes}
+          busy={busy}
+          onCreate={(request) => void createAnEntity(request)}
+          onSetField={(entityId, fieldId, value) => void setAField(entityId, fieldId, value)}
+          onAdvance={(entityId, trackId, by) => void advanceATrack(entityId, trackId, by)}
+        />
       </div>
     </div>
   );
