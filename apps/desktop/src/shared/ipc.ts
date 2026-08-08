@@ -240,6 +240,8 @@ export interface TrackView {
   readonly segments: number;
   /** May stand past full or below empty. Drawn, never judged. */
   readonly filled: number;
+  /** How the owning module says to draw it. Absent when it does not say. */
+  readonly draws?: 'spent' | 'earned';
 }
 
 /**

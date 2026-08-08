@@ -56,9 +56,11 @@ function templateFor(entityType: string | undefined): EntityTemplate | undefined
 
 function toTrackView(record: EntityRecord, template: EntityTemplate | undefined): TrackView[] {
   return record.tracks.map((track) => {
-    const label = template?.tracks.find((spec) => spec.id === track.id)?.label;
-    const view: TrackView = { id: track.id, segments: track.segments, filled: track.filled };
-    return label === undefined ? view : { ...view, label };
+    const spec = template?.tracks.find((each) => each.id === track.id);
+    let view: TrackView = { id: track.id, segments: track.segments, filled: track.filled };
+    if (spec?.label !== undefined) view = { ...view, label: spec.label };
+    if (spec?.draws !== undefined) view = { ...view, draws: spec.draws };
+    return view;
   });
 }
 

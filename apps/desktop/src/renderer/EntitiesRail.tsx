@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Button, labelStyle, slot, tokens } from '@aether-forge/ui';
+import { Button, labelStyle, Meter, slot, tokens } from '@aether-forge/ui';
 
 import type { EntityTypeView, EntityView, FieldValueView } from '../shared/ipc';
 
@@ -117,12 +117,13 @@ function Expanded({
           }}
         >
           <span style={labelStyle()}>{track.label ?? track.id}</span>
-          <span
+          <Meter
             data-testid={`track-${track.id}`}
-            style={{ fontFamily: 'var(--font-numeric)', fontSize: tokens.type.small }}
-          >
-            {track.filled}/{track.segments}
-          </span>
+            label={track.label ?? track.id}
+            segments={track.segments}
+            filled={track.filled}
+            shape={track.draws === 'earned' ? 'boxes' : 'bar'}
+          />
           <span style={{ display: 'flex', gap: tokens.space[2] }}>
             <Button
               weight="quiet"
