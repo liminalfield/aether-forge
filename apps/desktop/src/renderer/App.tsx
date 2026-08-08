@@ -191,6 +191,21 @@ export function App(): React.JSX.Element {
     [entitiesArrived, rereadShape],
   );
 
+  const importContent = useCallback(async () => {
+    setBusy(true);
+    try {
+      const asked = await window.aetherForge.importPackage();
+      if (asked.ok) {
+        setCredits(asked.value.listing.packages);
+        setProblem(null);
+      } else {
+        setProblem(asked.failure.detail);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
   const advanceATrack = useCallback(
     async (entityId: string, trackId: string, by: number) => {
       setBusy(true);
@@ -379,15 +394,22 @@ export function App(): React.JSX.Element {
           quietly, where the content actually is. Not behind a menu: a
           condition on using someone's work is not a settings page.
         */}
-          {credits.length > 0 && (
-            <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space.xs }}>
-              {credits.map((credit) => (
-                <p key={credit.id} style={QUIET}>
-                  {credit.attribution ?? `${credit.title} ${credit.version}, ${credit.license}.`}
-                </p>
-              ))}
-            </footer>
-          )}
+          <footer data-testid="content-credits" style={{ display: 'grid', gap: tokens.space.xs }}>
+            {credits.map((credit) => (
+              <p key={credit.id} style={QUIET}>
+                {credit.attribution ?? `${credit.title} ${credit.version}, ${credit.license}.`}
+              </p>
+            ))}
+            <Button
+              weight="quiet"
+              data-testid="import-content"
+              disabled={busy}
+              onClick={() => void importContent()}
+              style={{ justifySelf: 'start' }}
+            >
+              Import content…
+            </Button>
+          </footer>
 
           {problem !== null && (
             <p

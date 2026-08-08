@@ -14,6 +14,7 @@ import {
   type EntitiesView,
   type EntityTypesView,
   type PackagesView,
+  type ImportedPackagesView,
   type EntityView,
 } from '../shared/ipc';
 
@@ -52,6 +53,9 @@ const api: AetherForgeApi = {
     ipcRenderer.invoke(IPC.changeEntity, request) as Promise<IpcResult<EntityView>>,
 
   listPackages: () => ipcRenderer.invoke(IPC.listPackages) as Promise<IpcResult<PackagesView>>,
+
+  importPackage: () =>
+    ipcRenderer.invoke(IPC.importPackage) as Promise<IpcResult<ImportedPackagesView>>,
 
   describeEntityTypes: () =>
     ipcRenderer.invoke(IPC.describeEntityTypes) as Promise<IpcResult<EntityTypesView>>,

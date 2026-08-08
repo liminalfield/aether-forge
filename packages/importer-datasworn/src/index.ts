@@ -45,8 +45,13 @@ export interface Imported {
 export type ImportRefused = { readonly kind: 'not-a-ruleset'; readonly detail: string };
 
 export interface ImportOptions {
-  /** The version of the source package, which the manifest carries for stamps. */
-  readonly version: SemVer;
+  /**
+   * The version of the source package, which the manifest carries for
+   * stamps. Absent for a loose file somebody hands the import flow, which
+   * knows no package version; the ruleset's own Datasworn version stands in,
+   * because only this package may read that field.
+   */
+  readonly version?: SemVer;
   readonly source: PackageSource;
 }
 
@@ -197,7 +202,7 @@ export async function importDatasworn(
 
   const manifest: PackageManifest = {
     id: `datasworn-community.${ruleset.rulesetId}`,
-    version: options.version,
+    version: options.version ?? ruleset.dataswornVersion,
     title: ruleset.title,
     systems: [system ?? ruleset.rulesetId],
     license: asSpdx(ruleset.licenseUrl),

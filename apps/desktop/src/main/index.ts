@@ -13,7 +13,7 @@ import {
 } from '@aether-forge/core';
 import { glacialDark } from '@aether-forge/ui';
 import { isMotionPreference, MOTION_PREFERENCES } from '@aether-forge/ui';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
 import { IPC } from '../shared/ipc';
 import { answerOffer } from './answer-offer';
@@ -23,7 +23,12 @@ import { openCampaignDatabase } from './db';
 import { declareEventTypes } from './event-types';
 import { openEventLog } from './event-log';
 import { correctEntry, readJournal, recordEntry } from './journal';
-import { listPackages, openRegistry, type PackageRegistry } from './packages';
+import {
+  importPackageFromFile,
+  type RegistryDirectories,
+  type RegistryHolder,
+} from './import-package';
+import { listPackages, openRegistry } from './packages';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
@@ -82,9 +87,20 @@ function registerIpcHandlers(
   campaign: OpenCampaign,
   log: TranslatingLog,
   userDataDir: string,
-  registry: PackageRegistry,
+  holder: RegistryHolder,
+  directories: RegistryDirectories,
 ): void {
-  ipcMain.handle(IPC.listPackages, () => listPackages(registry));
+  ipcMain.handle(IPC.listPackages, () => listPackages(holder.current));
+  ipcMain.handle(IPC.importPackage, () =>
+    importPackageFromFile(holder, directories, async () => {
+      const picked = await dialog.showOpenDialog({
+        title: 'Import a Datasworn file',
+        filters: [{ name: 'Datasworn JSON', extensions: ['json'] }],
+        properties: ['openFile'],
+      });
+      return picked.canceled ? undefined : picked.filePaths[0];
+    }),
+  );
 
   ipcMain.handle(IPC.getAppVersion, () => app.getVersion());
   ipcMain.handle(IPC.readJournal, () => readJournal(campaign));
@@ -193,14 +209,15 @@ void app.whenReady().then(async () => {
   // What content this machine holds. Bundled packages ride in the install's
   // resources; imported ones live in the application data directory. Read
   // once at startup; the import flow re-reads when it installs.
-  const registry = await openRegistry({
+  const directories: RegistryDirectories = {
     bundled: app.isPackaged
       ? join(process.resourcesPath, 'content')
       : join(app.getAppPath(), 'resources', 'content'),
     imported: join(app.getPath('userData'), 'packages'),
-  });
+  };
+  const holder: RegistryHolder = { current: await openRegistry(directories) };
 
-  registerIpcHandlers(opened.value, log, app.getPath('userData'), registry);
+  registerIpcHandlers(opened.value, log, app.getPath('userData'), holder, directories);
   createWindow();
 
   app.on('activate', () => {
