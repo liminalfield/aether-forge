@@ -1,7 +1,7 @@
-import type { RollPerformedV1 } from '@aether-forge/core';
+import type { ContentPackage, RollPerformedV1 } from '@aether-forge/core';
 import { describe, expect, it } from 'vitest';
 
-import { FACE_DANGER } from './index.js';
+import { checksFrom, STARFORGED_SYSTEM_ID } from './index.js';
 import { interpretActionRoll, interpretNoRoll, interpretProgressRoll } from './interpreters.js';
 
 function anActionRoll(action: number, first: number, second: number): RollPerformedV1 {
@@ -46,9 +46,31 @@ describe('the action roll interpreter', () => {
     expect(interpretActionRoll(aProgressRoll(2, 9), {}).id).toBe('unreadable');
   });
 
-  it('agrees with the hand-written Face Danger on every outcome, which is the parity that lets it retire', () => {
-    // Face Danger's momentum proposals become the hook; the interpreter with
-    // that hook must be indistinguishable from the declaration it replaces.
+  it('is what a content-built check answers with, exactly', () => {
+    // The hand-written Face Danger retired against this parity: a check
+    // built from content facts is the interpreter and nothing else, so the
+    // two can never drift apart again.
+    const fixture: ContentPackage = {
+      manifest: {
+        id: 'example.fixture',
+        version: '1.0.0',
+        title: 'Fixture',
+        systems: [STARFORGED_SYSTEM_ID],
+        license: 'CC-BY-4.0',
+        source: 'bundled',
+        contentHash: 'sha256-irrelevant-here',
+      },
+      tables: [],
+      documents: [],
+      entityTemplates: [],
+      raw: {
+        formatVersion: 1,
+        moves: [{ id: 'example/doing/try_it', name: 'Try It', kind: 'action', stats: ['edge'] }],
+      },
+    };
+    const [built] = checksFrom([fixture]);
+    if (built === undefined) throw new Error('the fixture built no check');
+
     const cases: readonly [number, number, number][] = [
       [6, 1, 2],
       [4, 2, 9],
@@ -60,15 +82,8 @@ describe('the action roll interpreter', () => {
     for (const [action, first, second] of cases) {
       const roll = anActionRoll(action, first, second);
       const inputs = { stat: 2, bonus: 1 };
-      const handWritten = FACE_DANGER.interpret(roll, inputs);
-      const joined = interpretActionRoll(roll, inputs, () => []);
-
-      expect(joined.id).toBe(handWritten.id);
-      expect(joined.label).toBe(handWritten.label);
-      expect(joined.summary).toBe(handWritten.summary);
+      expect(built.interpret(roll, inputs)).toEqual(interpretActionRoll(roll, inputs));
     }
-
-    expect(FACE_DANGER.interpret(null, {}).id).toBe(interpretActionRoll(null, {}).id);
   });
 });
 

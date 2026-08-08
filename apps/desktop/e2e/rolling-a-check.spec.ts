@@ -92,6 +92,7 @@ test('still has the card, and the refusal, after the application is opened again
 test('rolls its own dice when nobody hands any in, and takes what it proposes', async () => {
   const page = await open();
 
+  await page.getByTestId('which-check').selectOption({ label: 'Face Danger' });
   await page.getByTestId('input-stat').fill('3');
   await expect(page.getByTestId('roll-it')).toHaveText('Roll it');
   await page.getByTestId('roll-it').click();

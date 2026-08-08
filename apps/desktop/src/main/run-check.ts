@@ -20,7 +20,7 @@ import type {
   RunCheckRequest,
 } from '../shared/ipc';
 import { performRoll } from './roll';
-import { LOADED_SYSTEMS, type LoadedSystem } from './systems';
+import { loadedSystems, type LoadedSystem } from './systems';
 
 /**
  * Running a check, which is the first of two acts.
@@ -69,7 +69,7 @@ interface Found {
 }
 
 function findCheck(systemId: string, checkId: string): Found | undefined {
-  for (const system of LOADED_SYSTEMS) {
+  for (const system of loadedSystems()) {
     if (system.systemId !== systemId) continue;
 
     const check = system.checks.find((each) => each.id === checkId);

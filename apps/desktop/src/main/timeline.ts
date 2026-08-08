@@ -23,7 +23,7 @@ import type {
   TimelineItem,
   TimelineView,
 } from '../shared/ipc';
-import { LOADED_SYSTEMS } from './systems';
+import { loadedSystems } from './systems';
 
 /**
  * The campaign as one thing, in the order it happened.
@@ -67,9 +67,9 @@ function readResolution(payload: unknown): Resolution | undefined {
 }
 
 function findCheck(systemId: string, checkId: string): CheckDefinition | undefined {
-  return LOADED_SYSTEMS.find((system) => system.systemId === systemId)?.checks.find(
-    (check) => check.id === checkId,
-  );
+  return loadedSystems()
+    .find((system) => system.systemId === systemId)
+    ?.checks.find((check) => check.id === checkId);
 }
 
 /**
@@ -217,7 +217,7 @@ export function readTimeline(
 
     // Only a resolution this build's modules declared. Another module's events
     // pass through untouched, which is the fault worth guarding against here.
-    const resolves = LOADED_SYSTEMS.some((system) => system.checkEvents.resolved === event.type);
+    const resolves = loadedSystems().some((system) => system.checkEvents.resolved === event.type);
     if (!resolves) continue;
 
     const resolution = readResolution(event.payload);

@@ -29,6 +29,7 @@ import {
   type RegistryHolder,
 } from './import-package';
 import { listPackages, openRegistry } from './packages';
+import { loadSystems } from './systems';
 import { readPreferences, writePreferences } from './preferences';
 import { runCheck } from './run-check';
 import { readTimeline } from './timeline';
@@ -216,6 +217,11 @@ void app.whenReady().then(async () => {
     imported: join(app.getPath('userData'), 'packages'),
   };
   const holder: RegistryHolder = { current: await openRegistry(directories) };
+
+  // The modules receive their installed content at load, per contract §9.
+  // An import mid-session re-reads the registry but not the systems; new
+  // checks arrive on restart, which the import surface says.
+  loadSystems(holder.current.packages);
 
   registerIpcHandlers(opened.value, log, app.getPath('userData'), holder, directories);
   createWindow();

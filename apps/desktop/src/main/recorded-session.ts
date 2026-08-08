@@ -1,10 +1,12 @@
-import type { UnversionedEventDraft } from '@aether-forge/core';
+import type { CheckDefinition, UnversionedEventDraft } from '@aether-forge/core';
 import {
-  FACE_DANGER,
+  ACTION_ROLL_OUTCOMES,
+  interpretActionRoll,
   MOMENTUM_CHANGED,
   MOVE_INVOKED,
   MOVE_RESOLVED,
   STARFORGED_SYSTEM_ID,
+  type SuggestsFor,
 } from '@aether-forge/system-ironsworn';
 import { COIN, COIN_FLIPPED, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 
@@ -44,6 +46,74 @@ import {
  * session where every suggestion was accepted would not exercise the thing the
  * audit trail exists for.
  */
+
+/**
+ * Face Danger exactly as this session recorded it, under its retired
+ * identifier.
+ *
+ * The module now builds its checks from content, under content identifiers,
+ * and no longer declares this one. The fixture keeps its own copy on
+ * purpose: a recorded campaign whose check ids a module no longer declares
+ * is a real state every campaign eventually reaches, and this session
+ * replaying to the same totals forever is the proof it stays readable. The
+ * drafts below are byte-identical to what the hand-written declaration
+ * produced.
+ */
+const AS_RECORDED_ID = 'starforged/moves/adventure/face_danger';
+
+const momentumAsRecorded: SuggestsFor = (outcomeId) => {
+  const TUNED: Readonly<Record<string, [number, string]>> = {
+    'strong-hit': [1, 'a clean success'],
+    'weak-hit': [-1, 'a cost paid'],
+    miss: [-2, 'it went badly'],
+  };
+  const tuned = TUNED[outcomeId];
+  if (tuned === undefined) return [];
+  const [by, reason] = tuned;
+  return [
+    {
+      id: `${AS_RECORDED_ID}#momentum`,
+      label: `Momentum ${by > 0 ? '+' : ''}${by}`,
+      fields: [
+        { id: 'by', label: 'Amount', kind: 'number' as const },
+        { id: 'reason', label: 'Reason', kind: 'text' as const },
+      ],
+      proposes: {
+        type: MOMENTUM_CHANGED,
+        systemId: STARFORGED_SYSTEM_ID,
+        payload: { by, reason },
+      },
+    },
+  ];
+};
+
+const FACE_DANGER_AS_RECORDED: CheckDefinition = {
+  id: AS_RECORDED_ID,
+  name: 'Face Danger',
+  roll: {
+    dice: [
+      { sides: 6, count: 1, label: 'action' },
+      { sides: 10, count: 2, label: 'challenge' },
+    ],
+  },
+  decisive: 'challenge',
+  inputs: [
+    {
+      id: 'stat',
+      label: 'Stat',
+      kind: 'choice',
+      source: 'chosen',
+      options: ['edge', 'heart', 'iron', 'shadow', 'wits'].map((stat) => ({
+        id: stat,
+        label: stat,
+        value: 0,
+      })),
+    },
+    { id: 'bonus', label: 'Bonus', kind: 'number', source: 'chosen' },
+  ],
+  outcomes: ACTION_ROLL_OUTCOMES,
+  interpret: (roll, inputs) => interpretActionRoll(roll, inputs, momentumAsRecorded),
+};
 
 const entry = (text: string): UnversionedEventDraft => ({ type: ENTRY_CREATED, payload: { text } });
 
@@ -119,12 +189,12 @@ function aCheckWhoseEffectWasRefused(): readonly UnversionedEventDraft[] {
   };
 
   const inputs = { stat: 2, bonus: 0 };
-  const outcome = FACE_DANGER.interpret(roll, inputs);
+  const outcome = FACE_DANGER_AS_RECORDED.interpret(roll, inputs);
   if (outcome.suggests.length === 0)
     throw new Error('the fixture expects this outcome to propose one thing');
 
   const ran = sequenceCheck({
-    check: FACE_DANGER,
+    check: FACE_DANGER_AS_RECORDED,
     systemId: STARFORGED_SYSTEM_ID,
     offered: [
       {

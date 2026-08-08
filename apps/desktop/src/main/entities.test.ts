@@ -13,7 +13,10 @@ import { CHARACTER_TEMPLATE, STARFORGED_SYSTEM_ID } from '@aether-forge/system-i
 import { describe, expect, it } from 'vitest';
 
 import { changeEntity, createEntity, readEntities } from './entities';
+import { loadFixtureSystems } from './content-fixture';
 import { declareEventTypes } from './event-types';
+
+loadFixtureSystems();
 
 function aStoredLog(): EventLog {
   let tick = 0;

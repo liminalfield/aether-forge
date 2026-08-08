@@ -344,6 +344,13 @@ changed.
 
 ## 9. The module, assembled
 
+> Amended 8 August 2026, per design/content-packages.md (#158): a module receives its installed
+> content at load. In code this is `checksFrom(packages)`: the application hands the module the
+> registry's packages, and the module joins their structured facts to its own interpreters to
+> produce its checks. `checks` as a static field is how the sketch below imagined it; the
+> application-side `LoadedSystem` now carries checks built at load, and a module with no packages
+> offers what it can (the toy offers its coin, from no content at all).
+
 ```ts
 interface SystemModule {
   id: SystemId;

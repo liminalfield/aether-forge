@@ -4,6 +4,7 @@ import {
   readOffer,
   sequenceCheck,
   SUGGESTION_OFFERED,
+  type ContentPackage,
   type EventEnvelope,
   type RollPerformedV1,
   describesRecordableEntities,
@@ -13,8 +14,8 @@ import { asProjection, describeProjectionIsPredictable } from '@aether-forge/cor
 import { describe, expect, it } from 'vitest';
 
 import {
+  checksFrom,
   COMPATIBLE_CORE_CONTRACT_VERSION,
-  FACE_DANGER,
   IRONSWORN_SYSTEM_ID,
   momentum,
   MOMENTUM_CHANGED,
@@ -26,6 +27,59 @@ import {
   templates,
   VOW_TEMPLATE,
 } from './index.js';
+
+/**
+ * A fixture package carrying the facts the importer would produce, with a
+ * move of each kind, so the checks are built the way the application builds
+ * them: from content joined to the interpreters. Face Danger's facts are the
+ * real ones, because its behaviour is what the tuned proposals preserve.
+ */
+const CONTENT_FIXTURE: ContentPackage = {
+  manifest: {
+    id: 'example.fixture-content',
+    version: '1.0.0',
+    title: 'Fixture Content',
+    systems: [STARFORGED_SYSTEM_ID],
+    license: 'CC-BY-4.0',
+    source: 'bundled',
+    contentHash: 'sha256-irrelevant-here',
+  },
+  tables: [],
+  documents: [],
+  entityTemplates: [],
+  raw: {
+    formatVersion: 1,
+    moves: [
+      {
+        id: 'starforged/adventure/face_danger',
+        name: 'Face Danger',
+        kind: 'action',
+        stats: ['edge', 'heart', 'iron', 'shadow', 'wits'],
+      },
+      {
+        id: 'starforged/quest/fulfill_your_vow',
+        name: 'Fulfill Your Vow',
+        kind: 'progress',
+        stats: [],
+      },
+      { id: 'starforged/session/take_a_break', name: 'Take a Break', kind: 'none', stats: [] },
+      {
+        id: 'starforged/legacy/continue_a_legacy',
+        name: 'Continue a Legacy',
+        kind: 'special',
+        stats: [],
+      },
+    ],
+  },
+};
+
+function builtCheck(id: string) {
+  const found = checksFrom([CONTENT_FIXTURE]).find((check) => check.id === id);
+  if (found === undefined) throw new Error(`the fixture content built no check ${id}`);
+  return found;
+}
+
+const FACE_DANGER = builtCheck('starforged/adventure/face_danger');
 
 function aChange(seq: number, by: number): EventEnvelope {
   return {
@@ -370,5 +424,94 @@ describe('the stat the application would use', () => {
 
   it('suggests nothing from a character whose stats are not numbers yet', () => {
     expect(statInput?.suggest?.(aCampaignHolding(character({ name: 'Vess' })))).toBeUndefined();
+  });
+});
+
+describe('building checks from content', () => {
+  it('offers a check for every runnable kind, and none for the special pair', () => {
+    const built = checksFrom([CONTENT_FIXTURE]);
+
+    expect(built.map((check) => check.id)).toEqual([
+      'starforged/adventure/face_danger',
+      'starforged/quest/fulfill_your_vow',
+      'starforged/session/take_a_break',
+    ]);
+  });
+
+  it('gives an action move its dice, its stats and its document reference', () => {
+    const built = builtCheck('starforged/adventure/face_danger');
+
+    expect(built.name).toBe('Face Danger');
+    expect(built.docRef).toBe('starforged/adventure/face_danger');
+    expect(built.decisive).toBe('challenge');
+    expect(built.roll?.dice).toEqual([
+      { sides: 6, count: 1, label: 'action' },
+      { sides: 10, count: 2, label: 'challenge' },
+    ]);
+    expect(
+      built.inputs.find((input) => input.id === 'stat')?.options?.map((option) => option.id),
+    ).toEqual(['edge', 'heart', 'iron', 'shadow', 'wits']);
+  });
+
+  it('gives a progress move its score and no action die', () => {
+    const built = builtCheck('starforged/quest/fulfill_your_vow');
+
+    expect(built.roll?.dice).toEqual([{ sides: 10, count: 2, label: 'challenge' }]);
+    expect(built.inputs.map((input) => input.id)).toEqual(['progress']);
+    expect(built.interpret(null, { progress: 10 }).id).toBe('unreadable');
+  });
+
+  it('gives a no-roll move no dice and one outcome', () => {
+    const built = builtCheck('starforged/session/take_a_break');
+
+    expect(built.roll).toBeNull();
+    expect(built.interpret(null, {}).id).toBe('resolved');
+  });
+
+  it('builds nothing from a package another system owns, or from a compartment it cannot read', () => {
+    const foreign: ContentPackage = {
+      ...CONTENT_FIXTURE,
+      manifest: { ...CONTENT_FIXTURE.manifest, systems: ['someone-else'] },
+    };
+    const garbled: ContentPackage = { ...CONTENT_FIXTURE, raw: { formatVersion: 99 } };
+
+    expect(checksFrom([foreign])).toEqual([]);
+    expect(checksFrom([garbled])).toEqual([]);
+  });
+
+  it('proposes momentum only where a move was tuned by hand', () => {
+    // Face Danger was tuned; the others were not, and a move nobody tuned
+    // proposes nothing rather than pretending to know a rule.
+    const faceDanger = builtCheck('starforged/adventure/face_danger');
+    const withTuning = faceDanger.interpret(
+      {
+        request: {
+          dice: [
+            { sides: 6, count: 1 },
+            { sides: 10, count: 2 },
+          ],
+        },
+        dice: [
+          { sides: 6, value: 4, source: { kind: 'manual' } },
+          { sides: 10, value: 2, source: { kind: 'manual' } },
+          { sides: 10, value: 9, source: { kind: 'manual' } },
+        ],
+      },
+      { stat: 2, bonus: 0 },
+    );
+    expect(withTuning.suggests).toHaveLength(1);
+    expect(withTuning.suggests[0]?.label).toBe('Momentum -1');
+
+    const untuned = builtCheck('starforged/quest/fulfill_your_vow').interpret(
+      {
+        request: { dice: [{ sides: 10, count: 2 }] },
+        dice: [
+          { sides: 10, value: 2, source: { kind: 'manual' } },
+          { sides: 10, value: 9, source: { kind: 'manual' } },
+        ],
+      },
+      { progress: 5 },
+    );
+    expect(untuned.suggests).toEqual([]);
   });
 });

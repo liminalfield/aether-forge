@@ -10,13 +10,25 @@ import {
   type OpenCampaign,
   type Projection,
 } from '@aether-forge/core';
-import { FACE_DANGER, MOVE_INVOKED, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
+import { MOVE_INVOKED, STARFORGED_SYSTEM_ID } from '@aether-forge/system-ironsworn';
 import { CALL_IT, TOY_SYSTEM_ID } from '@aether-forge/system-toy';
 import { describe, expect, it } from 'vitest';
 
 import { createEntity } from './entities';
 import { declareEventTypes } from './event-types';
 import { runCheck } from './run-check';
+import { loadFixtureSystems } from './content-fixture';
+import { loadedSystems } from './systems';
+
+loadFixtureSystems();
+
+const FACE_DANGER = (() => {
+  const found = loadedSystems()
+    .flatMap((system) => system.checks)
+    .find((check) => check.id === 'starforged/adventure/face_danger');
+  if (found === undefined) throw new Error('the fixture content built no Face Danger');
+  return found;
+})();
 
 function openACampaign(): { campaign: OpenCampaign; read: () => readonly EventEnvelope[] } {
   let tick = 0;

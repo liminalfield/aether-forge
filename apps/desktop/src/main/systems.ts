@@ -1,11 +1,12 @@
 import type {
   CheckDefinition,
+  ContentPackage,
   EntityTemplate,
   ModuleEventType,
   SystemId,
 } from '@aether-forge/core';
 import {
-  checks as ironswornChecks,
+  checksFrom,
   MOVE_INVOKED,
   MOVE_RESOLVED,
   STARFORGED_SYSTEM_ID,
@@ -61,24 +62,48 @@ export interface LoadedSystem {
   readonly playable: boolean;
 }
 
-/** The systems a person can actually roll a check from. */
-export function playableSystems(): readonly LoadedSystem[] {
-  return LOADED_SYSTEMS.filter((system) => system.playable);
+let held: readonly LoadedSystem[] | undefined;
+
+/**
+ * Assemble the systems from the content this machine holds.
+ *
+ * A module's checks come from its installed packages joined to its
+ * interpreters, which is why loading takes the packages: the module receives
+ * its content at load, per contract §9. The toy takes nothing, consumes
+ * nothing, and must keep working, which is the canary doing its job.
+ *
+ * Called once at startup, and by tests with fixture packages. Everything
+ * else reads through `loadedSystems`, which refuses to answer before loading
+ * rather than answering wrongly.
+ */
+export function loadSystems(packages: readonly ContentPackage[]): readonly LoadedSystem[] {
+  held = [
+    {
+      systemId: TOY_SYSTEM_ID,
+      checks: toyChecks,
+      templates: toyTemplates,
+      checkEvents: { invoked: CHECK_INVOKED, resolved: CHECK_RESOLVED },
+      playable: false,
+    },
+    {
+      systemId: STARFORGED_SYSTEM_ID,
+      checks: checksFrom(packages),
+      templates: ironswornTemplates,
+      checkEvents: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
+      playable: true,
+    },
+  ];
+  return held;
 }
 
-export const LOADED_SYSTEMS: readonly LoadedSystem[] = [
-  {
-    systemId: TOY_SYSTEM_ID,
-    checks: toyChecks,
-    templates: toyTemplates,
-    checkEvents: { invoked: CHECK_INVOKED, resolved: CHECK_RESOLVED },
-    playable: false,
-  },
-  {
-    systemId: STARFORGED_SYSTEM_ID,
-    checks: ironswornChecks,
-    templates: ironswornTemplates,
-    checkEvents: { invoked: MOVE_INVOKED, resolved: MOVE_RESOLVED },
-    playable: true,
-  },
-];
+export function loadedSystems(): readonly LoadedSystem[] {
+  if (held === undefined) {
+    throw new Error('the systems were needed before loadSystems was called');
+  }
+  return held;
+}
+
+/** The systems a person can actually roll a check from. */
+export function playableSystems(): readonly LoadedSystem[] {
+  return loadedSystems().filter((system) => system.playable);
+}

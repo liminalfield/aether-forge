@@ -25,7 +25,7 @@ import type {
   IpcResult,
   TrackView,
 } from '../shared/ipc';
-import { LOADED_SYSTEMS } from './systems';
+import { loadedSystems } from './systems';
 
 /**
  * Entities over the IPC contract.
@@ -49,9 +49,9 @@ function asIpcFailure(kind: string, detail: string): IpcResult<never> {
 
 function templateFor(entityType: string | undefined): EntityTemplate | undefined {
   if (entityType === undefined) return undefined;
-  return LOADED_SYSTEMS.flatMap((system) => system.templates).find(
-    (template) => template.typeId === entityType,
-  );
+  return loadedSystems()
+    .flatMap((system) => system.templates)
+    .find((template) => template.typeId === entityType);
 }
 
 function toTrackView(record: EntityRecord, template: EntityTemplate | undefined): TrackView[] {
@@ -80,7 +80,7 @@ export function entityView(record: EntityRecord): EntityView {
 /** The entity types the loaded modules describe, in load order. */
 export function describeEntityTypes(): EntityTypesView {
   return {
-    types: LOADED_SYSTEMS.flatMap((system) =>
+    types: loadedSystems().flatMap((system) =>
       system.templates.map((template) => ({ id: template.typeId, name: template.name })),
     ),
   };
